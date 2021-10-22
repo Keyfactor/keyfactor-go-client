@@ -12,9 +12,9 @@ func main() {
 
 func getCertStoreTypeInfo() {
 	clientConfig := &keyfactor.APIClient{
-		Hostname: "keyfactor.example.com",
-		Username: "username",
-		Password: "password",
+		Hostname: "sedemo.thedemodrive.com",
+		Username: "HRoszell",
+		Password: "Ferrari1!",
 	}
 
 	response, err := keyfactor.GetCertStoreType(2, clientConfig)

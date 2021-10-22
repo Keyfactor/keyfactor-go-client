@@ -21,9 +21,28 @@ type CreateStoreFctArgs struct {
 	AgentAssigned           bool
 	ContainerName           string
 	InventorySchedule       interface{}
-	ReEnrollmentStatus      *ReEnrollmnentConfig
+	ReEnrollmentStatus      ReEnrollmnentConfig
 	SetNewPasswordAllowed   bool
 	Password                string
+}
+
+type InventorySchedule struct {
+	Immediate   bool              `json:"Immediate"`
+	Interval    InventoryInterval `json:"Interval"`
+	Daily       InventoryDaily    `json:"Daily"`
+	ExactlyOnce InventoryOnce     `json:"ExactlyOnce"`
+}
+
+type InventoryInterval struct {
+	Minutes int `json:"Minutes"`
+}
+
+type InventoryDaily struct {
+	Time string `json:"Time"`
+}
+
+type InventoryOnce struct {
+	Time string `json:"Time"`
 }
 
 type ReEnrollmnentConfig struct {
@@ -37,7 +56,7 @@ type ReEnrollmnentConfig struct {
 type StorePasswordConfig struct {
 	Value                       string
 	SecretTypeGuid              string
-	ProviderTypeParameterValues *ProviderTypeParams // Not yet implemented
+	ProviderTypeParameterValues ProviderTypeParams // Not yet implemented
 }
 
 /* Future non-critical functionality */
@@ -47,19 +66,22 @@ type ProviderTypeParams struct {
 	Value        string
 	InstanceId   string
 	InstanceGuid string
-	Provider     *ProviderParams
+	Provider     ProviderParams
 }
 
 type ProviderParams struct {
 	Id           int
 	Name         string
 	Area         int
-	ProviderType *ProviderType
+	ProviderType ProviderType
 }
 
 type ProviderType struct {
 	Id   string
 	Name string
+}
+
+type createCertificateStoreBody struct {
 }
 
 type CertStoreTypeResponse struct {
@@ -130,6 +152,7 @@ func validateCreateStoreArgs(ca *CreateStoreFctArgs) error {
 	if ca.AgentId == "" {
 		return errors.New("orchestrator agent id is required for creation of new certificate store")
 	}
+
 	return nil
 }
 

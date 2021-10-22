@@ -76,6 +76,9 @@ func SendRequest(request *APIRequest) (*http.Response, error) {
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
 
 	return resp, nil
 }
