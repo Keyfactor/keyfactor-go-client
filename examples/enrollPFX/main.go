@@ -3,26 +3,10 @@ package main
 import (
 	"fmt"
 	"keyfactor-go-client/pkg/keyfactor"
-	"log"
 )
 
 func main() {
-	getCertStoreTypeInfo()
-}
-
-func getCertStoreTypeInfo() {
-	clientConfig := &keyfactor.APIClient{
-		Hostname: "sedemo.thedemodrive.com",
-		Username: "HRoszell",
-		Password: "Ferrari1!",
-	}
-
-	response, err := keyfactor.GetCertStoreType(2, clientConfig)
-	if err != nil {
-		return
-	}
-
-	log.Printf("Short Name: %s", response.ShortName)
+	demoPFXEnrollment()
 }
 
 func demoPFXEnrollment() {
