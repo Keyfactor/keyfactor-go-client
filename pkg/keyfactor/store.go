@@ -9,28 +9,28 @@ import (
 )
 
 type CreateStoreFctArgs struct {
-	ContainerId             int
-	ClientMachine           string
-	StorePath               string
-	CertStoreInventoryJobId int
-	CertStoreType           int
-	Approved                bool
-	CreateIfMissing         bool
-	Properties              interface{}
-	AgentId                 string
-	AgentAssigned           bool
-	ContainerName           string
-	InventorySchedule       interface{}
-	ReEnrollmentStatus      ReEnrollmnentConfig
-	SetNewPasswordAllowed   bool
-	Password                string
+	ContainerId             int                 `json:"ContainerId,omitempty"`
+	ClientMachine           string              `json:"ClientMachine"`
+	StorePath               string              `json:"StorePath"`
+	CertStoreInventoryJobId string              `json:"CertStoreInventoryJobId,omitempty"`
+	CertStoreType           int                 `json:"CertStoreType"`
+	Approved                bool                `json:"Approved,omitempty"`
+	CreateIfMissing         bool                `json:"CreateIfMissing,omitempty"`
+	Properties              []StringTuple       `json:"Properties"`
+	AgentId                 string              `json:"AgentId"`
+	AgentAssigned           bool                `json:"AgentAssigned,omitempty"`
+	ContainerName           string              `json:"ContainerName,omitempty"`
+	InventorySchedule       InventorySchedule   `json:"InventorySchedule,omitempty"`
+	ReEnrollmentStatus      ReEnrollmnentConfig `json:"ReEnrollmentStatus,omitempty"`
+	SetNewPasswordAllowed   bool                `json:"SetNewPasswordAllowed,omitempty"`
+	Password                StorePasswordConfig `json:"Password,omitempty"`
 }
 
 type InventorySchedule struct {
-	Immediate   bool              `json:"Immediate"`
-	Interval    InventoryInterval `json:"Interval"`
-	Daily       InventoryDaily    `json:"Daily"`
-	ExactlyOnce InventoryOnce     `json:"ExactlyOnce"`
+	Immediate   *bool              `json:"Immediate,omitempty"`
+	Interval    *InventoryInterval `json:"Interval,omitempty"`
+	Daily       *InventoryDaily    `json:"Daily,omitempty"`
+	ExactlyOnce *InventoryOnce     `json:"ExactlyOnce,omitempty"`
 }
 
 type InventoryInterval struct {
@@ -46,18 +46,19 @@ type InventoryOnce struct {
 }
 
 type ReEnrollmnentConfig struct {
-	Data               bool
-	AgentId            string
-	Message            string
-	JobProperties      []StringTuple
-	CustomAliasAllowed int
+	Data               bool          `json:"Data"`
+	AgentId            string        `json:"AgentId"`
+	Message            string        `json:"Message"`
+	JobProperties      []StringTuple `json:"JobProperties"`
+	CustomAliasAllowed int           `json:"CustomAliasAllowed"`
 }
 
 type StorePasswordConfig struct {
-	Value                       string
-	SecretTypeGuid              string
-	ProviderTypeParameterValues ProviderTypeParams // Not yet implemented
-}
+	Value                       string              `json:"Value"`
+	SecretTypeGuid              *string             `json:"SecretTypeGuid,omitempty"`
+	InstanceId                  *string             `json:"InstanceId,omitempty"`
+	ProviderTypeParameterValues *ProviderTypeParams `json:"ProviderTypeParameterValues,omitempty"`
+} // ProviderTypeParameterValues - Not yet implemented
 
 /* Future non-critical functionality */
 
@@ -79,9 +80,6 @@ type ProviderParams struct {
 type ProviderType struct {
 	Id   string
 	Name string
-}
-
-type createCertificateStoreBody struct {
 }
 
 type CertStoreTypeResponse struct {
@@ -127,16 +125,78 @@ type CertStoreTypeResponse struct {
 	EnrollmentJobType  string   `json:"EnrollmentJobType"`
 }
 
-func CreateStore(ca *CreateStoreFctArgs, api *APIClient) error {
+type CreateStoreResponse struct {
+	Id                      string              `json:"Id"`
+	ContainerId             int                 `json:"ContainerId"`
+	ClientMachine           string              `json:"ClientMachine"`
+	Storepath               string              `json:"Storepath"`
+	CertStoreInventoryJobId string              `json:"CertStoreInventoryJobId"`
+	CertStoreType           int                 `json:"cert_store_type"`
+	Approved                bool                `json:"Approved"`
+	CreateIfMissing         bool                `json:"CreateIfMissing"`
+	Properties              string              `json:"Properties"`
+	AgentId                 string              `json:"AgentId"`
+	AgentAssigned           bool                `json:"AgentAssigned"`
+	ContainerName           string              `json:"ContainerName"`
+	InventorySchedule       InventorySchedule   `json:"InventorySchedule"`
+	ReenrollmentStatus      ReEnrollmnentConfig `json:"ReenrollmentStatus"`
+	SetNewPasswordAllowed   bool                `json:"SetNewPasswordAllowed"`
+}
+
+func CreateStore(ca *CreateStoreFctArgs, api *APIClient) (*CreateStoreResponse, error) {
 	log.Println("[INFO] Creating new certificate store with Keyfactor")
 
 	/* Validate input */
 	err := validateCreateStoreArgs(ca)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	// Once required fields are found, create request body
+	log.Println("[TRACE] Request body")
+
+	// Set Keyfactor-specific headers
+	log.Println("[TRACE] Setting request headers")
+	headers := &APIHeaders{
+		Headers: []StringTuple{
+			{"x-keyfactor-api-version", "1"},
+			{"x-keyfactor-requested-with", "APIClient"},
+		},
+	}
+
+	log.Println("[TRACE] Creating request struct for Keyfactor client")
+	keyfactorAPIStruct := &APIRequest{
+		KFClient: api,
+		Method:   "POST",
+		Endpoint: "/KeyfactorAPI/CertificateStores",
+		Headers:  headers,
+		Payload:  &ca,
+	}
+
+	resp, err := SendRequest(keyfactorAPIStruct)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusOK {
+		log.Printf("[DEBUG] GET succeeded with response code %d", resp.StatusCode)
+		jsonResp := &CreateStoreResponse{}
+		err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+		if err != nil {
+			return nil, err
+		}
+		return jsonResp, nil
+	}
+
+	var errorMessage interface{} // Decode JSON body to handle issue
+	err = json.NewDecoder(resp.Body).Decode(&errorMessage)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("[DEBUG] Request failed with code %d and message %v", resp.StatusCode, errorMessage)
+	stringMessage := fmt.Sprintf("%v", errorMessage)
+	return nil, errors.New(stringMessage)
 }
 
 func validateCreateStoreArgs(ca *CreateStoreFctArgs) error {
@@ -157,7 +217,6 @@ func validateCreateStoreArgs(ca *CreateStoreFctArgs) error {
 }
 
 func GetCertStoreType(id int, api *APIClient) (*CertStoreTypeResponse, error) {
-
 	// Set Keyfactor-specific headers
 	log.Println("[TRACE] Setting request headers")
 	headers := &APIHeaders{
