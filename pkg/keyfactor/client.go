@@ -54,7 +54,7 @@ func SendRequest(request *APIRequest) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("[INFO] PFX Enrollment request body: %s", jsonByes)
+	log.Printf("[INFO] Request body: %s", jsonByes)
 
 	req, err := http.NewRequest(request.Method, keyfactorPath, bytes.NewBuffer(jsonByes))
 	if err != nil {
