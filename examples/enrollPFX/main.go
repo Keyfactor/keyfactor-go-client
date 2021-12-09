@@ -6,21 +6,23 @@ import (
 	"log"
 )
 
-var HOSTNAME = "hostname"
+var HOSTNAME = "example.com"
 var USERNAME = "username"
 var PASSWORD = "password"
 
 func main() {
-	//demoDownloadCert()
+	demoPFXEnrollment()
+	demoDownloadCert()
 	demoUpdateMetadata()
+	demoGetCertificateContext()
 }
 
 func demoPFXEnrollment() {
 	// Create a pointer to a credentials struct and populate it with example values
 	clientConfig := &keyfactor.APIClient{
-		Hostname: "keyfactor.example.com",
-		Username: "username",
-		Password: "password",
+		Hostname: HOSTNAME,
+		Username: USERNAME,
+		Password: PASSWORD,
 	}
 
 	// To enroll a PFX certificate with the Keyfactor Go client,
@@ -47,7 +49,31 @@ func demoPFXEnrollment() {
 	// By default, this method returns a PKCS#12 certificate. This is ugly to print,
 	// so we'll print the new certificate's serial number.
 
-	fmt.Printf("New certificate serial number: %s", response.CertificateInformation.SerialNumber)
+	fmt.Printf("%#v", response.CertificateInformation)
+	fmt.Printf("CertId: %d", response.CertificateInformation.KeyfactorID)
+	fmt.Printf("RequestId: %d", response.CertificateInformation.KeyfactorRequestID)
+}
+
+func demoGetCertificateContext() {
+	// Step 1: Create authentication structure
+	clientConfig := &keyfactor.APIClient{
+		Hostname: HOSTNAME,
+		Username: USERNAME,
+		Password: PASSWORD,
+	}
+	// Step 2: Create arguments structure
+	getCertContextArgs := &keyfactor.GetCertificateContextArgs{
+		Id:               2140,
+		IncludeMetadata:  boolToPointer(true),
+		IncludeLocations: boolToPointer(true),
+	}
+	// Step 3: Call associated function
+	response, err := keyfactor.GetCertificateContext(getCertContextArgs, clientConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("%#v", response)
 }
 
 func demoDownloadCert() {
@@ -92,4 +118,23 @@ func demoUpdateMetadata() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+// Helper functions
+func boolToPointer(b bool) *bool {
+	return &b
+}
+
+func intToPointer(i int) *int {
+	if i == 0 {
+		return nil
+	}
+	return &i
+}
+
+func stringToPointer(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

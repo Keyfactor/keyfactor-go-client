@@ -12,6 +12,9 @@ import (
 	"time"
 )
 
+// APIClient is a struct holding all necessary client configuration data
+// for communicating with the Keyfactor API. This includes the hostname,
+// username, password, and domain.
 type APIClient struct {
 	Hostname string
 	Username string
@@ -19,23 +22,41 @@ type APIClient struct {
 	Domain   string
 }
 
+// StringTuple is a struct holding two string elements used by the Keyfactor
+// Go Client library for data types requiring a tuple of strings
 type StringTuple struct {
 	Elem1 string
 	Elem2 string
 }
 
+// APIHeaders is a struct that holds an array of StringTuples used
+// to modularize the passing of custom API headers.
 type APIHeaders struct {
 	Headers []StringTuple
 }
 
+// APIQuery is a struct that holds an array of StringTuples used
+// to modularize the passing of custom URL query parameters.
+type APIQuery struct {
+	Query []StringTuple
+}
+
+// APIRequest is a structure that holds required information for communicating with
+// the Keyfactor API. Included inside this struct is a pointer to an APIClient struct,
+// a pointer to an APIHeaders struct, a payload as an unstructured interface, and other
+// configuration information for the API call.
 type APIRequest struct {
 	KFClient *APIClient
 	Method   string
 	Endpoint string
 	Headers  *APIHeaders
+	Query    *APIQuery
 	Payload  interface{}
 }
 
+// SendRequest takes an APIRequest struct as input and generates an API call
+// using the configuration data inside. It returns a pointer to an http response
+// struct and an error, if applicable.
 func SendRequest(request *APIRequest) (*http.Response, error) {
 	kfApiClientData := request.KFClient // Extract Keyfactor client data
 
@@ -47,7 +68,17 @@ func SendRequest(request *APIRequest) (*http.Response, error) {
 		u.Scheme = "https"
 	}
 	u.Path = path.Join(u.Path, request.Endpoint) // Attach enroll endpoint
-	keyfactorPath := u.String()
+
+	// Set request query
+	if request.Query != nil {
+		queryString := u.Query()
+		for _, query := range request.Query.Query {
+			queryString.Set(query.Elem1, query.Elem2)
+		}
+		u.RawQuery = queryString.Encode()
+	}
+
+	keyfactorPath := u.String() // Convert absolute path to string
 
 	log.Printf("[INFO] Preparing a %s request to path '%s'", request.Method, keyfactorPath)
 	jsonByes, err := json.Marshal(request.Payload)
@@ -83,6 +114,8 @@ func SendRequest(request *APIRequest) (*http.Response, error) {
 	return resp, nil
 }
 
+// buildAuthField takes an APIClient struct as input and returns a base-64 encoded
+// Basic authorization field required for communication with the Keyfactor API.
 func buildAuthField(creds *APIClient) string {
 	var authString string
 	log.Println("[TRACE] Building Authorization field")
