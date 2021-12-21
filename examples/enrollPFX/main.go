@@ -11,22 +11,22 @@ var USERNAME = "username"
 var PASSWORD = "password"
 
 func main() {
-	demoPFXEnrollment()
-	demoDownloadCert()
-	demoUpdateMetadata()
-	demoGetCertificateContext()
-}
-
-func demoPFXEnrollment() {
-	// Create a pointer to a credentials struct and populate it with example values
-	clientConfig := &keyfactor.APIClient{
+	// Create a new Keyfactor client
+	clientConfig := &keyfactor.AuthConfig{
 		Hostname: HOSTNAME,
 		Username: USERNAME,
 		Password: PASSWORD,
 	}
+	client, err := keyfactor.NewKeyfactorClient(clientConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	// ---------------------------------------------------------------------------------------------------------------//
+	// PFX Certificate Enrollment
+	//
 	// To enroll a PFX certificate with the Keyfactor Go client,
-	// first create a pointer to an Enroll PFX function Argument struct,
+	// first create a pointer to an EnrollPFXFctArgs struct,
 	// and populate the required fields. The below fields are the bare minimum
 	PFXArgs := &keyfactor.EnrollPFXFctArgs{
 		CertificateSubject: keyfactor.CertificateSubject{
@@ -36,76 +36,55 @@ func demoPFXEnrollment() {
 		CertificateAuthority: "<Keyfactor certificate authority>",
 		Template:             "<Keyfactor certificate template>",
 	}
-
-	// Then, call the Enroll PFX certificate function with the authentication and request
-	// arguments.
-	response, err := keyfactor.EnrollPFX(PFXArgs, clientConfig)
+	// Then, call the Enroll PFX certificate function with the request arguments.
+	enrollResponse, err := client.EnrollPFX(PFXArgs)
 	if err != nil {
 		return
 	}
 
 	// Enrolling a PFX certificate returns a pointer to an EnrollPFXResponse struct.
 
-	// By default, this method returns a PKCS#12 certificate. This is ugly to print,
-	// so we'll print the new certificate's serial number.
+	fmt.Printf("%#v", enrollResponse.CertificateInformation)
 
-	fmt.Printf("%#v", response.CertificateInformation)
-	fmt.Printf("CertId: %d", response.CertificateInformation.KeyfactorID)
-	fmt.Printf("RequestId: %d", response.CertificateInformation.KeyfactorRequestID)
-}
-
-func demoGetCertificateContext() {
-	// Step 1: Create authentication structure
-	clientConfig := &keyfactor.APIClient{
-		Hostname: HOSTNAME,
-		Username: USERNAME,
-		Password: PASSWORD,
-	}
-	// Step 2: Create arguments structure
+	// ---------------------------------------------------------------------------------------------------------------//
+	// Get Certificate Context
+	//
+	// To retrieve the context of a certificate stored by Keyfactor, first create a pointer to a
+	// GetCertificateContextArgs struct and populate the required fields.
 	getCertContextArgs := &keyfactor.GetCertificateContextArgs{
-		Id:               2140,
+		Id:               enrollResponse.CertificateInformation.KeyfactorID, // Just for fun, get context of previously created certificate
 		IncludeMetadata:  boolToPointer(true),
 		IncludeLocations: boolToPointer(true),
 	}
-	// Step 3: Call associated function
-	response, err := keyfactor.GetCertificateContext(getCertContextArgs, clientConfig)
+	// Then, call the get certificate context method with the request arguments.
+	context, err := client.GetCertificateContext(getCertContextArgs)
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("%#v", context)
 
-	fmt.Printf("%#v", response)
-}
-
-func demoDownloadCert() {
-	// Step 1: Create authentication structure
-	clientConfig := &keyfactor.APIClient{
-		Hostname: HOSTNAME,
-		Username: USERNAME,
-		Password: PASSWORD,
-	}
-	// Step 2: Create arguments structure
+	// ---------------------------------------------------------------------------------------------------------------//
+	// Download Certificate
+	//
+	// To download a persisted certificate from Keyfactor, first create a pointer to a
+	// DownloadCertArgs struct and populate the required fields.
 	downloadArgs := &keyfactor.DownloadCertArgs{
-		CertID:       1860,
+		CertID:       enrollResponse.CertificateInformation.KeyfactorID,
 		IncludeChain: true,
 		CertFormat:   "PEM",
 	}
-	// Step 3: Call associated function
-	resp, err := keyfactor.DownloadCertificate(downloadArgs, clientConfig)
+	// Then, call the download certificate method with the request arguments.
+	certificate, err := client.DownloadCertificate(downloadArgs)
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("%s", certificate.Content)
 
-	fmt.Printf("bruh: %s", resp.Content)
-}
-
-func demoUpdateMetadata() {
-	// Step 1: Create authentication structure
-	clientConfig := &keyfactor.APIClient{
-		Hostname: HOSTNAME,
-		Username: USERNAME,
-		Password: PASSWORD,
-	}
-	// Step 2: Create arguments structure
+	// ---------------------------------------------------------------------------------------------------------------//
+	// Update Certificate metadata
+	//
+	// To update the metadata associated with a certificate in Keyfactor, first create a pointer to a
+	// UpdateMetadataArgs struct and populate the required fields.
 	metadata := &keyfactor.UpdateMetadataArgs{
 		CertID: 1860,
 		CertificateMetadata: []keyfactor.StringTuple{
@@ -113,8 +92,8 @@ func demoUpdateMetadata() {
 			{"Email-Contact", "email@example.com"},
 		},
 	}
-	// Step 3: Call associated function
-	err := keyfactor.UpdateMetadata(metadata, clientConfig)
+	// Then, call the update certificate metadata method with the request arguments.
+	err = client.UpdateMetadata(metadata)
 	if err != nil {
 		log.Fatal(err)
 	}

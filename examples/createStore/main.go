@@ -11,35 +11,36 @@ var USERNAME = "username"
 var PASSWORD = "password"
 
 func main() {
-	demoDeployStore()
-	demoCreateStore()
-	demoGetStoreById()
-	getCertStoreTypeInfo()
-}
-
-func getCertStoreTypeInfo() {
-	clientConfig := &keyfactor.APIClient{
+	// Create a new Keyfactor client
+	clientConfig := &keyfactor.AuthConfig{
 		Hostname: HOSTNAME,
 		Username: USERNAME,
 		Password: PASSWORD,
 	}
-
-	response, err := keyfactor.GetCertStoreType(106, clientConfig)
+	client, err := keyfactor.NewKeyfactorClient(clientConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("Short Name: %s", response.ShortName)
-}
-
-func demoCreateStore() {
-	clientConfig := &keyfactor.APIClient{
-		Hostname: HOSTNAME,
-		Username: USERNAME,
-		Password: PASSWORD,
+	// ---------------------------------------------------------------------------------------------------------------//
+	// Get Certificate Store Types
+	//
+	// To retrieve data on a specific certificate store type supported by the Keyfactor instance referenced by the
+	// Keyfactor Go client, use the GetCertStoreType method.
+	storeType, err := client.GetCertStoreType(106)
+	if err != nil {
+		return
 	}
+	log.Printf("Short Name: %s", storeType.ShortName)
 
-	args := &keyfactor.CreateStoreFctArgs{
+	// ---------------------------------------------------------------------------------------------------------------//
+	// Create New AKV Certificate Store
+	//
+	// To create a new certificate store using the Keyfactor Go Client,
+	// first create a pointer to an CreateStoreFctArgs struct,
+	// and populate the required fields. The below fields are the bare minimum. Note that the properties required vary
+	// between different store types. Use the GetCertStoreType method to determine the required fields.
+	createStore := &keyfactor.CreateStoreFctArgs{
 		AgentId:       "keyfactor orchestrator agent ID",
 		ClientMachine: "aks_demo",
 		StorePath:     "https://coolvault.vault.azure.net/",
@@ -54,70 +55,21 @@ func demoCreateStore() {
 			{"VaultName", "coolvault"},
 		},
 	}
-
-	resp, err := keyfactor.CreateStore(args, clientConfig)
+	// Then, use the CreateStore method to create the new certificate store.
+	store, err := client.CreateStore(createStore)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
-	fmt.Printf("bruh: %#v", resp)
-}
+	fmt.Printf("%#v", store)
 
-func demoDeployStore() {
-	clientConfig := &keyfactor.APIClient{
-		Hostname: HOSTNAME,
-		Username: USERNAME,
-		Password: PASSWORD,
-	}
-	deployArgs := &keyfactor.DeployPFXArgs{
-		StoreIds: []string{
-			"store ID",
-		},
-		Password:      "password",
-		CertificateId: 2136,
-		RequestId:     1550,
-		StoreTypes: []keyfactor.StoreTypes{
-			{StoreTypeId: 106, Alias: stringToPointer("newCertificate")},
-		},
-	}
-
-	resp, err := keyfactor.DeployPFXCertificate(deployArgs, clientConfig)
+	// ---------------------------------------------------------------------------------------------------------------//
+	// Get Certificate Store Context
+	//
+	// To retrieve the context of a certificate store in Keyfactor, make a call to the GetCertificateStoreByID method.
+	// Pass a string as the certificate store ID.
+	storeContext, err := client.GetCertificateStoreByID(store.Id)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
-	fmt.Printf("%#v", resp)
-}
-
-func demoGetStoreById() {
-	clientConfig := &keyfactor.APIClient{
-		Hostname: HOSTNAME,
-		Username: USERNAME,
-		Password: PASSWORD,
-	}
-
-	store := "abcdefghijklmnopqrstuvwxyz"
-
-	resp, err := keyfactor.GetCertificateStoreByID(store, clientConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%#v", resp)
-}
-
-// Helper functions
-func boolToPointer(b bool) *bool {
-	return &b
-}
-
-func intToPointer(i int) *int {
-	if i == 0 {
-		return nil
-	}
-	return &i
-}
-
-func stringToPointer(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
+	fmt.Printf("%#v", storeContext)
 }
