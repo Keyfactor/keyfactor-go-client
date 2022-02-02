@@ -20,6 +20,12 @@ type CreateStoreFctArgs struct {
 	Password                *StorePasswordConfig `json:"Password,omitempty"`
 }
 
+// UpdateStoreFctArgs holds the function arguments used for calling the UpdateStore method.
+type UpdateStoreFctArgs struct {
+	Id string `json:"Id,omitempty"`
+	CreateStoreFctArgs
+}
+
 // InventorySchedule holds configuration data for creating an inventory schedule for a certificate store in Keyfactor
 type InventorySchedule struct {
 	Immediate   *bool              `json:"Immediate,omitempty"`
@@ -170,3 +176,6 @@ type CreateStoreResponse struct {
 	ReenrollmentStatus      ReEnrollmnentConfig `json:"ReenrollmentStatus"`
 	SetNewPasswordAllowed   bool                `json:"SetNewPasswordAllowed"`
 }
+
+// UpdateStoreResponse contains the response elements returned from the UpdateStore method.
+type UpdateStoreResponse struct{ CreateStoreResponse }
