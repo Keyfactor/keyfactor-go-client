@@ -270,6 +270,7 @@ type CertificateLocations struct {
 	StoreType    int    `json:"StoreType,omitempty"`
 	Alias        string `json:"Alias,omitempty"`
 	ChainLevel   int    `json:"ChainLevel,omitempty"`
+	CertStoreId  string `json:"CertStoreId,omitempty"`
 }
 
 // SSLLocations contains detailed information on the locations that the certificate was found in a scan.
