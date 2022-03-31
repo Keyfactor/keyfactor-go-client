@@ -35,9 +35,6 @@ type GetSecurityRolesResponse struct {
 	Id          int                `json:"Id,omitempty"`
 	Name        string             `json:"Name,omitempty"`
 	Description string             `json:"Description,omitempty"`
-	Enabled     bool               `json:"Enabled,omitempty"`
-	Valid       bool               `json:"Valid,omitempty"`
-	Private     bool               `json:"Private,omitempty"`
 	Identities  []SecurityIdentity `json:"Identities,omitempty"`
 	Permissions []string           `json:"Permissions,omitempty"`
 }
@@ -88,8 +85,8 @@ type SecurityRolePermission struct {
 // SecurityRoleIdentityConfig holds configuration data defining which security identities are attached to a given
 // security role.
 type SecurityRoleIdentityConfig struct {
-	Name string
-	SID  *string
+	AccountName string
+	SID         *string
 }
 
 // CreateSecurityRoleResponse holds response elements returned by

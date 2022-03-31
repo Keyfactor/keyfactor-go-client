@@ -16,6 +16,11 @@ type GetTemplateResponse struct {
 	MetadataFields         []TemplateMetadataFields   `json:"MetadataFields,omitempty"`
 	AllowedEnrollmentTypes int                        `json:"AllowedEnrollmentTypes,omitempty"`
 	TemplateRegexes        []TemplateRegex            `json:"TemplateRegexes,omitempty"`
+	UseAllowedRequesters   bool                       `json:"UseAllowedRequesters,omitempty"`
+	AllowedRequesters      []string                   `json:"AllowedRequesters,omitempty"`
+	RFCEnforcement         bool                       `json:"RFCEnforcement,omitempty"`
+	RequiresApproval       bool                       `json:"RequiresApproval,omitempty"`
+	KeyUsage               int                        `json:"KeyUsage,omitempty"`
 }
 
 type TemplateEnrollmentFields struct {
@@ -58,6 +63,11 @@ type UpdateTemplateArg struct {
 	MetadataFields         *[]TemplateMetadataFields   `json:"MetadataFields,omitempty"`
 	AllowedEnrollmentTypes *int                        `json:"AllowedEnrollmentTypes,omitempty"`
 	TemplateRegexes        *[]TemplateRegex            `json:"TemplateRegexes,omitempty"`
+	UseAllowedRequesters   *bool                       `json:"UseAllowedRequesters,omitempty"`
+	AllowedRequesters      *[]string                   `json:"AllowedRequesters,omitempty"`
+	RFCEnforcement         *bool                       `json:"RFCEnforcement,omitempty"`
+	RequiresApproval       *bool                       `json:"RequiresApproval,omitempty"`
+	KeyUsage               *bool                       `json:"KeyUsage,omitempty"`
 }
 
 type UpdateTemplateResponse struct{ GetTemplateResponse }

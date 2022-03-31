@@ -10,7 +10,7 @@ import (
 
 // GetSecurityIdentities hits the /Security/Identities endpoint with a GET request and returns a list of
 // GetSecurityIdentityResponse structs. The function takes no arguments.
-func (c *Client) GetSecurityIdentities() (*GetSecurityIdentityResponse, error) {
+func (c *Client) GetSecurityIdentities() ([]GetSecurityIdentityResponse, error) {
 	log.Println("[INFO] Getting Keyfactor security identity list")
 
 	// Set Keyfactor-specific headers
@@ -23,7 +23,7 @@ func (c *Client) GetSecurityIdentities() (*GetSecurityIdentityResponse, error) {
 
 	keyfactorAPIStruct := &request{
 		Method:   "GET",
-		Endpoint: "/KeyfactorAPI/Security/Roles+",
+		Endpoint: "/KeyfactorAPI/Security/Identities",
 		Headers:  headers,
 		Payload:  nil,
 	}
@@ -35,7 +35,7 @@ func (c *Client) GetSecurityIdentities() (*GetSecurityIdentityResponse, error) {
 
 	if resp.StatusCode == http.StatusOK {
 		log.Printf("[DEBUG] GET succeeded with response code %d", resp.StatusCode)
-		jsonResp := &GetSecurityIdentityResponse{}
+		var jsonResp []GetSecurityIdentityResponse
 		err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 		if err != nil {
 			return nil, err
@@ -60,7 +60,7 @@ func (c *Client) CreateSecurityIdentity(csia *CreateSecurityIdentityArg) (*Creat
 	log.Println("[INFO] Creating new Keyfactor security identity")
 
 	// Verify argument
-	if csia != nil && csia.AccountName != "" {
+	if csia == nil || csia.AccountName == "" {
 		return nil, errors.New("invalid input received for security identity creation")
 	}
 
@@ -158,7 +158,7 @@ func (c *Client) GetSecurityRole(id int) (*GetSecurityRolesResponse, error) {
 		},
 	}
 
-	endpoint := "KeyfactorAPI/Security/Roles/" + fmt.Sprintf("%s", id) // Append ID to complete endpoint
+	endpoint := "KeyfactorAPI/Security/Roles/" + fmt.Sprintf("%d", id) // Append ID to complete endpoint
 	keyfactorAPIStruct := &request{
 		Method:   "GET",
 		Endpoint: endpoint,
@@ -240,7 +240,7 @@ func (c *Client) CreateSecurityRole(input *CreateSecurityRoleArg) (*CreateSecuri
 	log.Println("[INFO] Creating new Keyfactor security role")
 
 	// Verify argument
-	if input != nil && input.Name != "" && input.Description != "" {
+	if input == nil || input.Name == "" || input.Description == "" {
 		return nil, errors.New("invalid input received for security role creation")
 	}
 
@@ -291,8 +291,14 @@ func (c *Client) UpdateSecurityRole(input *UpdatteSecurityRoleArg) (*UpdateSecur
 	log.Printf("[INFO] Updating Keyfactor security role with ID %d", input.Id)
 
 	// Verify argument
-	if input != nil && input.Id != 0 && input.Name != "" && input.Description != "" {
-		return nil, errors.New("invalid input received for security role creation")
+	if input == nil {
+		return nil, errors.New("update security role - argument struct is nil")
+	}
+	if input.Name == "" {
+		return nil, errors.New("update security role - role name is blank")
+	}
+	if input.Description == "" {
+		return nil, errors.New("update security role - role description is blank")
 	}
 
 	// Set Keyfactor-specific headers
