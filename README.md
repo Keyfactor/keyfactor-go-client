@@ -83,6 +83,8 @@ a CLI that uses the module.
 * ```GetCertStoreType```
 * ```DeleteCertificateStore```
 * ```GetCertificateStoreByID```
+* ```AddCertificateToStores```
+* ```RemoveCertificateFromStores```
 * ```GetSecurityIdentities```
 * ```CreateSecurityIdentity```
 * ```DeleteSecurityIdentity```
