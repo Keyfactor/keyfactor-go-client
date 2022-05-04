@@ -191,7 +191,7 @@ type AddCertificateToStore struct {
 	CertificateStores *[]CertificateStore `json:"CertificateStores,omitempty"`
 
 	// The inventory schedule for the add job
-	InventorySchedule *InventorySchedule `json:"InventorySchedule,omitempty"`
+	InventorySchedule *InventorySchedule `json:"Schedule,omitempty"`
 
 	// An integer containing the Keyfactor Command reference ID of the certificate to be added to the certificate store(s).
 	CollectionId int `json:"CollectionId,omitempty"`
@@ -205,7 +205,7 @@ type RemoveCertificateFromStore struct {
 	CertificateStores *[]CertificateStore `json:"CertificateStores"`
 
 	// The inventory schedule for the add job
-	InventorySchedule *InventorySchedule `json:"InventorySchedule,omitempty"`
+	InventorySchedule *InventorySchedule `json:"Schedule,omitempty"`
 
 	// An integer containing the Keyfactor Command reference ID of the certificate to be added to the certificate store(s).
 	CollectionId int `json:"CollectionId,omitempty"`
