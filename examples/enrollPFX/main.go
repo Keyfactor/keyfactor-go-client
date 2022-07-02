@@ -29,10 +29,10 @@ func main() {
 	// first create a pointer to an EnrollPFXFctArgs struct,
 	// and populate the required fields. The below fields are the bare minimum
 	PFXArgs := &keyfactor.EnrollPFXFctArgs{
-		CertificateSubject: keyfactor.CertificateSubject{
+		Subject: &keyfactor.CertificateSubject{
 			SubjectCommonName: "keyfactor-go-example",
 		},
-		KeyPassword:          "#SuperSecurePassword55!",
+		Password:             "#SuperSecurePassword55!",
 		CertificateAuthority: "<Keyfactor certificate authority>",
 		Template:             "<Keyfactor certificate template>",
 	}
@@ -66,19 +66,16 @@ func main() {
 	// ---------------------------------------------------------------------------------------------------------------//
 	// Download Certificate
 	//
-	// To download a persisted certificate from Keyfactor, first create a pointer to a
-	// DownloadCertArgs struct and populate the required fields.
-	downloadArgs := &keyfactor.DownloadCertArgs{
-		CertID:       enrollResponse.CertificateInformation.KeyfactorID,
-		IncludeChain: true,
-		CertFormat:   "PEM",
+	// To download a persisted certificate from Keyfactor, call the
+	// download certificate method with the requested arguments.
+	leaf, chain, err := client.DownloadCertificate(enrollResponse.CertificateInformation.KeyfactorID, "", "", "")
+	if err != nil {
+		return
 	}
-	// Then, call the download certificate method with the request arguments.
-	certificate, err := client.DownloadCertificate(downloadArgs)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%s", certificate.Content)
+	fmt.Println(leaf, chain)
 
 	// ---------------------------------------------------------------------------------------------------------------//
 	// Update Certificate metadata

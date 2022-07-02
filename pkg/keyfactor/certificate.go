@@ -1,12 +1,15 @@
 package keyfactor
 
 import (
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.mozilla.org/pkcs7"
 	"log"
 	"net/http"
+	"software.sslmate.com/src/go-pkcs12"
 	"strconv"
 	"strings"
 )
@@ -71,12 +74,15 @@ func (c *Client) EnrollPFX(ea *EnrollPFXFctArgs) (*EnrollResponse, error) {
 }
 
 // DownloadCertificate takes arguments for DownloadCertArgs to facilitate a call to Keyfactor
-// that downloads a certificate in the specified format.
+// that downloads a certificate from Keyfactor.
 // The download certificate endpoint requires one of the following to retrieve a cert:
 //  - CertID
 //  - Thumbprint
 //  - SerialNumber AND IssuerDN
-func (c *Client) DownloadCertificate(da *DownloadCertArgs) (*DownloadCertificateResponse, error) {
+// Returns:
+//   - Leaf certificate
+//   - Certificate chain
+func (c *Client) DownloadCertificate(certId int, thumbprint string, serialNumber string, issuerDn string) (*x509.Certificate, []*x509.Certificate, error) {
 	log.Println("[INFO] Downloading certificate")
 
 	/* The download certificate endpoint requires one of the following to retrieve a cert:
@@ -86,24 +92,25 @@ func (c *Client) DownloadCertificate(da *DownloadCertArgs) (*DownloadCertificate
 
 	Check for this input
 	*/
-	var validInput = false
-	if da.CertID != 0 {
+	validInput := true
+	if certId != 0 {
 		validInput = true
-	} else if da.Thumbprint != "" {
+	} else if thumbprint != "" {
 		validInput = true
-	} else if (da.SerialNumber != "") && (da.IssuerDN != "") {
+	} else if serialNumber != "" && issuerDn != "" {
 		validInput = true
 	}
-	if validInput != true {
-		return nil, errors.New("invalid input received for cert download request")
+
+	if !validInput {
+		return nil, nil, fmt.Errorf("certID, thumbprint, or serial number AND issuer DN required to dowload certificate")
 	}
 
 	payload := &downloadCertificateBody{
-		CertID:       da.CertID,
-		SerialNumber: da.SerialNumber,
-		IssuerDN:     da.IssuerDN,
-		Thumbprint:   da.Thumbprint,
-		IncludeChain: da.IncludeChain,
+		CertID:       certId,
+		SerialNumber: serialNumber,
+		IssuerDN:     issuerDn,
+		Thumbprint:   thumbprint,
+		IncludeChain: true,
 	}
 
 	// Set Keyfactor-specific headers
@@ -111,7 +118,7 @@ func (c *Client) DownloadCertificate(da *DownloadCertArgs) (*DownloadCertificate
 		Headers: []StringTuple{
 			{"x-keyfactor-api-version", "1"},
 			{"x-keyfactor-requested-with", "APIClient"},
-			{"x-certificateformat", da.CertFormat},
+			{"x-certificateformat", "P7B"},
 		},
 	}
 
@@ -124,21 +131,31 @@ func (c *Client) DownloadCertificate(da *DownloadCertArgs) (*DownloadCertificate
 
 	resp, err := c.sendRequest(keyfactorAPIStruct)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	jsonResp := &DownloadCertificateResponse{}
+	jsonResp := &downloadCertificateResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	content, err := base64.StdEncoding.DecodeString(jsonResp.Content)
+	buf, err := base64.StdEncoding.DecodeString(jsonResp.Content)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	jsonResp.Content = string(content)
 
-	return jsonResp, nil
+	certs, err := pkcs7.Parse(buf)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	leaf := certs.Certificates[0]
+
+	if len(certs.Certificates) > 1 {
+		return leaf, certs.Certificates[1:], nil
+	}
+
+	return leaf, nil, nil
 }
 
 // EnrollCSR takes arguments for EnrollCSRFctArgs to enroll a passed Certificate Signing
@@ -348,7 +365,11 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 //  - Thumbprint
 //  - SerialNumber AND IssuerDN
 // Additionally, the certificate Password is required.
-func (c *Client) RecoverCertificate(rca *RecoverCertArgs) (*RecoverCertResponse, error) {
+// Returns:
+//   - Private key (*rsa.PrivateKey or *ecdsa.PrivateKey)
+//   - Leaf certificate (*x509.Certificate)
+//   - Certificate chain ([]*x509.Certificate)
+func (c *Client) RecoverCertificate(rca *RecoverCertArgs) (interface{}, *x509.Certificate, []*x509.Certificate, error) {
 	log.Println("[INFO] Recovering certificate")
 	/* The download certificate endpoint requires one of the following to retrieve a cert:
 		- CertID
@@ -369,7 +390,7 @@ func (c *Client) RecoverCertificate(rca *RecoverCertArgs) (*RecoverCertResponse,
 		validInput = true
 	}
 	if validInput != true {
-		return nil, errors.New("invalid input received for cert download request")
+		return nil, nil, nil, errors.New("invalid input received for cert download request")
 	}
 
 	// Set Keyfactor-specific headers
@@ -390,21 +411,23 @@ func (c *Client) RecoverCertificate(rca *RecoverCertArgs) (*RecoverCertResponse,
 
 	resp, err := c.sendRequest(keyfactorAPIStruct)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	jsonResp := &RecoverCertResponse{}
+	jsonResp := &recoverCertResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
-	content, err := base64.StdEncoding.DecodeString(jsonResp.PFX)
-	if err != nil {
-		return nil, err
-	}
-	jsonResp.PFX = string(content)
 
-	return jsonResp, nil
+	pfxDer, err := base64.StdEncoding.DecodeString(jsonResp.PFX)
+
+	priv, leaf, chain, err := pkcs12.DecodeChain(pfxDer, rca.Password)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return priv, leaf, chain, nil
 }
 
 // createSubject builds the certificate subject string from a passed CertificateSubject argument.

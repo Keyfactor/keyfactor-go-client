@@ -51,17 +51,6 @@ type RevokeCertArgs struct {
 	CollectionId   int    `json:"CollectionId,omitempty"`
 }
 
-// DownloadCertArgs holds the function arguments used for calling the DownloadCertificate method.
-type DownloadCertArgs struct {
-	CertID       int
-	SerialNumber string
-	IssuerDN     string
-	Thumbprint   string
-	IncludeChain bool
-	CollectionId int
-	CertFormat   string
-}
-
 // GetCertificateContextArgs holds the function arguments used for calling the GetCertificateContext method.
 type GetCertificateContextArgs struct {
 	IncludeMetadata  *bool // Query
@@ -192,8 +181,8 @@ type GetCertificateResponse struct {
 	KeyRecoverable           bool                     `json:"KeyRecoverable"`
 }
 
-// RecoverCertResponse contains the response elements returned from the RecoverCertificate method.
-type RecoverCertResponse struct {
+// recoverCertResponse contains the response elements returned from the RecoverCertificate method.
+type recoverCertResponse struct {
 	PFX      string `json:"PFX"`
 	FileName string `json:"FileName"`
 }
@@ -255,7 +244,7 @@ type SubjectAltNameElements struct {
 	ValueHash string `json:"ValueHash"`
 }
 
-// DownloadCertificateResponse holds a raw string containing a Base64 encoded certificate.
-type DownloadCertificateResponse struct {
+// downloadCertificateResponse holds a raw string containing a Base64 encoded certificate.
+type downloadCertificateResponse struct {
 	Content string `json:"Content"`
 }

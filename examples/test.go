@@ -1,31 +1,31 @@
 package main
 
 import (
+	"fmt"
 	"github.com/Keyfactor/keyfactor-go-client/pkg/keyfactor"
 	"log"
+	"os"
 )
-
-var HOSTNAME = "sedemo.thedemodrive.com"
-var USERNAME = "HRoszell"
-var PASSWORD = "Ferrari1!"
 
 func main() {
 	// Create a new Keyfactor client
 	clientConfig := &keyfactor.AuthConfig{
-		Hostname: HOSTNAME,
-		Username: USERNAME,
-		Password: PASSWORD,
+		Hostname: os.Getenv("HOSTNAME"),
+		Username: os.Getenv("USERNAME"),
+		Password: os.Getenv("PASSWORD"),
 	}
 	client, err := keyfactor.NewKeyfactorClient(clientConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// 6175d9f2-b7e4-40a2-a3c3-9acb91cdeae5
-	//store := "6175d9f2-b7e4-40a2-a3c3-9acb91cdeae5"
-	store := "db21f6da-fec5-418b-a093-3c6eb0a5970c"
-	_, err = client.GetCertificateStoreByID(store)
+
+	leaf, chain, err := client.DownloadCertificate(3786, "", "", "")
 	if err != nil {
 		return
+	}
+	fmt.Println(leaf)
+	for _, i := range chain {
+		fmt.Println(i)
 	}
 }
 
