@@ -69,10 +69,9 @@ type DeployPFXArgs struct {
 	JobTime       *string      `json:"JobTime,omitempty"`
 }
 
-// RecoverCertArgs holds the function arguments used for calling the RevokeCert method.
-type RecoverCertArgs struct {
+// recoverCertArgs holds the function arguments used for calling the RevokeCert method.
+type recoverCertArgs struct {
 	CertId       int    `json:"CertId,omitempty"`
-	CertFormat   string `json:"-"` // Header
 	Password     string `json:"Password,omitempty"`
 	SerialNumber string `json:"SerialNumber,omitempty"`
 	IssuerDN     string `json:"IssuerDN,omitempty"`

@@ -92,7 +92,7 @@ func (c *Client) DownloadCertificate(certId int, thumbprint string, serialNumber
 
 	Check for this input
 	*/
-	validInput := true
+	validInput := false
 	if certId != 0 {
 		validInput = true
 	} else if thumbprint != "" {
@@ -369,7 +369,7 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 //   - Private key (*rsa.PrivateKey or *ecdsa.PrivateKey)
 //   - Leaf certificate (*x509.Certificate)
 //   - Certificate chain ([]*x509.Certificate)
-func (c *Client) RecoverCertificate(rca *RecoverCertArgs) (interface{}, *x509.Certificate, []*x509.Certificate, error) {
+func (c *Client) RecoverCertificate(certId int, thumbprint string, serialNumber string, issuerDn string, password string) (interface{}, *x509.Certificate, []*x509.Certificate, error) {
 	log.Println("[INFO] Recovering certificate")
 	/* The download certificate endpoint requires one of the following to retrieve a cert:
 		- CertID
@@ -378,19 +378,30 @@ func (c *Client) RecoverCertificate(rca *RecoverCertArgs) (interface{}, *x509.Ce
 
 	Check for this input
 	*/
-	var validInput = false
-	if rca.Password != "" {
+	validInput := false
+	if certId != 0 {
+		validInput = true
+	} else if thumbprint != "" {
+		validInput = true
+	} else if serialNumber != "" && issuerDn != "" {
 		validInput = true
 	}
-	if rca.CertId != 0 {
-		validInput = true
-	} else if rca.Thumbprint != "" {
-		validInput = true
-	} else if (rca.SerialNumber != "") && (rca.IssuerDN != "") {
-		validInput = true
+
+	if !validInput {
+		return nil, nil, nil, fmt.Errorf("certID, thumbprint, or serial number AND issuer DN required to dowload certificate")
 	}
-	if validInput != true {
-		return nil, nil, nil, errors.New("invalid input received for cert download request")
+
+	if password == "" {
+		return nil, nil, nil, fmt.Errorf("password required to recover private key with certificate")
+	}
+
+	rca := &recoverCertArgs{
+		CertId:       certId,
+		Password:     password,
+		SerialNumber: serialNumber,
+		IssuerDN:     issuerDn,
+		Thumbprint:   thumbprint,
+		IncludeChain: true,
 	}
 
 	// Set Keyfactor-specific headers
@@ -398,7 +409,7 @@ func (c *Client) RecoverCertificate(rca *RecoverCertArgs) (interface{}, *x509.Ce
 		Headers: []StringTuple{
 			{"x-keyfactor-api-version", "1"},
 			{"x-keyfactor-requested-with", "APIClient"},
-			{"x-certificateformat", rca.CertFormat},
+			{"x-certificateformat", "PFX"},
 		},
 	}
 

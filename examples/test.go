@@ -27,23 +27,14 @@ func main() {
 	for _, i := range chain {
 		fmt.Println(i)
 	}
-}
 
-// Helper functions
-func boolToPointer(b bool) *bool {
-	return &b
-}
-
-func intToPointer(i int) *int {
-	if i == 0 {
-		return nil
+	priv, leaf, chain, err := client.RecoverCertificate(3786, "", "", "", "TerraformAccTestBasic")
+	if err != nil {
+		return
 	}
-	return &i
-}
-
-func stringToPointer(s string) *string {
-	if s == "" {
-		return nil
+	fmt.Println(leaf)
+	fmt.Println(priv)
+	for _, i := range chain {
+		fmt.Println(i)
 	}
-	return &s
 }
