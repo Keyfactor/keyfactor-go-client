@@ -1,20 +1,20 @@
-package keyfactor
+package main
 
 import (
 	"fmt"
-	main2 "github.com/Keyfactor/keyfactor-go-client"
+	"github.com/Keyfactor/keyfactor-go-client"
 	"log"
 	"os"
 )
 
 func main() {
 	// Create a new Keyfactor client
-	clientConfig := &main2.AuthConfig{
+	clientConfig := &keyfactor.AuthConfig{
 		Hostname: os.Getenv("KEYFACTOR_HOSTNAME"),
 		Username: os.Getenv("KEYFACTOR_USERNAME"),
 		Password: os.Getenv("KEYFACTOR_PASSWORD"),
 	}
-	client, err := main2.NewKeyfactorClient(clientConfig)
+	client, err := keyfactor.NewKeyfactorClient(clientConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func main() {
 	properties["APIObjectId"] = "object ID"
 	properties["VaultName"] = "coolvault"
 
-	createStore := &main2.CreateStoreFctArgs{
+	createStore := &keyfactor.CreateStoreFctArgs{
 		AgentId:       "keyfactor orchestrator agent ID",
 		ClientMachine: "aks_demo",
 		StorePath:     "https://coolvault.vault.azure.net/",

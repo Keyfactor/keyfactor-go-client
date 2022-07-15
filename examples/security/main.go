@@ -2,7 +2,7 @@ package keyfactor
 
 import (
 	"fmt"
-	main2 "github.com/Keyfactor/keyfactor-go-client"
+	"github.com/Keyfactor/keyfactor-go-client"
 	"log"
 )
 
@@ -12,12 +12,12 @@ var PASSWORD = ""
 
 func main() {
 	// Create a new Keyfactor client
-	clientConfig := &main2.AuthConfig{
+	clientConfig := &keyfactor.AuthConfig{
 		Hostname: HOSTNAME,
 		Username: USERNAME,
 		Password: PASSWORD,
 	}
-	client, err := main2.NewKeyfactorClient(clientConfig)
+	client, err := keyfactor.NewKeyfactorClient(clientConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
