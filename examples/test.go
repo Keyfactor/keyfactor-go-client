@@ -1,20 +1,20 @@
-package main
+package keyfactor
 
 import (
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client/pkg/keyfactor"
+	main2 "github.com/Keyfactor/keyfactor-go-client"
 	"log"
 	"os"
 )
 
 func main() {
 	// Create a new Keyfactor client
-	clientConfig := &keyfactor.AuthConfig{
+	clientConfig := &main2.AuthConfig{
 		Hostname: os.Getenv("HOSTNAME"),
 		Username: os.Getenv("USERNAME"),
 		Password: os.Getenv("PASSWORD"),
 	}
-	client, err := keyfactor.NewKeyfactorClient(clientConfig)
+	client, err := main2.NewKeyfactorClient(clientConfig)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -20,8 +20,24 @@ func (c *Client) EnrollPFX(ea *EnrollPFXFctArgs) (*EnrollResponse, error) {
 	log.Println("[INFO] Enrolling PFX certificate with Keyfactor")
 
 	/* Ensure required inputs exist */
-	if (ea.Template == "") || (ea.Password == "") || (ea.CertificateAuthority == "") || (ea.CertFormat == "") {
-		return nil, errors.New("invalid or nonexistent values required for pfx enrollment")
+	missingFields := []string{}
+
+	// TODO: Probably a better way to express these if blocks
+	if ea.Template == "" {
+		missingFields = append(missingFields, "Template")
+	}
+	if ea.CertificateAuthority == "" {
+		missingFields = append(missingFields, "CertificateAuthority")
+	}
+	if ea.CertFormat == "" {
+		missingFields = append(missingFields, "CertFormat")
+	}
+	//if ea.Password == "" {
+	//	missingFields = append(missingFields, "Password")
+	//}
+
+	if len(missingFields) > 0 {
+		return nil, errors.New("Required field(s) missing: " + strings.Join(missingFields, ", "))
 	}
 
 	// Set Keyfactor-specific headers
@@ -370,7 +386,7 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 //   - Leaf certificate (*x509.Certificate)
 //   - Certificate chain ([]*x509.Certificate)
 func (c *Client) RecoverCertificate(certId int, thumbprint string, serialNumber string, issuerDn string, password string) (interface{}, *x509.Certificate, []*x509.Certificate, error) {
-	log.Println("[INFO] Recovering certificate")
+	log.Println("[INFO] Recovering certificate ID:", certId)
 	/* The download certificate endpoint requires one of the following to retrieve a cert:
 		- CertID
 		- Thumbprint
