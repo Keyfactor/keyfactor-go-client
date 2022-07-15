@@ -1,4 +1,4 @@
-package keyfactor
+package api
 
 import (
 	"crypto/x509"

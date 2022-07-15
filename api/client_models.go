@@ -1,4 +1,4 @@
-package keyfactor
+package api
 
 // StringTuple is a struct holding two string elements used by the Keyfactor
 // Go Client library for data types requiring a tuple of strings

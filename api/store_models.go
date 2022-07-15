@@ -1,4 +1,4 @@
-package keyfactor
+package api
 
 // CreateStoreFctArgs holds the function arguments used for calling the CreateStore method.
 type CreateStoreFctArgs struct {

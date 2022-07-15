@@ -1,4 +1,4 @@
-package keyfactor
+package api
 
 // SANs holds arrays of strings associated with IPv4 (IP4), IPv6 (IP6), DNS, and URI SANs.
 type SANs struct {

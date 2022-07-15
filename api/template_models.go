@@ -1,4 +1,4 @@
-package keyfactor
+package api
 
 type GetTemplateResponse struct {
 	Id                     int                        `json:"Id,omitempty"`

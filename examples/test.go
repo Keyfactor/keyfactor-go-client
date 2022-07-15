@@ -2,7 +2,7 @@ package keyfactor
 
 import (
 	"fmt"
-	main2 "github.com/Keyfactor/keyfactor-go-client"
+	main2 "github.com/Keyfactor/keyfactor-go-client/api"
 	"log"
 	"os"
 )

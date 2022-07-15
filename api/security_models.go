@@ -1,4 +1,4 @@
-package keyfactor
+package api
 
 // GetSecurityIdentityResponse holds the response data returned by /Security/Identities
 type GetSecurityIdentityResponse struct {

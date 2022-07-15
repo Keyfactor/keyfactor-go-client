@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client"
+	"github.com/Keyfactor/keyfactor-go-client/api"
 	"log"
 )
 
@@ -12,12 +12,12 @@ var PASSWORD = "password"
 
 func main() {
 	// Create a new Keyfactor client
-	clientConfig := &keyfactor.AuthConfig{
+	clientConfig := &api.AuthConfig{
 		Hostname: HOSTNAME,
 		Username: USERNAME,
 		Password: PASSWORD,
 	}
-	client, err := keyfactor.NewKeyfactorClient(clientConfig)
+	client, err := api.NewKeyfactorClient(clientConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -28,8 +28,8 @@ func main() {
 	// To enroll a PFX certificate with the Keyfactor Go client,
 	// first create a pointer to an EnrollPFXFctArgs struct,
 	// and populate the required fields. The below fields are the bare minimum
-	PFXArgs := &keyfactor.EnrollPFXFctArgs{
-		Subject: &keyfactor.CertificateSubject{
+	PFXArgs := &api.EnrollPFXFctArgs{
+		Subject: &api.CertificateSubject{
 			SubjectCommonName: "keyfactor-go-example",
 		},
 		Password:             "#SuperSecurePassword55!",
@@ -51,7 +51,7 @@ func main() {
 	//
 	// To retrieve the context of a certificate stored by Keyfactor, first create a pointer to a
 	// GetCertificateContextArgs struct and populate the required fields.
-	getCertContextArgs := &keyfactor.GetCertificateContextArgs{
+	getCertContextArgs := &api.GetCertificateContextArgs{
 		Id:               enrollResponse.CertificateInformation.KeyfactorID, // Just for fun, get context of previously created certificate
 		IncludeMetadata:  boolToPointer(true),
 		IncludeLocations: boolToPointer(true),
@@ -82,9 +82,9 @@ func main() {
 	//
 	// To update the metadata associated with a certificate in Keyfactor, first create a pointer to a
 	// UpdateMetadataArgs struct and populate the required fields.
-	metadata := &keyfactor.UpdateMetadataArgs{
+	metadata := &api.UpdateMetadataArgs{
 		CertID: 1860,
-		CertificateMetadata: []keyfactor.StringTuple{
+		CertificateMetadata: []api.StringTuple{
 			{"Department", "IT"},
 			{"Email-Contact", "email@example.com"},
 		},

@@ -1,4 +1,4 @@
-package keyfactor
+package api
 
 type CA struct {
 	Id                     int    `json:"Id"`

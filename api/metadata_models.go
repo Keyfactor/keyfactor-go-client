@@ -1,4 +1,4 @@
-package keyfactor
+package api
 
 // UpdateMetadataArgs holds the function arguments used for calling the UpdateMetadata method.
 type UpdateMetadataArgs struct {

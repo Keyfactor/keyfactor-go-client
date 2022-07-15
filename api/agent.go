@@ -1,13 +1,13 @@
-package keyfactor
+package api
 
 import (
 	"encoding/json"
 	"log"
 )
 
-// GetCAList returns a list of certificate authorities supported by the Keyfactor instance
-func (c *Client) GetCAList() ([]CA, error) {
-	log.Println("[INFO] Getting a list of CAs from Keyfactor instance")
+// GetAgentList returns a list of orchestrators registered in the Keyfactor instance
+func (c *Client) GetAgentList() ([]Agent, error) {
+	log.Println("[INFO] Getting a list of agents registered in Keyfactor")
 
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
@@ -19,7 +19,7 @@ func (c *Client) GetCAList() ([]CA, error) {
 
 	keyfactorAPIStruct := &request{
 		Method:   "GET",
-		Endpoint: "CertificateAuthority",
+		Endpoint: "Agents",
 		Headers:  headers,
 		Payload:  nil,
 	}
@@ -29,7 +29,7 @@ func (c *Client) GetCAList() ([]CA, error) {
 		return nil, err
 	}
 
-	var jsonResp []CA
+	var jsonResp []Agent
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
 		return nil, err
