@@ -115,9 +115,9 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	}
 	log.Printf("[TRACE] Request body: %s", jsonByes)
 
-	req, err := http.NewRequest(request.Method, keyfactorPath, bytes.NewBuffer(jsonByes))
-	if err != nil {
-		return nil, err
+	req, reqErr := http.NewRequest(request.Method, keyfactorPath, bytes.NewBuffer(jsonByes))
+	if reqErr != nil {
+		return nil, reqErr
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -129,9 +129,9 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		req.Header.Set(headers.Elem1, headers.Elem2)
 	}
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
+	resp, respErr := c.httpClient.Do(req)
+	if respErr != nil {
+		return nil, respErr
 	}
 	var stringMessage string
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent {
@@ -142,7 +142,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		var errorMessage interface{} // Decode JSON body to handle issue
 		// First, try to serialize the response into an interface, but catch the exception.
 		defer func() {
-			if err := recover(); err != nil {
+			if nfErr := recover(); nfErr != nil {
 				stringMessage = "404 - file or directory not found"
 			}
 		}()

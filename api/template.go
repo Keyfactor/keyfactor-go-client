@@ -9,7 +9,7 @@ import (
 // GetTemplate takes arguments for a template ID used to facilitate the retrieval
 // of certificate template context. The primary query required to get certificate context is the template ID. A pointer
 //to a GetTemplateResponse structure is returned, containing the template context.
-func (c *Client) GetTemplate(Id int) (*GetTemplateResponse, error) {
+func (c *Client) GetTemplate(Id interface{}) (*GetTemplateResponse, error) {
 	if Id == 0 {
 		return nil, errors.New("template id required to get template")
 	}

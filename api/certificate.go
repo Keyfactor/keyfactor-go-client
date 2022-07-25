@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/spbsoluble/go-pkcs12"
 	"go.mozilla.org/pkcs7"
 	"log"
 	"net/http"
-	"software.sslmate.com/src/go-pkcs12"
 	"strconv"
 	"strings"
 )
@@ -165,10 +165,11 @@ func (c *Client) DownloadCertificate(certId int, thumbprint string, serialNumber
 		return nil, nil, err
 	}
 
-	leaf := certs.Certificates[0]
+	//todo: review this as it seems to be returning the wrong cert
+	leaf := certs.Certificates[1]
 
 	if len(certs.Certificates) > 1 {
-		return leaf, certs.Certificates[1:], nil
+		return leaf, certs.Certificates, nil
 	}
 
 	return leaf, nil, nil

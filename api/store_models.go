@@ -127,6 +127,10 @@ type CertStoreTypeResponse struct {
 	EnrollmentJobType  string   `json:"EnrollmentJobType"`
 }
 
+type CertStoreTypeResponseList []struct {
+	CertStoreTypeResponse
+}
+
 // GetStoreByIDResp contains the response elements returned from the GetCertificateStoreByID method.
 type GetStoreByIDResp struct {
 	Id                      string              `json:"Id,omitempty"`

@@ -152,6 +152,42 @@ func (c *Client) GetCertStoreType(id int) (*CertStoreTypeResponse, error) {
 	return jsonResp, nil
 }
 
+// GetCertStoreType takes arguments for a certificate store type ID to facilitate a call to Keyfactor
+// that retrieves certificate store context assicated with a store type ID
+func (c *Client) GetCertStoreTypeByName(name string) (*CertStoreTypeResponse, error) {
+	// Set Keyfactor-specific headers
+	headers := &apiHeaders{
+		Headers: []StringTuple{
+			{"x-keyfactor-api-version", "1"},
+			{"x-keyfactor-requested-with", "APIClient"},
+		},
+	}
+
+	endpoint := fmt.Sprintf("CertificateStoreTypes/Name/%s", name)
+	keyfactorAPIStruct := &request{
+		Method:   "GET",
+		Endpoint: endpoint,
+		Headers:  headers,
+		Payload:  nil,
+	}
+
+	resp, err := c.sendRequest(keyfactorAPIStruct)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonResp := &CertStoreTypeResponseList{}
+	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range *jsonResp {
+		// TODO: Assumes that there really should only be one type with a given shortname but this is not guaranteed
+		return &v.CertStoreTypeResponse, nil
+	}
+	return nil, nil
+}
+
 // DeleteCertificateStore takes arguments for a certificate store ID to facilitate a call to Keyfactor
 // that deletes a certificate store. Only the store ID is required.
 func (c *Client) DeleteCertificateStore(storeId string) error {

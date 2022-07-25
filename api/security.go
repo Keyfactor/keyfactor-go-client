@@ -142,8 +142,8 @@ func (c *Client) GetSecurityRoles() ([]GetSecurityRolesResponse, error) {
 	return jsonResp, nil
 }
 
-func (c *Client) GetSecurityRole(id int) (*GetSecurityRolesResponse, error) {
-	log.Printf("[INFO] Getting Keyfactor security role with ID %d", id)
+func (c *Client) GetSecurityRole(id interface{}) (*GetSecurityRoleResponse, error) {
+	log.Printf("[INFO] Getting Keyfactor security role with ID %v", id)
 
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
@@ -153,25 +153,66 @@ func (c *Client) GetSecurityRole(id int) (*GetSecurityRolesResponse, error) {
 		},
 	}
 
-	endpoint := "Security/Roles/" + fmt.Sprintf("%d", id) // Append ID to complete endpoint
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: endpoint,
-		Headers:  headers,
-		Payload:  nil,
+	var endpoint string
+	var keyfactorAPIStruct *request
+	switch id.(type) {
+	case int:
+		endpoint = "Security/Roles/" + fmt.Sprintf("%d", id.(int)) // Append ID to complete endpoint
+		keyfactorAPIStruct = &request{
+			Method:   "GET",
+			Endpoint: endpoint,
+			Headers:  headers,
+			Payload:  nil,
+		}
+
+		resp, err := c.sendRequest(keyfactorAPIStruct)
+		if err != nil {
+			return nil, err
+		}
+		jsonResp := &GetSecurityRoleResponse{}
+		err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+		if err != nil {
+			return nil, err
+		}
+		return jsonResp, nil
+
+	case string:
+		endpoint = "Security/Roles" // Append ID to complete endpoint
+		query := &apiQuery{
+			Query: []StringTuple{
+				{"pq.queryString", fmt.Sprintf("name -eq \"%s\"", id.(string))},
+			},
+		}
+		keyfactorAPIStruct = &request{
+			Method:   "GET",
+			Endpoint: endpoint,
+			Headers:  headers,
+			Payload:  nil,
+			Query:    query,
+		}
+
+		resp, err := c.sendRequest(keyfactorAPIStruct)
+		if err != nil {
+			return nil, err
+		}
+
+		jsonResp := &GetSecurityRolesResponse{}
+		err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+
+		for i, jResp := range *jsonResp {
+			log.Printf("[INFO] Getting Keyfactor security role with %v ID %v", i, jResp)
+			return &GetSecurityRoleResponse{
+				Id:          jResp.ID,
+				Name:        jResp.Name,
+				Description: jResp.Description,
+				Identities:  jResp.Identities,
+				Permissions: jResp.Permissions,
+			}, nil
+
+		}
 	}
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return nil, err
-	}
-
-	jsonResp := &GetSecurityRolesResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	return jsonResp, nil
+	return nil, nil
 }
 
 // DeleteSecurityRole takes arguments for a security role ID, and makes an associated call to Keyfactor to
@@ -246,7 +287,7 @@ func (c *Client) CreateSecurityRole(input *CreateSecurityRoleArg) (*CreateSecuri
 
 // UpdateSecurityRole updates the Keyfacor security role. This function takes argument for a CreateSecurityRoleArg
 // struct and returns a CreateSecurityRoleResponse struct.
-func (c *Client) UpdateSecurityRole(input *UpdatteSecurityRoleArg) (*UpdateSecurityRoleResponse, error) {
+func (c *Client) UpdateSecurityRole(input *UpdateSecurityRoleArg) (*UpdateSecurityRoleResponse, error) {
 	log.Printf("[INFO] Updating Keyfactor security role with ID %d", input.Id)
 
 	// Verify argument

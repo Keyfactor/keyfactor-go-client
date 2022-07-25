@@ -31,7 +31,19 @@ type CreateSecurityIdentityResponse struct {
 }
 
 // GetSecurityRolesResponse holds the response data returned by /Security/Roles
-type GetSecurityRolesResponse struct {
+type GetSecurityRolesResponse []struct {
+	ID          int                `json:"Id,omitempty"`
+	Description string             `json:"Description,omitempty"`
+	Enabled     bool               `json:"Enabled"`
+	Immutable   bool               `json:"Immutable"`
+	Valid       bool               `json:"Valid"`
+	Private     bool               `json:"Private"`
+	Identities  []SecurityIdentity `json:"Identities,omitempty"`
+	Name        string             `json:"Name,omitempty"`
+	Permissions []string           `json:"Permissions,omitempty"`
+}
+
+type GetSecurityRoleResponse struct {
 	Id          int                `json:"Id,omitempty"`
 	Name        string             `json:"Name,omitempty"`
 	Description string             `json:"Description,omitempty"`
@@ -101,8 +113,8 @@ type CreateSecurityRoleResponse struct {
 	Identities  *[]SecurityRoleIdentityConfig `json:"Identities,omitempty"`
 }
 
-// UpdatteSecurityRoleArg holds the function arguments used for calling the UpdateSecurityRole method.
-type UpdatteSecurityRoleArg struct {
+// UpdateSecurityRoleArg holds the function arguments used for calling the UpdateSecurityRole method.
+type UpdateSecurityRoleArg struct {
 	Id int `json:"Id,omitempty"`
 	CreateSecurityRoleArg
 }
