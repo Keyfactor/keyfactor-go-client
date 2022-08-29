@@ -113,7 +113,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("[TRACE] Request body: %s", jsonByes)
+	//log.Printf("[TRACE] Request body: %s", jsonByes)
 
 	req, reqErr := http.NewRequest(request.Method, keyfactorPath, bytes.NewBuffer(jsonByes))
 	if reqErr != nil {
@@ -170,7 +170,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 // returns a base-64 encoded auth string including the 'Basic ' prefix.
 func buildBasicAuthString(auth *AuthConfig) string {
 	var authString string
-	log.Println("[TRACE] Building Authorization field")
+	//log.Println("[TRACE] Building Authorization field")
 	if auth.Domain == "" {
 		authString = strings.Join([]string{auth.Username, ":", auth.Password}, "")
 	} else {
