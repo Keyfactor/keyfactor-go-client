@@ -6,5 +6,5 @@
   "link_github": false,
   "update_catalog": false,
   "support_level": "kf-community",
-  "description": "Go lang wrapper around the Keyfactor API."
+  "description": "The Keyfactor Go Client is a Go module that provides abstracted methods of interacting with the Keyfactor API. The primary supported functionality is the creation and modification of SSL/TLS certificates, updating certificate metadata, and creating certificate stores."
 }

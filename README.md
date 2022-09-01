@@ -1,25 +1,19 @@
 # Keyfactor Go Client
 
-Go lang wrapper around the Keyfactor API.
 
-#### Integration status: Prototype - Demonstration quality. Not for use in customer environments.
+#### Integration status: Pilot - Ready for use in test environments. Not for use in production.
 
-## About the Keyfactor 
-
-
-
----
-
-
-
-
----
-
-## keyfactor-go-client
+## About the Keyfactor API Client
 The Keyfactor Go Client is a Go module that provides abstracted
 methods of interacting with the Keyfactor API. The primary supported 
 functionality is the creation and modification of SSL/TLS certificates,
 updating certificate metadata, and creating certificate stores.
+
+## Support for Keyfactor Go Client
+
+Keyfactor Go Client is open source and there is **no SLA** for this tool/library/client.
+Keyfactor will address issues as resources become available. Keyfactor customers may request escalation by opening up a
+support ticket through their Keyfactor representative.
 
 ### Usage
 This module's primary use is as a client to connect to Keyfactor using the
