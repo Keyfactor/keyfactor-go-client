@@ -1,0 +1,10 @@
+{
+  "$schema": "https://keyfactor.github.io/integration-manifest-schema.json",
+  "integration_type": "api-client",
+  "name": "Keyfactor Go Client",
+  "status": "prototype",
+  "link_github": false,
+  "update_catalog": false,
+  "support_level": "kf-community",
+  "description": "Go lang wrapper around the Keyfactor API."
+}
