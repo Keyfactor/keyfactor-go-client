@@ -464,24 +464,24 @@ func (c *Client) RecoverCertificate(certId int, thumbprint string, serialNumber 
 func createSubject(cs CertificateSubject) (string, error) {
 	var subject string
 
-	if cs.SubjectCommonName != "" {
+	if cs.SubjectCommonName != "" && cs.SubjectCommonName != "<null>" {
 		subject = "CN=" + cs.SubjectCommonName + ","
 	} else {
 		return "", errors.New("build subject: common name required") // Common name is required!
 	}
-	if cs.SubjectOrganizationalUnit != "" {
+	if cs.SubjectOrganizationalUnit != "" && cs.SubjectOrganizationalUnit != "<null>" {
 		subject += "OU=" + cs.SubjectOrganizationalUnit + ","
 	}
-	if cs.SubjectOrganization != "" {
+	if cs.SubjectOrganization != "" && cs.SubjectOrganization != "<null>" {
 		subject += "O=" + cs.SubjectOrganization + ","
 	}
-	if cs.SubjectLocality != "" {
+	if cs.SubjectLocality != "" && cs.SubjectLocality != "<null>" {
 		subject += "L=" + cs.SubjectLocality + ","
 	}
-	if cs.SubjectState != "" {
+	if cs.SubjectState != "" && cs.SubjectState != "<null>" {
 		subject += "ST=" + cs.SubjectState + ","
 	}
-	if cs.SubjectCountry != "" {
+	if cs.SubjectCountry != "" && cs.SubjectCountry != "<null>" {
 		subject += "C=" + cs.SubjectCountry + ","
 	}
 	subject = strings.TrimRight(subject, ",") // remove trailing comma
