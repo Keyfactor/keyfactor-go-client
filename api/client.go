@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"path"
 	"strings"
@@ -138,7 +139,6 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		log.Printf("[DEBUG] %s succeeded with response code %d", request.Method, resp.StatusCode)
 		return resp, nil
 	} else if resp.StatusCode == http.StatusNotFound {
-
 		var errorMessage interface{} // Decode JSON body to handle issue
 		// First, try to serialize the response into an interface, but catch the exception.
 		defer func() {
@@ -153,11 +153,24 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		stringMessage = fmt.Sprintf("%v", errorMessage)
 		log.Printf("[ERROR] Call to %s returned status %d. %s", keyfactorPath, resp.StatusCode, stringMessage)
 		return nil, errors.New(stringMessage)
+	} else if resp.StatusCode == http.StatusUnauthorized {
+		_, derr := httputil.DumpResponse(resp, true)
+		if derr != nil {
+			return nil, derr
+		}
+		err = errors.New("401 - Unauthorized: Access is denied due to invalid credentials.")
+		return nil, err
 	} else {
 		var errorMessage interface{} // Decode JSON body to handle issue
 		err = json.NewDecoder(resp.Body).Decode(&errorMessage)
+
 		if err != nil {
-			return nil, err
+			_, derr := httputil.DumpResponse(resp, true)
+			if derr != nil {
+				return nil, derr
+			}
+			uerr := errors.New(fmt.Sprintf("%s - Unknown error connecting to Keyfactor %s, please check your connection.", resp.StatusCode, endpoint))
+			return nil, uerr
 		}
 
 		log.Printf("[DEBUG] Request failed with code %d and message %v", resp.StatusCode, errorMessage)
