@@ -207,14 +207,17 @@ type AddCertificateToStore struct {
 // RemoveCertificateFromStore contains configuration data required to remove a certificate associated with a specific
 // alias from one or more certificate stores.
 type RemoveCertificateFromStore struct {
-	// An array of certificate store GUIDs to identify the certificate stores to which the certificate should be added
+	// An integer containing the Keyfactor Command reference ID of the certificate to be removed to the certificate store(s).
+	CertificateId int    `json:"CertificateId"`
+	Alias         string `json:"Alias"`
+	// An array of certificate store GUIDs to identify the certificate stores to which the certificate should be removed
 	// and provide appropriate reference information for the certificate in the store.
-	CertificateStores *[]CertificateStore `json:"CertificateStores"`
+	CertificateStores *[]CertificateStore `json:"CertificateStores,omitempty"`
 
-	// The inventory schedule for the add job
+	// The inventory schedule for the remove job
 	InventorySchedule *InventorySchedule `json:"Schedule,omitempty"`
 
-	// An integer containing the Keyfactor Command reference ID of the certificate to be added to the certificate store(s).
+	// An integer containing the Keyfactor Command reference ID of the certificate to be removed to the certificate store(s).
 	CollectionId int `json:"CollectionId,omitempty"`
 }
 
@@ -238,6 +241,32 @@ type CertificateStore struct {
 
 	// A Boolean that sets whether to include the private key of the certificate in the certificate store if private keys are optional for the given certificate store (true) or not (false). The default is false.
 	IncludePrivateKey bool `json:"IncludePrivateKey,omitempty"`
+}
+
+type GetCertStoreInventoryResp struct {
+	Inventory []CertStoreInventory
+}
+
+type CertStoreInventory struct {
+	CertStoreInventoryItemId int                      `json:"CertStoreInventoryItemId"`
+	Name                     string                   `json:"Name,omitempty"`
+	Certificates             []InventoriedCertificate `json:"Certificates,omitempty"`
+	Thumbprints              map[string]bool          `json:"-"`
+	Serials                  map[string]bool          `json:"-"`
+	Ids                      map[int]bool             `json:"-"`
+	Properties               map[string]string        `json:"-"`
+}
+
+type InventoriedCertificate struct {
+	Id                       int    `json:"Id"`
+	IssuedDN                 string `json:"IssuedDN"`
+	SerialNumber             string `json:"SerialNumber"`
+	NotBefore                string `json:"NotBefore"`
+	NotAfter                 string `json:"NotAfter"`
+	SigningAlgorithm         string `json:"SigningAlgorithm"`
+	IssuerDN                 string `json:"IssuerDN"`
+	Thumbprint               string `json:"Thumbprint"`
+	CertStoreInventoryItemId int    `json:"CertStoreInventoryItemId"`
 }
 
 type EntryPassword struct {

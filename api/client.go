@@ -105,6 +105,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 			queryString.Set(query.Elem1, query.Elem2)
 		}
 		u.RawQuery = queryString.Encode()
+		u.RawQuery = strings.ReplaceAll(u.RawQuery, "+", "%20")
 	}
 
 	keyfactorPath := u.String() // Convert absolute path to string

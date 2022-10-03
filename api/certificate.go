@@ -318,8 +318,8 @@ func (c *Client) DeployPFXCertificate(args *DeployPFXArgs) (*DeployPFXResp, erro
 // and include locations add additional data, but can be set to false if they are unneeded. A pointer to a
 // GetCertificateResponse structure is returned, containing the certificate context.
 func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCertificateResponse, error) {
-	if gca.Id == 0 {
-		return nil, errors.New("keyfactor certificate id required to get certificate")
+	if gca.Id == 0 && gca.Thumbprint == "" {
+		return nil, errors.New("keyfactor certificate id or thumbprint are required to get certificate")
 	}
 
 	// Set Keyfactor-specific headers
@@ -331,11 +331,10 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 	}
 
 	// Construct URL query for /Certificates/{ID} requests
-	var query *apiQuery
+	query := apiQuery{
+		Query: []StringTuple{},
+	}
 	if gca.IncludeLocations != nil || gca.CollectionId != nil || gca.IncludeMetadata != nil {
-		query = &apiQuery{
-			Query: []StringTuple{},
-		}
 		if gca.IncludeLocations != nil {
 			query.Query = append(query.Query, StringTuple{
 				"includeLocations", strconv.FormatBool(*gca.IncludeLocations),
@@ -353,13 +352,21 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 		}
 	}
 
-	endpoint := "Certificates/" + fmt.Sprintf("%d", gca.Id) // Append ID to complete endpoint
+	var endpoint string
+	if gca.Id <= 0 && gca.Thumbprint != "" {
+		query.Query = append(query.Query, StringTuple{
+			"pq.queryString", fmt.Sprintf(`Thumbprint -eq "%s"`, gca.Thumbprint),
+		})
+		endpoint = "Certificates"
+	} else {
+		endpoint = "Certificates/" + fmt.Sprintf("%d", gca.Id)
+	}
 
 	keyfactorAPIStruct := &request{
 		Method:   "GET",
 		Endpoint: endpoint,
 		Headers:  headers,
-		Query:    query,
+		Query:    &query,
 		Payload:  nil,
 	}
 
@@ -368,12 +375,18 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 		return nil, err
 	}
 
-	jsonResp := &GetCertificateResponse{}
+	jsonResp := GetCertificateResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
-		return nil, err
+		var lCerts []GetCertificateResponse
+		lResp, _ := c.sendRequest(keyfactorAPIStruct)
+		lErr := json.NewDecoder(lResp.Body).Decode(&lCerts)
+		if lErr != nil {
+			return nil, lErr
+		}
+		return &lCerts[0], nil
 	}
-	return jsonResp, err
+	return &jsonResp, err
 }
 
 // RecoverCertificate takes arguments for RecoverCertArgs to facilitate a call to Keyfactor

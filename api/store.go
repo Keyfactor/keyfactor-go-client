@@ -120,6 +120,82 @@ func (c *Client) UpdateStore(ua *UpdateStoreFctArgs) (*UpdateStoreResponse, erro
 	return jsonResp, nil
 }
 
+// DeleteCertificateStore takes arguments for a certificate store ID to facilitate a call to Keyfactor
+// that deletes a certificate store. Only the store ID is required.
+func (c *Client) DeleteCertificateStore(storeId string) error {
+	// Set Keyfactor-specific headers
+	headers := &apiHeaders{
+		Headers: []StringTuple{
+			{"x-keyfactor-api-version", "1"},
+			{"x-keyfactor-requested-with", "APIClient"},
+		},
+	}
+
+	endpoint := "CertificateStores/" + fmt.Sprintf("%s", storeId) // Append GUID to complete endpoint
+	keyfactorAPIStruct := &request{
+		Method:   "DELETE",
+		Endpoint: endpoint,
+		Headers:  headers,
+		Payload:  nil,
+	}
+
+	resp, err := c.sendRequest(keyfactorAPIStruct)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
+	}
+
+	return nil
+}
+
+// CreateStore takes arguments for CreateStoreFctArgs to facilitate the creation
+// of all store types supported by a customer Keyfactor Command instance. Note that various certificate
+// store types require different property arguments, and careful attention should be taken to ensure that
+// all required elements are included. Required arguments for this method are:
+//   - ClientMachine : string
+//   - StorePath     : string
+//   - Properties    : []StringTuple *Note - Method converts this array of StringTuples to a JSON string if provided
+//   - AgentId       : string
+func (c *Client) CreateStoreType(ca *CertStoreTypeResponse) (*CertStoreTypeResponse, error) {
+	log.Println("[INFO] Creating new certificate store type with Keyfactor")
+
+	// Validate that the required fields are present
+	//err := validateCreateStoreTypeArgs(ca)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	// Set Keyfactor-specific headers
+	headers := &apiHeaders{
+		Headers: []StringTuple{
+			{"x-keyfactor-api-version", "1"},
+			{"x-keyfactor-requested-with", "APIClient"},
+		},
+	}
+
+	keyfactorAPIStruct := &request{
+		Method:   "POST",
+		Endpoint: "CertificateStoreType",
+		Headers:  headers,
+		Payload:  &ca,
+	}
+
+	resp, err := c.sendRequest(keyfactorAPIStruct)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonResp := &CertStoreTypeResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	if err != nil {
+		return nil, err
+	}
+	return jsonResp, nil
+}
+
 // GetCertStoreType takes arguments for a certificate store type ID to facilitate a call to Keyfactor
 // that retrieves certificate store context assicated with a store type ID
 func (c *Client) GetCertStoreType(id int) (*CertStoreTypeResponse, error) {
@@ -151,6 +227,9 @@ func (c *Client) GetCertStoreType(id int) (*CertStoreTypeResponse, error) {
 	}
 	return jsonResp, nil
 }
+
+// GetCertStoreType takes arguments for a certificate store type ID to facilitate a call to Keyfactor
+// that retrieves certificate store context assicated with a store type ID
 
 // GetCertStoreType takes arguments for a certificate store type ID to facilitate a call to Keyfactor
 // that retrieves certificate store context assicated with a store type ID
@@ -186,37 +265,6 @@ func (c *Client) GetCertStoreTypeByName(name string) (*CertStoreTypeResponse, er
 		return &v.CertStoreTypeResponse, nil
 	}
 	return nil, nil
-}
-
-// DeleteCertificateStore takes arguments for a certificate store ID to facilitate a call to Keyfactor
-// that deletes a certificate store. Only the store ID is required.
-func (c *Client) DeleteCertificateStore(storeId string) error {
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
-
-	endpoint := "CertificateStores/" + fmt.Sprintf("%s", storeId) // Append GUID to complete endpoint
-	keyfactorAPIStruct := &request{
-		Method:   "DELETE",
-		Endpoint: endpoint,
-		Headers:  headers,
-		Payload:  nil,
-	}
-
-	resp, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
-	}
-
-	return nil
 }
 
 // GetCertificateStoreByID takes arguments for a certificate store ID to facilitate a call to Keyfactor
@@ -317,6 +365,71 @@ func (c *Client) RemoveCertificateFromStores(config *RemoveCertificateFromStore)
 		return nil, err
 	}
 	return jsonResp, nil
+}
+
+func (c *Client) GetCertStoreInventory(storeId string) (*CertStoreInventory, error) {
+	// Set Keyfactor-specific headers
+	headers := &apiHeaders{
+		Headers: []StringTuple{
+			{"x-keyfactor-api-version", "1"},
+			{"x-keyfactor-requested-with", "APIClient"},
+		},
+	}
+
+	endpoint := fmt.Sprintf("CertificateStores/%s/Inventory", storeId)
+	keyfactorAPIStruct := &request{
+		Method:   "GET",
+		Endpoint: endpoint,
+		Headers:  headers,
+		Payload:  nil,
+	}
+
+	resp, err := c.sendRequest(keyfactorAPIStruct)
+	if err != nil {
+		return nil, err
+	}
+	var inv []interface{}
+	jsonResp := inv
+	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	//err = json.Unmarshal(resp.Body, &jsonResp)
+	if err != nil {
+		return nil, err
+	}
+	var invResp *CertStoreInventory
+	if len(jsonResp) == 0 {
+		invResp = &CertStoreInventory{}
+	} else {
+		//invResp = jsonResp[0]
+		invResp = &CertStoreInventory{
+			Name:                     jsonResp[0].(map[string]interface{})["Name"].(string),
+			CertStoreInventoryItemId: int(jsonResp[0].(map[string]interface{})["CertStoreInventoryItemId"].(float64)),
+			//Certificates: jsonResp[0].(map[string]interface{})["Name"].(string),
+			//Properties: jsonResp[0].(map[string]interface{})["Name"].(string),
+			Thumbprints: map[string]bool{},
+			Serials:     map[string]bool{},
+			Ids:         map[int]bool{},
+		}
+		for _, cert := range jsonResp[0].(map[string]interface{})["Certificates"].([]interface{}) {
+			iCert := InventoriedCertificate{
+				Id:                       int(cert.(map[string]interface{})["Id"].(float64)),
+				IssuedDN:                 cert.(map[string]interface{})["IssuedDN"].(string),
+				SerialNumber:             cert.(map[string]interface{})["SerialNumber"].(string),
+				NotBefore:                cert.(map[string]interface{})["NotBefore"].(string),
+				NotAfter:                 cert.(map[string]interface{})["NotAfter"].(string),
+				SigningAlgorithm:         cert.(map[string]interface{})["SigningAlgorithm"].(string),
+				IssuerDN:                 cert.(map[string]interface{})["IssuerDN"].(string),
+				Thumbprint:               cert.(map[string]interface{})["Thumbprint"].(string),
+				CertStoreInventoryItemId: int(cert.(map[string]interface{})["CertStoreInventoryItemId"].(float64)),
+			}
+			invResp.Certificates = append(invResp.Certificates, iCert)
+			invResp.Thumbprints[cert.(map[string]interface{})["Thumbprint"].(string)] = true
+			invResp.Serials[cert.(map[string]interface{})["SerialNumber"].(string)] = true
+			invResp.Ids[int(cert.(map[string]interface{})["Id"].(float64))] = true
+		}
+	}
+
+	//jsonResp.Properties = unmarshalPropertiesString(jsonResp.PropertiesString)
+	return invResp, nil
 }
 
 // unmarshalPropertiesString unmarshalls a JSON string and serializes it into an array of StringTuple.
