@@ -151,7 +151,43 @@ func (c *Client) DeleteCertificateStore(storeId string) error {
 	return nil
 }
 
-// CreateStore takes arguments for CreateStoreFctArgs to facilitate the creation
+// ListCertificateStores takes no arguments and returns a slice of CertificateStore objects
+// that represent all certificate stores associated with a Keyfactor Command instance.
+
+func (c *Client) ListCertificateStores() (*[]GetCertificateStoreResponse, error) {
+	// Set Keyfactor-specific headers
+	headers := &apiHeaders{
+		Headers: []StringTuple{
+			{"x-keyfactor-api-version", "1"},
+			{"x-keyfactor-requested-with", "APIClient"},
+		},
+	}
+
+	endpoint := "CertificateStores/"
+	keyfactorAPIStruct := &request{
+		Method:   "GET",
+		Endpoint: endpoint,
+		Headers:  headers,
+		Payload:  nil,
+	}
+
+	resp, err := c.sendRequest(keyfactorAPIStruct)
+	if err != nil {
+		return &[]GetCertificateStoreResponse{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return &[]GetCertificateStoreResponse{}, fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
+	}
+	var jsonResp []GetCertificateStoreResponse
+	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	if err != nil {
+		return nil, err
+	}
+	return &jsonResp, nil
+}
+
+// CreateStoreType CreateStore takes arguments for CreateStoreFctArgs to facilitate the creation
 // of all store types supported by a customer Keyfactor Command instance. Note that various certificate
 // store types require different property arguments, and careful attention should be taken to ensure that
 // all required elements are included. Required arguments for this method are:
@@ -400,14 +436,18 @@ func (c *Client) GetCertStoreInventory(storeId string) (*CertStoreInventory, err
 		invResp = &CertStoreInventory{}
 	} else {
 		//invResp = jsonResp[0]
+		params, ok := jsonResp[0].(map[string]interface{})["Parameters"].(map[string]interface{})
+		if !ok {
+			params = map[string]interface{}{}
+		}
 		invResp = &CertStoreInventory{
 			Name:                     jsonResp[0].(map[string]interface{})["Name"].(string),
 			CertStoreInventoryItemId: int(jsonResp[0].(map[string]interface{})["CertStoreInventoryItemId"].(float64)),
-			//Certificates: jsonResp[0].(map[string]interface{})["Name"].(string),
-			//Properties: jsonResp[0].(map[string]interface{})["Name"].(string),
-			Thumbprints: map[string]bool{},
-			Serials:     map[string]bool{},
-			Ids:         map[int]bool{},
+			Certificates:             []InventoriedCertificate{},
+			Parameters:               params,
+			Thumbprints:              map[string]bool{},
+			Serials:                  map[string]bool{},
+			Ids:                      map[int]bool{},
 		}
 		for _, cert := range jsonResp[0].(map[string]interface{})["Certificates"].([]interface{}) {
 			iCert := InventoriedCertificate{

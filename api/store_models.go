@@ -243,6 +243,30 @@ type CertificateStore struct {
 	IncludePrivateKey bool `json:"IncludePrivateKey,omitempty"`
 }
 
+type GetCertificateStoreResponse struct {
+	Id                      string              `json:"Id"`
+	ContainerId             int                 `json:"ContainerId"`
+	ClientMachine           string              `json:"ClientMachine"`
+	Storepath               string              `json:"Storepath"`
+	CertStoreInventoryJobId string              `json:"CertStoreInventoryJobId"`
+	CertStoreType           int                 `json:"cert_store_type"`
+	Approved                bool                `json:"Approved"`
+	CreateIfMissing         bool                `json:"CreateIfMissing"`
+	PropertiesString        string              `json:"Properties"`
+	AgentId                 string              `json:"AgentId"`
+	AgentAssigned           bool                `json:"AgentAssigned"`
+	ContainerName           string              `json:"ContainerName"`
+	InventorySchedule       InventorySchedule   `json:"InventorySchedule"`
+	ReenrollmentStatus      ReEnrollmnentConfig `json:"ReenrollmentStatus"`
+	SetNewPasswordAllowed   bool                `json:"SetNewPasswordAllowed"`
+	Password                string              `json:"Password"`
+}
+
+type ListCertificateStoresResponse struct {
+	// An array of certificate store objects.
+	CertificateStores []CertificateStore `json:"CertificateStores"`
+}
+
 type GetCertStoreInventoryResp struct {
 	Inventory []CertStoreInventory
 }
@@ -254,7 +278,8 @@ type CertStoreInventory struct {
 	Thumbprints              map[string]bool          `json:"-"`
 	Serials                  map[string]bool          `json:"-"`
 	Ids                      map[int]bool             `json:"-"`
-	Properties               map[string]string        `json:"-"`
+	Properties               map[string]interface{}   `json:"-"`
+	Parameters               map[string]interface{}   `json:"-"`
 }
 
 type InventoriedCertificate struct {
