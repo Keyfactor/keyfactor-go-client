@@ -91,7 +91,7 @@ type ProviderType struct {
 	Name string
 }
 
-// CertStoreTypeResponse contains the response elements returned from the GetCertStoreType method.
+// CertStoreTypeResponse contains the response elements returned from the GetCertificateStoreType method.
 type CertStoreTypeResponse struct {
 	Name                string `json:"Name"`
 	ShortName           string `json:"ShortName"`
@@ -127,10 +127,6 @@ type CertStoreTypeResponse struct {
 	EnrollmentJobType  string   `json:"EnrollmentJobType"`
 }
 
-type CertStoreTypeResponseList []struct {
-	CertStoreTypeResponse
-}
-
 // GetStoreByIDResp contains the response elements returned from the GetCertificateStoreByID method.
 type GetStoreByIDResp struct {
 	Id                      string              `json:"Id,omitempty"`
@@ -152,8 +148,8 @@ type GetStoreByIDResp struct {
 	Password                StorePasswordConfig `json:"Password,omitempty"`
 }
 
-// PropertyDefinition defines property filds associated with a certificate store type, and is returned by the
-// GetCertStoreType method
+// PropertyDefinition defines property fields associated with a certificate store type, and is returned by the
+// GetCertificateStoreType method
 type PropertyDefinition struct {
 	StoreTypeID  int    `json:"StoreTypeID"`
 	Name         string `json:"Name"`

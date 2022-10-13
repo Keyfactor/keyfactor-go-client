@@ -187,122 +187,6 @@ func (c *Client) ListCertificateStores() (*[]GetCertificateStoreResponse, error)
 	return &jsonResp, nil
 }
 
-// CreateStoreType CreateStore takes arguments for CreateStoreFctArgs to facilitate the creation
-// of all store types supported by a customer Keyfactor Command instance. Note that various certificate
-// store types require different property arguments, and careful attention should be taken to ensure that
-// all required elements are included. Required arguments for this method are:
-//   - ClientMachine : string
-//   - StorePath     : string
-//   - Properties    : []StringTuple *Note - Method converts this array of StringTuples to a JSON string if provided
-//   - AgentId       : string
-func (c *Client) CreateStoreType(ca *CertStoreTypeResponse) (*CertStoreTypeResponse, error) {
-	log.Println("[INFO] Creating new certificate store type with Keyfactor")
-
-	// Validate that the required fields are present
-	//err := validateCreateStoreTypeArgs(ca)
-	//if err != nil {
-	//	return nil, err
-	//}
-
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
-
-	keyfactorAPIStruct := &request{
-		Method:   "POST",
-		Endpoint: "CertificateStoreType",
-		Headers:  headers,
-		Payload:  &ca,
-	}
-
-	resp, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return nil, err
-	}
-
-	jsonResp := &CertStoreTypeResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	return jsonResp, nil
-}
-
-// GetCertStoreType takes arguments for a certificate store type ID to facilitate a call to Keyfactor
-// that retrieves certificate store context assicated with a store type ID
-func (c *Client) GetCertStoreType(id int) (*CertStoreTypeResponse, error) {
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
-
-	endpoint := fmt.Sprintf("CertificateStoreTypes/%d", id)
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: endpoint,
-		Headers:  headers,
-		Payload:  nil,
-	}
-
-	resp, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return nil, err
-	}
-
-	jsonResp := &CertStoreTypeResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	return jsonResp, nil
-}
-
-// GetCertStoreType takes arguments for a certificate store type ID to facilitate a call to Keyfactor
-// that retrieves certificate store context assicated with a store type ID
-
-// GetCertStoreType takes arguments for a certificate store type ID to facilitate a call to Keyfactor
-// that retrieves certificate store context assicated with a store type ID
-func (c *Client) GetCertStoreTypeByName(name string) (*CertStoreTypeResponse, error) {
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
-
-	endpoint := fmt.Sprintf("CertificateStoreTypes/Name/%s", name)
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: endpoint,
-		Headers:  headers,
-		Payload:  nil,
-	}
-
-	resp, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return nil, err
-	}
-
-	jsonResp := &CertStoreTypeResponseList{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	for _, v := range *jsonResp {
-		// TODO: Assumes that there really should only be one type with a given shortname but this is not guaranteed
-		return &v.CertStoreTypeResponse, nil
-	}
-	return nil, nil
-}
-
 // GetCertificateStoreByID takes arguments for a certificate store ID to facilitate a call to Keyfactor
 // that retrieves a certificate store context. Only the store ID is required. A pointer to a GetStoreByIDResp struct
 // is returned that contains information on the certificate store.
@@ -403,7 +287,7 @@ func (c *Client) RemoveCertificateFromStores(config *RemoveCertificateFromStore)
 	return jsonResp, nil
 }
 
-func (c *Client) GetCertStoreInventory(storeId string) (*CertStoreInventory, error) {
+func (c *Client) GetCertStoreInventory(storeId string) (*[]CertStoreInventory, error) {
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -431,45 +315,49 @@ func (c *Client) GetCertStoreInventory(storeId string) (*CertStoreInventory, err
 	if err != nil {
 		return nil, err
 	}
-	var invResp *CertStoreInventory
+	var invResp []CertStoreInventory
 	if len(jsonResp) == 0 {
-		invResp = &CertStoreInventory{}
+		invResp = []CertStoreInventory{}
 	} else {
 		//invResp = jsonResp[0]
-		params, ok := jsonResp[0].(map[string]interface{})["Parameters"].(map[string]interface{})
-		if !ok {
-			params = map[string]interface{}{}
-		}
-		invResp = &CertStoreInventory{
-			Name:                     jsonResp[0].(map[string]interface{})["Name"].(string),
-			CertStoreInventoryItemId: int(jsonResp[0].(map[string]interface{})["CertStoreInventoryItemId"].(float64)),
-			Certificates:             []InventoriedCertificate{},
-			Parameters:               params,
-			Thumbprints:              map[string]bool{},
-			Serials:                  map[string]bool{},
-			Ids:                      map[int]bool{},
-		}
-		for _, cert := range jsonResp[0].(map[string]interface{})["Certificates"].([]interface{}) {
-			iCert := InventoriedCertificate{
-				Id:                       int(cert.(map[string]interface{})["Id"].(float64)),
-				IssuedDN:                 cert.(map[string]interface{})["IssuedDN"].(string),
-				SerialNumber:             cert.(map[string]interface{})["SerialNumber"].(string),
-				NotBefore:                cert.(map[string]interface{})["NotBefore"].(string),
-				NotAfter:                 cert.(map[string]interface{})["NotAfter"].(string),
-				SigningAlgorithm:         cert.(map[string]interface{})["SigningAlgorithm"].(string),
-				IssuerDN:                 cert.(map[string]interface{})["IssuerDN"].(string),
-				Thumbprint:               cert.(map[string]interface{})["Thumbprint"].(string),
-				CertStoreInventoryItemId: int(cert.(map[string]interface{})["CertStoreInventoryItemId"].(float64)),
+
+		for _, storedCert := range jsonResp {
+			params, ok := storedCert.(map[string]interface{})["Parameters"].(map[string]interface{})
+			if !ok {
+				params = map[string]interface{}{}
 			}
-			invResp.Certificates = append(invResp.Certificates, iCert)
-			invResp.Thumbprints[cert.(map[string]interface{})["Thumbprint"].(string)] = true
-			invResp.Serials[cert.(map[string]interface{})["SerialNumber"].(string)] = true
-			invResp.Ids[int(cert.(map[string]interface{})["Id"].(float64))] = true
+			invC := CertStoreInventory{
+				Name:                     storedCert.(map[string]interface{})["Name"].(string),
+				CertStoreInventoryItemId: int(storedCert.(map[string]interface{})["CertStoreInventoryItemId"].(float64)),
+				Certificates:             []InventoriedCertificate{},
+				Parameters:               params,
+				Thumbprints:              map[string]bool{},
+				Serials:                  map[string]bool{},
+				Ids:                      map[int]bool{},
+			}
+			for _, cert := range storedCert.(map[string]interface{})["Certificates"].([]interface{}) {
+				iCert := InventoriedCertificate{
+					Id:                       int(cert.(map[string]interface{})["ID"].(float64)),
+					IssuedDN:                 cert.(map[string]interface{})["IssuedDN"].(string),
+					SerialNumber:             cert.(map[string]interface{})["SerialNumber"].(string),
+					NotBefore:                cert.(map[string]interface{})["NotBefore"].(string),
+					NotAfter:                 cert.(map[string]interface{})["NotAfter"].(string),
+					SigningAlgorithm:         cert.(map[string]interface{})["SigningAlgorithm"].(string),
+					IssuerDN:                 cert.(map[string]interface{})["IssuerDN"].(string),
+					Thumbprint:               cert.(map[string]interface{})["Thumbprint"].(string),
+					CertStoreInventoryItemId: int(cert.(map[string]interface{})["CertStoreInventoryItemId"].(float64)),
+				}
+				invC.Certificates = append(invC.Certificates, iCert)
+				invC.Thumbprints[cert.(map[string]interface{})["Thumbprint"].(string)] = true
+				invC.Serials[cert.(map[string]interface{})["SerialNumber"].(string)] = true
+				invC.Ids[int(cert.(map[string]interface{})["ID"].(float64))] = true
+				invResp = append(invResp, invC)
+			}
 		}
 	}
 
 	//jsonResp.Properties = unmarshalPropertiesString(jsonResp.PropertiesString)
-	return invResp, nil
+	return &invResp, nil
 }
 
 // unmarshalPropertiesString unmarshalls a JSON string and serializes it into an array of StringTuple.
