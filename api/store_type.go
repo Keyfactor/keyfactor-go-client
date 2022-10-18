@@ -126,80 +126,79 @@ func (c *Client) ListCertificateStoreTypes() (*[]CertificateStoreType, error) {
 //   - StorePath     : string
 //   - Properties    : []StringTuple *Note - Method converts this array of StringTuples to a JSON string if provided
 //   - AgentId       : string
-//
-//	func (c *Client) CreateStoreType(ca *CertificateStoreType) (*CertificateStoreType, error) {
-//		log.Println("[INFO] Creating new certificate store type with Keyfactor")
-//
-//		// Validate that the required fields are present
-//		//err := validateCreateStoreTypeArgs(ca)
-//		//if err != nil {
-//		//	return nil, err
-//		//}
-//
-//		// Set Keyfactor-specific headers
-//		headers := &apiHeaders{
-//			Headers: []StringTuple{
-//				{"x-keyfactor-api-version", "1"},
-//				{"x-keyfactor-requested-with", "APIClient"},
-//			},
-//		}
-//
-//		keyfactorAPIStruct := &request{
-//			Method:   "POST",
-//			Endpoint: "CertificateStoreType",
-//			Headers:  headers,
-//			Payload:  &ca,
-//		}
-//
-//		resp, err := c.sendRequest(keyfactorAPIStruct)
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		jsonResp := &CertStoreTypeResponse{}
-//		err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-//		if err != nil {
-//			return nil, err
-//		}
-//		return jsonResp, nil
-//	}
-//
-//	func (c *Client) UpdateStoreType(ca *CertificateStoreType) (*CertificateStoreType, error) {
-//		log.Println("[INFO] Creating new certificate store type with Keyfactor")
-//
-//		// Validate that the required fields are present
-//		//err := validateCreateStoreTypeArgs(ca)
-//		//if err != nil {
-//		//	return nil, err
-//		//}
-//
-//		// Set Keyfactor-specific headers
-//		headers := &apiHeaders{
-//			Headers: []StringTuple{
-//				{"x-keyfactor-api-version", "1"},
-//				{"x-keyfactor-requested-with", "APIClient"},
-//			},
-//		}
-//
-//		keyfactorAPIStruct := &request{
-//			Method:   "POST",
-//			Endpoint: "CertificateStoreType",
-//			Headers:  headers,
-//			Payload:  &ca,
-//		}
-//
-//		resp, err := c.sendRequest(keyfactorAPIStruct)
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		jsonResp := &CertStoreTypeResponse{}
-//		err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-//		if err != nil {
-//			return nil, err
-//		}
-//		return jsonResp, nil
-//	}
+func (c *Client) CreateStoreType(ca *CertificateStoreType) (*CertificateStoreType, error) {
+	log.Println("[INFO] Creating new certificate store type with Keyfactor")
+
+	// Validate that the required fields are present
+	//err := validateCreateStoreTypeArgs(ca)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	// Set Keyfactor-specific headers
+	headers := &apiHeaders{
+		Headers: []StringTuple{
+			{"x-keyfactor-api-version", "1"},
+			{"x-keyfactor-requested-with", "APIClient"},
+		},
+	}
+
+	keyfactorAPIStruct := &request{
+		Method:   "POST",
+		Endpoint: "CertificateStoreTypes",
+		Headers:  headers,
+		Payload:  &ca,
+	}
+
+	resp, err := c.sendRequest(keyfactorAPIStruct)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonResp := &CertificateStoreType{}
+	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	if err != nil {
+		return nil, err
+	}
+	return jsonResp, nil
+}
+
+func (c *Client) UpdateStoreType(ca *CertificateStoreType) (*CertificateStoreType, error) {
+	log.Println("[INFO] Creating new certificate store type with Keyfactor")
+
+	// Validate that the required fields are present
+	//err := validateCreateStoreTypeArgs(ca)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	// Set Keyfactor-specific headers
+	headers := &apiHeaders{
+		Headers: []StringTuple{
+			{"x-keyfactor-api-version", "1"},
+			{"x-keyfactor-requested-with", "APIClient"},
+		},
+	}
+
+	keyfactorAPIStruct := &request{
+		Method:   "POST",
+		Endpoint: "CertificateStoreType",
+		Headers:  headers,
+		Payload:  &ca,
+	}
+
+	resp, err := c.sendRequest(keyfactorAPIStruct)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonResp := &CertificateStoreType{}
+	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	if err != nil {
+		return nil, err
+	}
+	return jsonResp, nil
+}
 func (c *Client) DeleteCertificateStoreType(id int) (*DeleteStoreType, error) {
 	log.Printf("[INFO] Attempting to delete certificate store type %d", id)
 

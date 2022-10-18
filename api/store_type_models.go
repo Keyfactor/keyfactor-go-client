@@ -46,13 +46,13 @@ type DeleteStoreType struct {
 }
 
 type StoreTypePropertyDefinition struct {
-	StoreTypeID  int    `json:"StoreTypeId"`
-	Name         string `json:"Name"`
-	DisplayName  string `json:"DisplayName"`
-	Type         string `json:"Type"`
-	DependsOn    string `json:"DependsOn"`
-	DefaultValue string `json:"DefaultValue"`
-	Required     bool   `json:"Required"`
+	StoreTypeID  int         `json:"StoreTypeId;omitempty"`
+	Name         string      `json:"Name"`
+	DisplayName  string      `json:"DisplayName"`
+	Type         string      `json:"Type"`
+	DependsOn    string      `json:"DependsOn"`
+	DefaultValue interface{} `json:"DefaultValue"`
+	Required     bool        `json:"Required"`
 }
 
 type EntryParameter struct {

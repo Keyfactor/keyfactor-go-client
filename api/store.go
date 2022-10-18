@@ -337,7 +337,7 @@ func (c *Client) GetCertStoreInventory(storeId string) (*[]CertStoreInventory, e
 			}
 			for _, cert := range storedCert.(map[string]interface{})["Certificates"].([]interface{}) {
 				iCert := InventoriedCertificate{
-					Id:                       int(cert.(map[string]interface{})["ID"].(float64)),
+					Id:                       int(cert.(map[string]interface{})["Id"].(float64)),
 					IssuedDN:                 cert.(map[string]interface{})["IssuedDN"].(string),
 					SerialNumber:             cert.(map[string]interface{})["SerialNumber"].(string),
 					NotBefore:                cert.(map[string]interface{})["NotBefore"].(string),
@@ -350,7 +350,7 @@ func (c *Client) GetCertStoreInventory(storeId string) (*[]CertStoreInventory, e
 				invC.Certificates = append(invC.Certificates, iCert)
 				invC.Thumbprints[cert.(map[string]interface{})["Thumbprint"].(string)] = true
 				invC.Serials[cert.(map[string]interface{})["SerialNumber"].(string)] = true
-				invC.Ids[int(cert.(map[string]interface{})["ID"].(float64))] = true
+				invC.Ids[int(cert.(map[string]interface{})["Id"].(float64))] = true
 				invResp = append(invResp, invC)
 			}
 		}
