@@ -53,10 +53,11 @@ type RevokeCertArgs struct {
 
 // GetCertificateContextArgs holds the function arguments used for calling the GetCertificateContext method.
 type GetCertificateContextArgs struct {
-	IncludeMetadata  *bool // Query
-	IncludeLocations *bool // Query
-	CollectionId     *int  // Query
-	Id               int   // Query
+	IncludeMetadata  *bool  // Query
+	IncludeLocations *bool  // Query
+	CollectionId     *int   // Query
+	Thumbprint       string // Query
+	Id               int    // Query
 }
 
 // DeployPFXArgs holds the function arguments used for calling the DeployPFXCertificate method.
@@ -178,6 +179,10 @@ type GetCertificateResponse struct {
 	CARowIndex               int                      `json:"CARowIndex"`
 	DetailedKeyUsage         []DetailedKeyUsage       `json:"detailed_key_usage"`
 	KeyRecoverable           bool                     `json:"KeyRecoverable"`
+}
+
+type ListCertificateResponse struct {
+	Certificates []GetCertificateResponse `json:"Certificates"`
 }
 
 // recoverCertResponse contains the response elements returned from the RecoverCertificate method.

@@ -105,6 +105,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 			queryString.Set(query.Elem1, query.Elem2)
 		}
 		u.RawQuery = queryString.Encode()
+		u.RawQuery = strings.ReplaceAll(u.RawQuery, "+", "%20")
 	}
 
 	keyfactorPath := u.String() // Convert absolute path to string
@@ -161,7 +162,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		err = errors.New("401 - Unauthorized: Access is denied due to invalid credentials.")
 		return nil, err
 	} else {
-		var errorMessage interface{} // Decode JSON body to handle issue
+		var errorMessage map[string]interface{} // Decode JSON body to handle issue
 		err = json.NewDecoder(resp.Body).Decode(&errorMessage)
 
 		if err != nil {
@@ -174,7 +175,12 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		}
 
 		log.Printf("[DEBUG] Request failed with code %d and message %v", resp.StatusCode, errorMessage)
-		stringMessage = fmt.Sprintf("%v", errorMessage)
+		var fOps []string
+		for _, v := range errorMessage["FailedOperations"].([]interface{}) {
+			fOps = append(fOps, fmt.Sprintf("%s", v.(map[string]interface{})["Reason"]))
+		}
+		fOpsStr := strings.Join(fOps, ", ")
+		stringMessage = fmt.Sprintf("%s. %s", errorMessage["Message"], fOpsStr)
 		return nil, errors.New(stringMessage)
 	}
 }

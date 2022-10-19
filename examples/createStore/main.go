@@ -23,8 +23,8 @@ func main() {
 	// Get Certificate Store Types
 	//
 	// To retrieve data on a specific certificate store type supported by the Keyfactor instance referenced by the
-	// Keyfactor Go client, use the GetCertStoreType method.
-	storeType, err := client.GetCertStoreType(106)
+	// Keyfactor Go client, use the GetCertificateStoreType method.
+	storeType, err := client.GetCertificateStoreType(106)
 	if err != nil {
 		return
 	}
@@ -36,7 +36,7 @@ func main() {
 	// To create a new certificate store using the Keyfactor Go Client,
 	// first create a pointer to an CreateStoreFctArgs struct,
 	// and populate the required fields. The below fields are the bare minimum. Note that the properties required vary
-	// between different store types. Use the GetCertStoreType method to determine the required fields.
+	// between different store types. Use the GetCertificateStoreType method to determine the required fields.
 	properties := make(map[string]string)
 	properties["TenantID"] = "tenant"
 	properties["ResourceGroupName"] = "resource group name"
