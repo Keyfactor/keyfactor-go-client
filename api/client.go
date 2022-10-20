@@ -175,12 +175,19 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		}
 
 		log.Printf("[DEBUG] Request failed with code %d and message %v", resp.StatusCode, errorMessage)
-		var fOps []string
-		for _, v := range errorMessage["FailedOperations"].([]interface{}) {
-			fOps = append(fOps, fmt.Sprintf("%s", v.(map[string]interface{})["Reason"]))
+		_, hasFailedOps := errorMessage["FailedOperations"]
+		if hasFailedOps {
+			var fOps []string
+			for _, v := range errorMessage["FailedOperations"].([]interface{}) {
+				fOps = append(fOps, fmt.Sprintf("%s", v.(map[string]interface{})["Reason"]))
+			}
+			fOpsStr := strings.Join(fOps, ", ")
+			stringMessage += fmt.Sprintf("%s. %s", errorMessage["Message"], fOpsStr)
 		}
-		fOpsStr := strings.Join(fOps, ", ")
-		stringMessage = fmt.Sprintf("%s. %s", errorMessage["Message"], fOpsStr)
+		_, hasMsg := errorMessage["Message"]
+		if hasMsg {
+			stringMessage += fmt.Sprintf("%s", errorMessage["Message"])
+		}
 		return nil, errors.New(stringMessage)
 	}
 }
