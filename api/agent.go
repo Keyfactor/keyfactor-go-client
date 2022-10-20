@@ -39,7 +39,7 @@ func (c *Client) GetAgentList() ([]Agent, error) {
 }
 
 func (c *Client) GetAgent(id string) ([]Agent, error) {
-	log.Println("[INFO] Getting a list of agents registered in Keyfactor")
+	log.Println("[INFO] Getting agent by ID or name.")
 
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
@@ -72,6 +72,9 @@ func (c *Client) GetAgent(id string) ([]Agent, error) {
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
 		return nil, err
+	}
+	if len(jsonResp) == 0 {
+		return jsonResp, fmt.Errorf("agent %s not found", id)
 	}
 	return jsonResp, nil
 }
@@ -190,6 +193,9 @@ func (c *Client) ResetAgent(id string) (string, error) {
 		return "", rErr
 	}
 
+	if resp.StatusCode == 204 {
+		return "Reset agent successful.", nil
+	}
 	var jsonResp string
 	err := json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {

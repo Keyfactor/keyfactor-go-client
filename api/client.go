@@ -42,8 +42,8 @@ func NewKeyfactorClient(auth *AuthConfig) (*Client, error) {
 	return c, nil
 }
 
-// validateAuthConfig ensures that the required fields for the creation of a new Keyfactor client struct were passed
-// to the NewKeyfactorClient method. In the future, this method will be updated to ask Keyfactor for session token.
+// loginToKeyfactor is a helper function that creates a new Keyfactor client instance. A configured Client is returned
+// with methods used to interact with Keyfactor.
 func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
 	if auth.Hostname == "" {
 		return nil, errors.New("keyfactor hostname required for creation of new client")
@@ -84,7 +84,7 @@ func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
 	return c, nil
 }
 
-// SendRequest takes an APIRequest struct as input and generates an API call
+// sendRequest takes an APIRequest struct as input and generates an API call
 // using the configuration data inside. It returns a pointer to an http response
 // struct and an error, if applicable.
 func (c *Client) sendRequest(request *request) (*http.Response, error) {
@@ -111,9 +111,9 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	keyfactorPath := u.String() // Convert absolute path to string
 
 	log.Printf("[INFO] Preparing a %s request to path '%s'", request.Method, keyfactorPath)
-	jsonByes, err := json.Marshal(request.Payload)
-	if err != nil {
-		return nil, err
+	jsonByes, mErr := json.Marshal(request.Payload)
+	if mErr != nil {
+		return nil, mErr
 	}
 	//log.Printf("[TRACE] Request body: %s", jsonByes)
 
@@ -140,18 +140,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		log.Printf("[DEBUG] %s succeeded with response code %d", request.Method, resp.StatusCode)
 		return resp, nil
 	} else if resp.StatusCode == http.StatusNotFound {
-		var errorMessage interface{} // Decode JSON body to handle issue
-		// First, try to serialize the response into an interface, but catch the exception.
-		defer func() {
-			if nfErr := recover(); nfErr != nil {
-				stringMessage = "404 - file or directory not found"
-			}
-		}()
-		err = json.NewDecoder(resp.Body).Decode(&errorMessage)
-		if err != nil {
-			return nil, err
-		}
-		stringMessage = fmt.Sprintf("%v", errorMessage)
+		stringMessage = fmt.Sprintf("Error %d - the requested resource was not found. Please check the request and try again.", resp.StatusCode)
 		log.Printf("[ERROR] Call to %s returned status %d. %s", keyfactorPath, resp.StatusCode, stringMessage)
 		return nil, errors.New(stringMessage)
 	} else if resp.StatusCode == http.StatusUnauthorized {
@@ -170,7 +159,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 			if derr != nil {
 				return nil, derr
 			}
-			uerr := errors.New(fmt.Sprintf("%s - Unknown error connecting to Keyfactor %s, please check your connection.", resp.StatusCode, endpoint))
+			uerr := errors.New(fmt.Sprintf("%d - Unknown error connecting to Keyfactor %s, please check your connection.", resp.StatusCode, endpoint))
 			return nil, uerr
 		}
 
