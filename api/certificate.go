@@ -20,7 +20,7 @@ func (c *Client) EnrollPFX(ea *EnrollPFXFctArgs) (*EnrollResponse, error) {
 	log.Println("[INFO] Enrolling PFX certificate with Keyfactor")
 
 	/* Ensure required inputs exist */
-	missingFields := []string{}
+	var missingFields []string
 
 	// TODO: Probably a better way to express these if blocks
 	if ea.Template == "" {

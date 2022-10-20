@@ -159,7 +159,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		if derr != nil {
 			return nil, derr
 		}
-		err = errors.New("401 - Unauthorized: Access is denied due to invalid credentials.")
+		err = errors.New("401 - Unauthorized: Access is denied due to invalid credentials")
 		return nil, err
 	} else {
 		var errorMessage map[string]interface{} // Decode JSON body to handle issue
