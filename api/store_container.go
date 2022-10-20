@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 )
 
 // GetStoreContainers returns a list of store containers
@@ -41,6 +42,10 @@ func (c *Client) GetStoreContainers() (*[]CertStoreContainer, error) {
 func (c *Client) GetStoreContainer(id interface{}) (*CertStoreContainer, error) {
 	log.Printf("[INFO] Fetching certificat store containers %s.\n", id)
 
+	var endpoint string
+	var query apiQuery
+	var jsonResp interface{}
+
 	headers := &apiHeaders{
 		Headers: []StringTuple{
 			{"x-keyfactor-api-version", "1"},
@@ -48,25 +53,36 @@ func (c *Client) GetStoreContainer(id interface{}) (*CertStoreContainer, error) 
 		},
 	}
 
-	var endpoint string
-	var query apiQuery
-	switch id.(type) {
-	case int:
-		endpoint = fmt.Sprintf("CertificateStoreContainers/%s", id)
-	case string:
+	idInt, cErr := strconv.Atoi(id.(string))
+	if cErr == nil {
+		// Endpoint returns a single store container
+		endpoint = fmt.Sprintf("CertificateStoreContainers/%d", idInt)
+		jsonResp = &CertStoreContainer{}
+	} else {
+		// Endpoint returns a list of store containers
 		endpoint = "CertificateStoreContainers"
 		query = apiQuery{
 			Query: []StringTuple{},
 		}
 		query.Query = append(query.Query, StringTuple{
-			"pq.queryString", fmt.Sprintf(`name -eq "%s"`, id),
+			"pq.queryString", fmt.Sprintf(`Name -eq "%s"`, id),
 		})
+		jsonResp = &[]CertStoreContainer{}
 	}
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: endpoint,
-		Headers:  headers,
-		Query:    &query,
+	var keyfactorAPIStruct *request
+	if query.Query != nil {
+		keyfactorAPIStruct = &request{
+			Method:   "GET",
+			Endpoint: endpoint,
+			Headers:  headers,
+			Query:    &query,
+		}
+	} else {
+		keyfactorAPIStruct = &request{
+			Method:   "GET",
+			Endpoint: endpoint,
+			Headers:  headers,
+		}
 	}
 
 	resp, err := c.sendRequest(keyfactorAPIStruct)
@@ -74,10 +90,15 @@ func (c *Client) GetStoreContainer(id interface{}) (*CertStoreContainer, error) 
 		return nil, err
 	}
 
-	jsonResp := &CertStoreContainer{}
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
 		return nil, err
 	}
-	return jsonResp, nil
+	switch jsonResp.(type) {
+	case *CertStoreContainer:
+		return jsonResp.(*CertStoreContainer), nil
+	case *[]CertStoreContainer:
+		return &(*jsonResp.(*[]CertStoreContainer))[0], nil
+	}
+	return nil, fmt.Errorf("invalid API response from Keyfactor while getting cert store container %s", id)
 }
