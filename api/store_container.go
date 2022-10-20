@@ -52,8 +52,15 @@ func (c *Client) GetStoreContainer(id interface{}) (*CertStoreContainer, error) 
 			{"x-keyfactor-requested-with", "APIClient"},
 		},
 	}
+	var idInt int
+	var cErr error
+	switch id.(type) {
+	case string:
+		idInt, cErr = strconv.Atoi(id.(string))
+	case int:
+		idInt = id.(int)
+	}
 
-	idInt, cErr := strconv.Atoi(id.(string))
 	if cErr == nil {
 		// Endpoint returns a single store container
 		endpoint = fmt.Sprintf("CertificateStoreContainers/%d", idInt)
@@ -98,7 +105,10 @@ func (c *Client) GetStoreContainer(id interface{}) (*CertStoreContainer, error) 
 	case *CertStoreContainer:
 		return jsonResp.(*CertStoreContainer), nil
 	case *[]CertStoreContainer:
-		return &(*jsonResp.(*[]CertStoreContainer))[0], nil
+		if len(*jsonResp.(*[]CertStoreContainer)) > 0 {
+			return &(*jsonResp.(*[]CertStoreContainer))[0], nil
+		}
+		return nil, fmt.Errorf("no cert store container found with name %s", id)
 	}
 	return nil, fmt.Errorf("invalid API response from Keyfactor while getting cert store container %s", id)
 }
