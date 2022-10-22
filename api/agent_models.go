@@ -14,7 +14,3 @@ type Agent struct {
 	Thumbprint       string `json:"Thumbprint"`
 	LegacyThumbprint string `json:"LegacyThumbprint"`
 }
-
-type AgentApproval struct {
-	AgentIds []string `json:"agentIds"`
-}

@@ -10,9 +10,17 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 	"time"
+)
+
+var (
+	EnvCommandHostname = "KEYFACTOR_HOSTNAME"
+	EnvCommandUsername = "KEYFACTOR_USERNAME"
+	EnvCommandPassword = "KEYFACTOR_PASSWORD"
+	EnvCommandDomain   = "KEYFACTOR_DOMAIN"
 )
 
 type Client struct {
@@ -46,13 +54,36 @@ func NewKeyfactorClient(auth *AuthConfig) (*Client, error) {
 // with methods used to interact with Keyfactor.
 func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
 	if auth.Hostname == "" {
-		return nil, errors.New("keyfactor hostname required for creation of new client")
+		envHostname := os.Getenv(EnvCommandHostname)
+		if envHostname != "" {
+			auth.Hostname = envHostname
+		} else {
+			return nil, fmt.Errorf("%s is required", EnvCommandHostname)
+		}
 	}
 	if auth.Username == "" {
-		return nil, errors.New("keyfactor username required for creation of new client")
+		envUsername := os.Getenv(EnvCommandUsername)
+		if envUsername != "" {
+			envDomain := os.Getenv(EnvCommandDomain)
+			if envDomain != "" && auth.Domain == "" && !strings.Contains(envUsername, envDomain) {
+				auth.Domain = envDomain
+			}
+			if auth.Domain != "" && !strings.Contains(envUsername, envDomain) {
+				auth.Username = auth.Domain + "\\" + envUsername
+			} else {
+				auth.Username = envUsername
+			}
+		} else {
+			return nil, fmt.Errorf("%s is required", EnvCommandUsername)
+		}
 	}
 	if auth.Password == "" {
-		return nil, errors.New("keyfactor password required for creation of new client")
+		envPassword := os.Getenv(EnvCommandPassword)
+		if envPassword != "" {
+			auth.Password = envPassword
+		} else {
+			return nil, fmt.Errorf("%s is required", EnvCommandPassword)
+		}
 	}
 
 	headers := &apiHeaders{

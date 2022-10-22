@@ -90,18 +90,11 @@ func (c *Client) ApproveAgent(id string) (string, error) {
 		},
 	}
 
-	//agent, err := c.GetAgent(id)
-	//if err != nil {
-	//	return "", err
-	//} else if len(agent) == 0 {
-	//	return "", fmt.Errorf("agent %s not found", id)
-	//}
-
 	keyfactorAPIStruct := &request{
 		Method:   "POST",
 		Endpoint: "Agents/Approve",
 		Headers:  headers,
-		Payload:  &AgentApproval{AgentIds: []string{id}},
+		Payload:  &[]string{id},
 	}
 
 	resp, rErr := c.sendRequest(keyfactorAPIStruct)
@@ -110,7 +103,7 @@ func (c *Client) ApproveAgent(id string) (string, error) {
 	}
 
 	if resp.StatusCode == 204 {
-		return fmt.Sprintf("Fetching logs for %s successful.", id), nil
+		return "Approve agent successful.", nil
 	}
 
 	var jsonResp string
@@ -132,18 +125,11 @@ func (c *Client) DisApproveAgent(id string) (string, error) {
 		},
 	}
 
-	//agent, err := c.GetAgent(id)
-	//if err != nil {
-	//	return "", err
-	//} else if len(agent) == 0 {
-	//	return "", fmt.Errorf("agent %s not found", id)
-	//}
-
 	keyfactorAPIStruct := &request{
 		Method:   "POST",
 		Endpoint: "Agents/Disapprove",
 		Headers:  headers,
-		Payload:  &AgentApproval{AgentIds: []string{id}},
+		Payload:  &[]string{id},
 	}
 
 	resp, rErr := c.sendRequest(keyfactorAPIStruct)
@@ -152,7 +138,7 @@ func (c *Client) DisApproveAgent(id string) (string, error) {
 	}
 
 	if resp.StatusCode == 204 {
-		return fmt.Sprintf("Fetch disapproving %s successful.", id), nil
+		return fmt.Sprintf("Disapproving %s successful.", id), nil
 	}
 
 	var jsonResp string
@@ -173,13 +159,6 @@ func (c *Client) ResetAgent(id string) (string, error) {
 			{"x-keyfactor-requested-with", "APIClient"},
 		},
 	}
-
-	//agent, err := c.GetAgent(id)
-	//if err != nil {
-	//	return "", err
-	//} else if len(agent) == 0 {
-	//	return "", fmt.Errorf("agent %s not found", id)
-	//}
 
 	keyfactorAPIStruct := &request{
 		Method:   "POST",
@@ -214,13 +193,6 @@ func (c *Client) FetchAgentLogs(id string) (string, error) {
 			{"x-keyfactor-requested-with", "APIClient"},
 		},
 	}
-
-	//agent, err := c.GetAgent(id)
-	//if err != nil {
-	//	return "", err
-	//} else if len(agent) == 0 {
-	//	return "", fmt.Errorf("agent %s not found", id)
-	//}
 
 	keyfactorAPIStruct := &request{
 		Method:   "POST",

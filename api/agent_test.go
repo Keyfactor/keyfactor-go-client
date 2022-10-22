@@ -1,108 +1,38 @@
-package api
+package api_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"github.com/Keyfactor/keyfactor-go-client/api"
+	"io"
 	"log"
-	"net/http"
 	"os"
 	"testing"
 )
 
-func initClient() (*Client, error) {
-	var clientAuth AuthConfig
-	clientAuth.Username = os.Getenv("KEYFACTOR_USERNAME")
-	log.Printf("[DEBUG] Username: %s", clientAuth.Username)
-	clientAuth.Password = os.Getenv("KEYFACTOR_PASSWORD")
-	log.Printf("[DEBUG] Password: %s", clientAuth.Password)
-	clientAuth.Domain = os.Getenv("KEYFACTOR_DOMAIN")
-	log.Printf("[DEBUG] Domain: %s", clientAuth.Domain)
-	clientAuth.Hostname = os.Getenv("KEYFACTOR_HOSTNAME")
-	log.Printf("[DEBUG] Hostname: %s", clientAuth.Hostname)
-
-	c, err := NewKeyfactorClient(&clientAuth)
-
-	if err != nil {
-		log.Fatalf("Error creating Keyfactor client: %s", err)
-	}
-	return c, err
-}
+const (
+	ApprovedAgentStatus   = 2
+	AgentActionApprove    = "approve"
+	AgentActionDisApprove = "disapprove"
+	AgentActionReset      = "reset"
+	AgentActionLogs       = "logs"
+)
 
 func TestClient_ApproveAgent(t *testing.T) {
-	log.SetOutput(ioutil.Discard)
-	kfClient, _ := initClient()
+	log.SetOutput(io.Discard)
+	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
 	agentID := os.Getenv("TEST_KEYFACTOR_AGENT_ID")
-	type fields struct {
-		hostname        string
-		httpClient      *http.Client
-		basicAuthString string
+	agentClientName := os.Getenv("TEST_KEYFACTOR_AGENT_NAME")
+	if kfcErr != nil {
+		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
+		return
 	}
-	type args struct {
-		id string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    string
-		wantErr bool
-	}{
-		{
-			name: "agent_approve_failure",
-			fields: fields{
-				hostname:        kfClient.hostname,
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			}, args: args{
-				id: agentID,
-			},
-			want:    "",
-			wantErr: true, // TODO: Currently always errors out
-		},
-		//{
-		//	name: "agent_approve_success",
-		//	fields: fields{
-		//		hostname:        kfClient.hostname,
-		//		httpClient:      kfClient.httpClient,
-		//		basicAuthString: kfClient.basicAuthString,
-		//	}, args: args{
-		//		id: "1",
-		//	},
-		//	want:    "",
-		//	wantErr: false,
-		//},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := &Client{
-				hostname:        tt.fields.hostname,
-				httpClient:      tt.fields.httpClient,
-				basicAuthString: tt.fields.basicAuthString,
-			}
-			got, err := c.ApproveAgent(tt.args.id)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ApproveAgent() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("ApproveAgent() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
-func TestClient_DisApproveAgent(t *testing.T) {
-	log.SetOutput(ioutil.Discard)
-	kfClient, _ := initClient()
-	agentID := os.Getenv("TEST_KEYFACTOR_AGENT_ID")
-	type fields struct {
-		hostname        string
-		httpClient      *http.Client
-		basicAuthString string
-	}
+	type fields struct{}
 	type args struct {
-		id string
+		id         string
+		clientName string
 	}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -111,60 +41,76 @@ func TestClient_DisApproveAgent(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "agent_disapprove_failure",
-			fields: fields{
-				hostname:        kfClient.hostname,
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			}, args: args{
-				id: agentID,
+			name:   "InvertApprovalStatus",
+			fields: fields{},
+			args: args{
+				id:         agentID,
+				clientName: agentClientName,
 			},
 			want:    "",
-			wantErr: true, // TODO: Currently always errors out
+			wantErr: false,
 		},
-		//{
-		//	name: "agent_disapprove_success",
-		//	fields: fields{
-		//		hostname:        kfClient.hostname,
-		//		httpClient:      kfClient.httpClient,
-		//		basicAuthString: kfClient.basicAuthString,
-		//	}, args: args{
-		//		id: "1",
-		//	},
-		//	want:    "",
-		//	wantErr: false,
-		//},
+		{
+			name:   "RevertApprovalStatus",
+			fields: fields{},
+			args: args{
+				id:         agentID,
+				clientName: agentClientName,
+			},
+			want:    "",
+			wantErr: false, // TODO: Currently always errors out
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &Client{
-				hostname:        tt.fields.hostname,
-				httpClient:      tt.fields.httpClient,
-				basicAuthString: tt.fields.basicAuthString,
-			}
-			got, err := c.DisApproveAgent(tt.args.id)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DisApproveAgent() error = %v, wantErr %v", err, tt.wantErr)
+			agents, lErr := c.GetAgentList()
+			if lErr != nil {
+				t.Errorf("unable to list agents. %s", lErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("DisApproveAgent() got = %v, want %v", got, tt.want)
+			foundAgent := false
+			var orchestrator api.Agent
+			for _, agent := range agents {
+				if agent.AgentId == tt.args.id || agent.ClientMachine == tt.args.clientName {
+					orchestrator = agent
+					foundAgent = true
+					break
+				}
+			}
+			if !foundAgent {
+				t.Errorf("unable to find agent with id %s or client name %s", tt.args.id, tt.args.clientName)
+				return
+			}
+			if orchestrator.Status == ApprovedAgentStatus {
+				_, err := c.DisApproveAgent(orchestrator.AgentId)
+				if (err != nil) != tt.wantErr {
+					t.Errorf("DisApproveAgent() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
+			} else {
+				_, err := c.ApproveAgent(orchestrator.AgentId)
+				if (err != nil) != tt.wantErr {
+					t.Errorf("ApproveAgent() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
 			}
 		})
 	}
 }
 
 func TestClient_FetchAgentLogs(t *testing.T) {
-	log.SetOutput(ioutil.Discard)
-	kfClient, _ := initClient()
-	agentID := os.Getenv("TEST_KEYFACTOR_AGENT_ID")
-	type fields struct {
-		hostname        string
-		httpClient      *http.Client
-		basicAuthString string
+	log.SetOutput(io.Discard)
+	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	if kfcErr != nil {
+		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
+		return
 	}
+	agentID := os.Getenv("TEST_KEYFACTOR_AGENT_ID")
+	agentClientName := os.Getenv("TEST_KEYFACTOR_AGENT_NAME")
+	type fields struct{}
 	type args struct {
-		id string
+		id         string
+		clientName string
 	}
 	tests := []struct {
 		name    string
@@ -174,25 +120,19 @@ func TestClient_FetchAgentLogs(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "agent_fetchlogs_failure",
-			fields: fields{
-				hostname:        kfClient.hostname,
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			}, args: args{
-				id: "",
+			name:   "agent_fetchlogs_failure",
+			fields: fields{}, args: args{
+				id:         "",
+				clientName: "",
 			},
-			want:    "invalid-agent-id",
+			want:    "invalid-agent-name",
 			wantErr: true,
 		},
 		{
-			name: "agent_fetchlogs_success",
-			fields: fields{
-				hostname:        kfClient.hostname,
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			}, args: args{
-				id: agentID,
+			name:   "agent_fetchlogs_success",
+			fields: fields{}, args: args{
+				id:         agentID,
+				clientName: agentClientName,
 			},
 			want:    "Fetch logs successful.",
 			wantErr: false,
@@ -200,10 +140,27 @@ func TestClient_FetchAgentLogs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &Client{
-				hostname:        tt.fields.hostname,
-				httpClient:      tt.fields.httpClient,
-				basicAuthString: tt.fields.basicAuthString,
+			if tt.args.id == "" && tt.args.clientName == "" && !tt.wantErr {
+				t.Errorf("unable to find agent with id %s or client name %s", tt.args.id, agentClientName)
+				return
+			} else if tt.args.id == "" {
+				agents, lErr := c.GetAgentList()
+				if lErr != nil && !tt.wantErr {
+					t.Errorf("unable to list agents. %s", lErr)
+					return
+				}
+				foundAgent := false
+				for _, agent := range agents {
+					if agent.ClientMachine == tt.args.clientName {
+						tt.args.id = agent.AgentId
+						foundAgent = true
+						break
+					}
+				}
+				if !foundAgent && !tt.wantErr {
+					t.Errorf("unable to find agent with id %s or client name %s", tt.args.id, tt.args.clientName)
+					return
+				}
 			}
 			got, err := c.FetchAgentLogs(tt.args.id)
 			if (err != nil) != tt.wantErr {
@@ -221,15 +178,15 @@ func TestClient_FetchAgentLogs(t *testing.T) {
 }
 
 func TestClient_GetAgent(t *testing.T) {
-	log.SetOutput(ioutil.Discard)
-	kfClient, _ := initClient()
+	log.SetOutput(io.Discard)
+	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	if kfcErr != nil {
+		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
+		return
+	}
 	agentID := os.Getenv("TEST_KEYFACTOR_AGENT_NAME")
 
-	type fields struct {
-		hostname        string
-		httpClient      *http.Client
-		basicAuthString string
-	}
+	type fields struct{}
 	type args struct {
 		id string
 	}
@@ -237,41 +194,29 @@ func TestClient_GetAgent(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []Agent
+		want    []api.Agent
 		wantErr bool
 	}{
 		{
-			name: "agent_get_failure",
-			fields: fields{
-				hostname:        kfClient.hostname,
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			}, args: args{
-				id: "invalid-agent-id",
+			name:   "agent_get_failure",
+			fields: fields{}, args: args{
+				id: "invalid-agent-name",
 			},
-			want:    []Agent{},
+			want:    []api.Agent{},
 			wantErr: true,
 		},
 		{
-			name: "agent_get_success",
-			fields: fields{
-				hostname:        kfClient.hostname,
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			}, args: args{
+			name:   "agent_get_success",
+			fields: fields{}, args: args{
 				id: agentID,
 			},
-			want:    []Agent{},
+			want:    []api.Agent{},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &Client{
-				hostname:        tt.fields.hostname,
-				httpClient:      tt.fields.httpClient,
-				basicAuthString: tt.fields.basicAuthString,
-			}
+
 			got, err := c.GetAgent(tt.args.id)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetAgent() error = %v, wantErr %v", err, tt.wantErr)
@@ -294,48 +239,31 @@ func TestClient_GetAgent(t *testing.T) {
 }
 
 func TestClient_GetAgentList(t *testing.T) {
-	log.SetOutput(ioutil.Discard)
-	kfClient, _ := initClient()
-
-	type fields struct {
-		hostname        string
-		httpClient      *http.Client
-		basicAuthString string
+	log.SetOutput(io.Discard)
+	log.SetOutput(io.Discard)
+	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	if kfcErr != nil {
+		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
+		return
 	}
+
+	type fields struct{}
 	tests := []struct {
 		name    string
 		fields  fields
-		want    []Agent
+		want    []api.Agent
 		wantErr bool
 	}{
 		{
-			name: "agent_list_failure",
-			fields: fields{
-				hostname:        "",
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			},
-			want:    []Agent{},
-			wantErr: true,
-		},
-		{
-			name: "agent_list_success",
-			fields: fields{
-				hostname:        kfClient.hostname,
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			},
-			want:    []Agent{},
+			name:    "GetAgentList",
+			fields:  fields{},
+			want:    []api.Agent{},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &Client{
-				hostname:        tt.fields.hostname,
-				httpClient:      tt.fields.httpClient,
-				basicAuthString: tt.fields.basicAuthString,
-			}
+
 			got, err := c.GetAgentList()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetAgentList() error = %v, wantErr %v", err, tt.wantErr)
@@ -358,17 +286,20 @@ func TestClient_GetAgentList(t *testing.T) {
 }
 
 func TestClient_ResetAgent(t *testing.T) {
-	log.SetOutput(ioutil.Discard)
-	kfClient, _ := initClient()
-	agentID := os.Getenv("TEST_KEYFACTOR_AGENT_NAME")
-
-	type fields struct {
-		hostname        string
-		httpClient      *http.Client
-		basicAuthString string
+	log.SetOutput(io.Discard)
+	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	if kfcErr != nil {
+		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
+		return
 	}
+	agentID := os.Getenv("TEST_KEYFACTOR_AGENT_ID")
+	agentClientName := os.Getenv("TEST_KEYFACTOR_AGENT_NAME")
+
+	type fields struct{}
 	type args struct {
-		id string
+		id         string
+		clientName string
+		action     string
 	}
 	tests := []struct {
 		name    string
@@ -378,50 +309,66 @@ func TestClient_ResetAgent(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "agent_reset_failure",
-			fields: fields{
-				hostname:        kfClient.hostname,
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			}, args: args{
-				id: "invalid-agent-id",
+			name:   "agent_reset_failure",
+			fields: fields{},
+			args: args{
+				id:         "invalid-agent-id",
+				clientName: "invalid-agent-name",
+				action:     AgentActionReset,
 			},
 			want:    "Error 404 - the requested resource was not found. Please check the request and try again.",
 			wantErr: true,
 		},
 		{
-			name: "agent_reset_success",
-			fields: fields{
-				hostname:        kfClient.hostname,
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			}, args: args{
-				id: agentID,
+			name:   "agent_reset_success",
+			fields: fields{},
+			args: args{
+				id:         agentID,
+				clientName: agentClientName,
+				action:     AgentActionReset,
 			},
 			want:    "Reset agent successful.",
+			wantErr: false,
+		},
+		{
+			name:   "approve_reset_agent",
+			fields: fields{},
+			args: args{
+				id:         agentID,
+				clientName: agentClientName,
+				action:     AgentActionApprove,
+			},
+			want:    "Approve agent successful.",
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &Client{
-				hostname:        tt.fields.hostname,
-				httpClient:      tt.fields.httpClient,
-				basicAuthString: tt.fields.basicAuthString,
+			if tt.args.id == "" && tt.args.clientName == "" {
+				t.Errorf("TestClient_ResetAgent() missing agent ID or agent name. Please set TEST_KEYFACTOR_AGENT_ID and TEST_KEYFACTOR_AGENT_NAME environment variables and try again.")
+				return
 			}
-			aID, aErr := c.GetAgent(tt.args.id)
+
+			aID, aErr := c.GetAgent(tt.args.clientName)
 			if aErr != nil && !tt.wantErr {
 				t.Errorf("ResetAgent() error = %v, wantErr %v", aErr, tt.wantErr)
 				return
 			}
 			var got string
 			var err error
-			if aID != nil && len(aID) > 0 {
-				got, err = c.ResetAgent(aID[0].AgentId)
-			} else {
-				got, err = c.ResetAgent(agentID)
+			if tt.args.action == AgentActionReset {
+				if aID != nil && len(aID) > 0 {
+					got, err = c.ResetAgent(aID[0].AgentId)
+				} else {
+					got, err = c.ResetAgent(tt.args.id)
+				}
+			} else if tt.args.action == AgentActionApprove {
+				if aID != nil && len(aID) > 0 {
+					got, err = c.ApproveAgent(aID[0].AgentId)
+				} else {
+					got, err = c.ApproveAgent(tt.args.id)
+				}
 			}
-
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ResetAgent() error = %v, wantErr %v", err, tt.wantErr)
 				return

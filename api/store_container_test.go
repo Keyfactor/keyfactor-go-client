@@ -1,29 +1,25 @@
-package api
+package api_test
 
 import (
-	"io/ioutil"
+	"github.com/Keyfactor/keyfactor-go-client/api"
+	"io"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"testing"
 )
 
 func TestClient_GetStoreContainer(t *testing.T) {
-	log.SetOutput(ioutil.Discard)
-	kfClient, connErr := initClient()
-	if connErr != nil {
-		t.Errorf("Error connecting to Keyfactor: %s", connErr)
+	log.SetOutput(io.Discard)
+	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	if kfcErr != nil {
+		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
 	}
 	containerID := os.Getenv("TEST_KEYFACTOR_STORE_CONTAINER_ID")
 	containerName := os.Getenv("TEST_KEYFACTOR_STORE_CONTAINER_NAME")
 
-	type fields struct {
-		hostname        string
-		httpClient      *http.Client
-		basicAuthString string
-	}
+	type fields struct{}
 	type args struct {
 		id interface{}
 	}
@@ -31,72 +27,51 @@ func TestClient_GetStoreContainer(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *CertStoreContainer
+		want    *api.CertStoreContainer
 		wantErr bool
 	}{
 		{
-			name: "Get store container by ID",
-			fields: fields{
-				hostname:        kfClient.hostname,
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			},
+			name:   "Get store container by ID",
+			fields: fields{},
 			args: args{
 				id: containerID,
 			},
-			want:    &CertStoreContainer{},
+			want:    &api.CertStoreContainer{},
 			wantErr: false,
 		},
 		{
-			name: "Get store container by invalid ID",
-			fields: fields{
-				hostname:        kfClient.hostname,
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			},
+			name:   "Get store container by invalid ID",
+			fields: fields{},
 			args: args{
 				id: "-1",
 			},
-			want:    &CertStoreContainer{},
+			want:    &api.CertStoreContainer{},
 			wantErr: true,
 		},
 		{
-			name: "Get store container by name",
-			fields: fields{
-				hostname:        kfClient.hostname,
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			},
+			name:   "Get store container by name",
+			fields: fields{},
 			args: args{
 				id: containerName,
 			},
-			want:    &CertStoreContainer{},
+			want:    &api.CertStoreContainer{},
 			wantErr: false,
 		},
 		{
-			name: "Get store container invalid by name",
-			fields: fields{
-				hostname:        kfClient.hostname,
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			},
+			name:   "Get store container invalid by name",
+			fields: fields{},
 			args: args{
 				id: "invalid-container-name",
 			},
-			want:    &CertStoreContainer{},
+			want:    &api.CertStoreContainer{},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &Client{
-				hostname:        tt.fields.hostname,
-				httpClient:      tt.fields.httpClient,
-				basicAuthString: tt.fields.basicAuthString,
-			}
 			var idInt int
 			_, cErr := strconv.Atoi(tt.args.id.(string))
-			var got *CertStoreContainer
+			var got *api.CertStoreContainer
 			var err error
 			if cErr == nil {
 				idInt, _ = strconv.Atoi(tt.args.id.(string))
@@ -127,48 +102,31 @@ func TestClient_GetStoreContainer(t *testing.T) {
 }
 
 func TestClient_GetStoreContainers(t *testing.T) {
-	log.SetOutput(ioutil.Discard)
-	kfClient, _ := initClient()
-
-	type fields struct {
-		hostname        string
-		httpClient      *http.Client
-		basicAuthString string
+	log.SetOutput(io.Discard)
+	log.SetOutput(io.Discard)
+	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	if kfcErr != nil {
+		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
+		return
 	}
+
+	type fields struct{}
 	tests := []struct {
 		name    string
 		fields  fields
-		want    *[]CertStoreContainer
+		want    *[]api.CertStoreContainer
 		wantErr bool
 	}{
 		{
-			name: "List store containers",
-			fields: fields{
-				hostname:        kfClient.hostname,
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			},
-			want:    &[]CertStoreContainer{},
+			name:    "List store containers",
+			fields:  fields{},
+			want:    &[]api.CertStoreContainer{},
 			wantErr: false,
-		},
-		{
-			name: "List store containers failure",
-			fields: fields{
-				hostname:        "",
-				httpClient:      kfClient.httpClient,
-				basicAuthString: kfClient.basicAuthString,
-			},
-			want:    &[]CertStoreContainer{},
-			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &Client{
-				hostname:        tt.fields.hostname,
-				httpClient:      tt.fields.httpClient,
-				basicAuthString: tt.fields.basicAuthString,
-			}
+
 			got, err := c.GetStoreContainers()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetStoreContainers() error = %v, wantErr %v", err, tt.wantErr)
