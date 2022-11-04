@@ -161,7 +161,7 @@ func TestClient_GetCertificateStoreByID(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *GetStoreByIDResp
+		want    *GetCertificateStoreResponse
 		wantErr bool
 	}{
 		// TODO: Add test cases.

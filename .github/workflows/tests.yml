@@ -1,1 +1,2 @@
-#TODO: Implement auto tests.
+- name: GoLang Test
+  uses: n8maninger/action-golang-test@v1
