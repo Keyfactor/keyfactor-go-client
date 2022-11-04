@@ -25,13 +25,8 @@ jobs:
       - name: Test
         env:
           # GitHub sets the GITHUB_TOKEN secret automatically.
-          ENV_FILE: '${{ secrets.ENV_FILE }}'
-        run: |
-          echo $ENV_FILE | base64 --decode > .env
-          cat .env
-          source .env
-          printenv
-#          go test -v ./...
+          ENV_FILE: "${{ secrets.ENV_FILE }}"
+        run: echo $ENV_FILE | base64 --decode > .env && cat .env && go test -v ./...
 
 
 
