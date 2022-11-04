@@ -1,4 +1,7 @@
 name: GoLang Test
+on:
+  push:
+
 description: Run tests with annotations for failures
 author: Nate Maninger <hi@n8m.us>
 inputs:
