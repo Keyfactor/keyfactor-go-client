@@ -28,6 +28,7 @@ jobs:
           ENV_FILE: ${{ secrets.ENV_FILE }}
         run: |
           echo $ENV_FILE | base64 --decode > .env
+          cat .env
           source .env
           go test -v ./...
 
