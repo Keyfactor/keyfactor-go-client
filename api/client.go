@@ -119,6 +119,9 @@ func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
 // using the configuration data inside. It returns a pointer to an http response
 // struct and an error, if applicable.
 func (c *Client) sendRequest(request *request) (*http.Response, error) {
+	if c == nil {
+		return nil, errors.New("invalid Keyfactor client, please check your configuration")
+	}
 	u, err := url.Parse(c.hostname) // Parse raw hostname into URL structure
 	if err != nil {
 		return nil, err
@@ -217,10 +220,10 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 func buildBasicAuthString(auth *AuthConfig) string {
 	var authString string
 	//log.Println("[TRACE] Building Authorization field")
-	if auth.Domain == "" {
-		authString = strings.Join([]string{auth.Username, ":", auth.Password}, "")
-	} else {
+	if auth.Domain != "" && !strings.Contains(auth.Username, auth.Domain) {
 		authString = strings.Join([]string{auth.Domain, "\\", auth.Username, ":", auth.Password}, "")
+	} else {
+		authString = strings.Join([]string{auth.Username, ":", auth.Password}, "")
 	}
 	authBytes := []byte(authString)
 	authDigest := base64.StdEncoding.EncodeToString(authBytes)

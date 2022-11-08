@@ -22,6 +22,7 @@ func TestClient_ApproveAgent(t *testing.T) {
 	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
 	agentID := os.Getenv("TEST_KEYFACTOR_AGENT_ID")
 	agentClientName := os.Getenv("TEST_KEYFACTOR_AGENT_NAME")
+
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return

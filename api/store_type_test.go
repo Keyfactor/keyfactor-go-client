@@ -197,6 +197,7 @@ func TestClient_DeleteCertificateStoreType(t *testing.T) {
 	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
+		return
 	}
 
 	tests := []storeTypeTest{
@@ -221,7 +222,10 @@ func TestClient_DeleteCertificateStoreType(t *testing.T) {
 			},
 		},
 	}
-	runStoreTypeTests(t, tests, c)
+	if c != nil {
+		runStoreTypeTests(t, tests, c)
+	}
+
 }
 
 func TestClient_GetCertificateStoreType(t *testing.T) {
@@ -229,6 +233,7 @@ func TestClient_GetCertificateStoreType(t *testing.T) {
 	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
+		return
 	}
 	var tests = []storeTypeTest{
 		{
@@ -271,6 +276,7 @@ func TestClient_ListCertificateStoreTypes(t *testing.T) {
 	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
+		return
 	}
 	tests := []storeTypeTest{
 		{
@@ -293,6 +299,7 @@ func TestClient_UpdateStoreType(t *testing.T) {
 	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
+		return
 	}
 	updatedStoreType := *testStoreType
 	updatedStoreType.Name = "TestStoreType2"
