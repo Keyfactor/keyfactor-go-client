@@ -1,5 +1,5 @@
-# Keyfactor Command Go Client SDK
-Client SDK in Golang for the Keyfactor Command Web API
+# Keyfactor Command Go Client
+The client is a Golang module for the Keyfactor Command Web API
 
 ### Usage
 This module's primary use is as a client to connect to Keyfactor Command using the Command API. 

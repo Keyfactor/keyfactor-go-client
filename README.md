@@ -1,6 +1,6 @@
-# Keyfactor Command Golang SDK
+# Keyfactor Command Golang Client
 
-The Keyfactor Command Golang SDK is a Go module that provides abstracted methods of interacting with the Keyfactor API. The primary supported functionality is the creation and modification of SSL/TLS certificates, updating certificate metadata, and creating certificate stores.
+The Keyfactor Command Golang Client is a Go module that provides abstracted methods of interacting with the Keyfactor API. The primary supported functionality is the creation and modification of SSL/TLS certificates, updating certificate metadata, and creating certificate stores.
 
 #### Integration status: Pilot - Ready for use in test environments. Not for use in production.
 
@@ -10,9 +10,9 @@ This API client allows for programmatic management of Keyfactor resources.
 
 
 
-## Support for Keyfactor Command Golang SDK
+## Support for Keyfactor Command Golang Client
 
-Keyfactor Command Golang SDK is open source and there is **no SLA** for this tool/library/client. Keyfactor will address issues as resources become available. Keyfactor customers may request escalation by opening up a support ticket through their Keyfactor representative.
+Keyfactor Command Golang Client is open source and there is **no SLA** for this tool/library/client. Keyfactor will address issues as resources become available. Keyfactor customers may request escalation by opening up a support ticket through their Keyfactor representative.
 
 ###### To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
 ___
@@ -20,8 +20,8 @@ ___
 
 
 
-# Keyfactor Command Go Client SDK
-Client SDK in Golang for the Keyfactor Command Web API
+# Keyfactor Command Go Client
+Client in Golang for the Keyfactor Command Web API
 
 ### Usage
 This module's primary use is as a client to connect to Keyfactor Command using the Command API. 

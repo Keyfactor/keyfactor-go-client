@@ -1,10 +1,10 @@
 {
   "$schema": "https://keyfactor.github.io/integration-manifest-schema.json",
   "integration_type": "api-client",
-  "name": "Keyfactor Command Golang SDK",
+  "name": "Keyfactor Command Golang Client",
   "status": "pilot",
   "link_github": false,
   "update_catalog": false,
   "support_level": "kf-community",
-  "description": "The Keyfactor Command Golang SDK is a Go module that provides abstracted methods of interacting with the Keyfactor API. The primary supported functionality is the creation and modification of SSL/TLS certificates, updating certificate metadata, and creating certificate stores."
+  "description": "The Keyfactor Command Golang Client is a Go module that provides abstracted methods of interacting with the Keyfactor API. The primary supported functionality is the creation and modification of SSL/TLS certificates, updating certificate metadata, and creating certificate stores."
 }
