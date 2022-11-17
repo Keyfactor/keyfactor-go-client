@@ -10,9 +10,17 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 	"time"
+)
+
+var (
+	EnvCommandHostname = "KEYFACTOR_HOSTNAME"
+	EnvCommandUsername = "KEYFACTOR_USERNAME"
+	EnvCommandPassword = "KEYFACTOR_PASSWORD"
+	EnvCommandDomain   = "KEYFACTOR_DOMAIN"
 )
 
 type Client struct {
@@ -42,17 +50,40 @@ func NewKeyfactorClient(auth *AuthConfig) (*Client, error) {
 	return c, nil
 }
 
-// validateAuthConfig ensures that the required fields for the creation of a new Keyfactor client struct were passed
-// to the NewKeyfactorClient method. In the future, this method will be updated to ask Keyfactor for session token.
+// loginToKeyfactor is a helper function that creates a new Keyfactor client instance. A configured Client is returned
+// with methods used to interact with Keyfactor.
 func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
 	if auth.Hostname == "" {
-		return nil, errors.New("keyfactor hostname required for creation of new client")
+		envHostname := os.Getenv(EnvCommandHostname)
+		if envHostname != "" {
+			auth.Hostname = envHostname
+		} else {
+			return nil, fmt.Errorf("%s is required", EnvCommandHostname)
+		}
 	}
 	if auth.Username == "" {
-		return nil, errors.New("keyfactor username required for creation of new client")
+		envUsername := os.Getenv(EnvCommandUsername)
+		if envUsername != "" {
+			envDomain := os.Getenv(EnvCommandDomain)
+			if envDomain != "" && auth.Domain == "" && !strings.Contains(envUsername, envDomain) {
+				auth.Domain = envDomain
+			}
+			if auth.Domain != "" && !strings.Contains(envUsername, envDomain) {
+				auth.Username = auth.Domain + "\\" + envUsername
+			} else {
+				auth.Username = envUsername
+			}
+		} else {
+			return nil, fmt.Errorf("%s is required", EnvCommandUsername)
+		}
 	}
 	if auth.Password == "" {
-		return nil, errors.New("keyfactor password required for creation of new client")
+		envPassword := os.Getenv(EnvCommandPassword)
+		if envPassword != "" {
+			auth.Password = envPassword
+		} else {
+			return nil, fmt.Errorf("%s is required", EnvCommandPassword)
+		}
 	}
 
 	headers := &apiHeaders{
@@ -84,10 +115,13 @@ func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
 	return c, nil
 }
 
-// SendRequest takes an APIRequest struct as input and generates an API call
+// sendRequest takes an APIRequest struct as input and generates an API call
 // using the configuration data inside. It returns a pointer to an http response
 // struct and an error, if applicable.
 func (c *Client) sendRequest(request *request) (*http.Response, error) {
+	if c == nil {
+		return nil, errors.New("invalid Keyfactor client, please check your configuration")
+	}
 	u, err := url.Parse(c.hostname) // Parse raw hostname into URL structure
 	if err != nil {
 		return nil, err
@@ -111,9 +145,9 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	keyfactorPath := u.String() // Convert absolute path to string
 
 	log.Printf("[INFO] Preparing a %s request to path '%s'", request.Method, keyfactorPath)
-	jsonByes, err := json.Marshal(request.Payload)
-	if err != nil {
-		return nil, err
+	jsonByes, mErr := json.Marshal(request.Payload)
+	if mErr != nil {
+		return nil, mErr
 	}
 	//log.Printf("[TRACE] Request body: %s", jsonByes)
 
@@ -140,18 +174,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		log.Printf("[DEBUG] %s succeeded with response code %d", request.Method, resp.StatusCode)
 		return resp, nil
 	} else if resp.StatusCode == http.StatusNotFound {
-		var errorMessage interface{} // Decode JSON body to handle issue
-		// First, try to serialize the response into an interface, but catch the exception.
-		defer func() {
-			if nfErr := recover(); nfErr != nil {
-				stringMessage = "404 - file or directory not found"
-			}
-		}()
-		err = json.NewDecoder(resp.Body).Decode(&errorMessage)
-		if err != nil {
-			return nil, err
-		}
-		stringMessage = fmt.Sprintf("%v", errorMessage)
+		stringMessage = fmt.Sprintf("Error %d - the requested resource was not found. Please check the request and try again.", resp.StatusCode)
 		log.Printf("[ERROR] Call to %s returned status %d. %s", keyfactorPath, resp.StatusCode, stringMessage)
 		return nil, errors.New(stringMessage)
 	} else if resp.StatusCode == http.StatusUnauthorized {
@@ -159,7 +182,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		if derr != nil {
 			return nil, derr
 		}
-		err = errors.New("401 - Unauthorized: Access is denied due to invalid credentials.")
+		err = errors.New("401 - Unauthorized: Access is denied due to invalid credentials")
 		return nil, err
 	} else {
 		var errorMessage map[string]interface{} // Decode JSON body to handle issue
@@ -170,17 +193,24 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 			if derr != nil {
 				return nil, derr
 			}
-			uerr := errors.New(fmt.Sprintf("%s - Unknown error connecting to Keyfactor %s, please check your connection.", resp.StatusCode, endpoint))
+			uerr := errors.New(fmt.Sprintf("%d - Unknown error connecting to Keyfactor %s, please check your connection.", resp.StatusCode, endpoint))
 			return nil, uerr
 		}
 
 		log.Printf("[DEBUG] Request failed with code %d and message %v", resp.StatusCode, errorMessage)
-		var fOps []string
-		for _, v := range errorMessage["FailedOperations"].([]interface{}) {
-			fOps = append(fOps, fmt.Sprintf("%s", v.(map[string]interface{})["Reason"]))
+		_, hasFailedOps := errorMessage["FailedOperations"]
+		if hasFailedOps {
+			var fOps []string
+			for _, v := range errorMessage["FailedOperations"].([]interface{}) {
+				fOps = append(fOps, fmt.Sprintf("%s", v.(map[string]interface{})["Reason"]))
+			}
+			fOpsStr := strings.Join(fOps, ", ")
+			stringMessage += fmt.Sprintf("%s. %s", errorMessage["Message"], fOpsStr)
 		}
-		fOpsStr := strings.Join(fOps, ", ")
-		stringMessage = fmt.Sprintf("%s. %s", errorMessage["Message"], fOpsStr)
+		_, hasMsg := errorMessage["Message"]
+		if hasMsg {
+			stringMessage += fmt.Sprintf("%s", errorMessage["Message"])
+		}
 		return nil, errors.New(stringMessage)
 	}
 }
@@ -190,10 +220,10 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 func buildBasicAuthString(auth *AuthConfig) string {
 	var authString string
 	//log.Println("[TRACE] Building Authorization field")
-	if auth.Domain == "" {
-		authString = strings.Join([]string{auth.Username, ":", auth.Password}, "")
-	} else {
+	if auth.Domain != "" && !strings.Contains(auth.Username, auth.Domain) {
 		authString = strings.Join([]string{auth.Domain, "\\", auth.Username, ":", auth.Password}, "")
+	} else {
+		authString = strings.Join([]string{auth.Username, ":", auth.Password}, "")
 	}
 	authBytes := []byte(authString)
 	authDigest := base64.StdEncoding.EncodeToString(authBytes)

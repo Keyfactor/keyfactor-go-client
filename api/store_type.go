@@ -181,8 +181,8 @@ func (c *Client) UpdateStoreType(ca *CertificateStoreType) (*CertificateStoreTyp
 	}
 
 	keyfactorAPIStruct := &request{
-		Method:   "POST",
-		Endpoint: "CertificateStoreType",
+		Method:   "PUT",
+		Endpoint: "CertificateStoreTypes",
 		Headers:  headers,
 		Payload:  &ca,
 	}

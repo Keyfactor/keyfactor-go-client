@@ -190,7 +190,7 @@ func (c *Client) ListCertificateStores() (*[]GetCertificateStoreResponse, error)
 // GetCertificateStoreByID takes arguments for a certificate store ID to facilitate a call to Keyfactor
 // that retrieves a certificate store context. Only the store ID is required. A pointer to a GetStoreByIDResp struct
 // is returned that contains information on the certificate store.
-func (c *Client) GetCertificateStoreByID(storeId string) (*GetStoreByIDResp, error) {
+func (c *Client) GetCertificateStoreByID(storeId string) (*GetCertificateStoreResponse, error) {
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -212,12 +212,75 @@ func (c *Client) GetCertificateStoreByID(storeId string) (*GetStoreByIDResp, err
 		return nil, err
 	}
 
-	jsonResp := &GetStoreByIDResp{}
+	jsonResp := &GetCertificateStoreResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
 		return nil, err
 	}
 	jsonResp.Properties = unmarshalPropertiesString(jsonResp.PropertiesString)
+	return jsonResp, nil
+}
+
+// GetCertificateStoreByID takes arguments for a certificate store ID to facilitate a call to Keyfactor
+// that retrieves a certificate store context. Only the store ID is required. A pointer to a GetStoreByIDResp struct
+// is returned that contains information on the certificate store.
+func (c *Client) GetCertificateStoreByContainerID(containerID interface{}) (*[]GetCertificateStoreResponse, error) {
+
+	query := apiQuery{
+		Query: []StringTuple{},
+	}
+	switch containerID.(type) {
+	case int:
+		query.Query = append(query.Query, StringTuple{
+			"certificateStoreQuery.queryString", fmt.Sprintf(`ContainerId -eq "%d"`, containerID),
+		})
+	case string:
+		ct, ctErr := c.GetStoreContainer(containerID.(string))
+		if ctErr != nil {
+			return nil, ctErr
+		}
+		query.Query = append(query.Query, StringTuple{
+			"certificateStoreQuery.queryString", fmt.Sprintf(`ContainerId -eq %d`, *ct.Id),
+		})
+	}
+
+	// Set Keyfactor-specific headers
+	headers := &apiHeaders{
+		Headers: []StringTuple{
+			{"x-keyfactor-api-version", "1"},
+			{"x-keyfactor-requested-with", "APIClient"},
+		},
+	}
+
+	endpoint := "CertificateStores"
+
+	var keyfactorAPIStruct *request
+	if query.Query != nil {
+		keyfactorAPIStruct = &request{
+			Method:   "GET",
+			Endpoint: endpoint,
+			Headers:  headers,
+			Query:    &query,
+		}
+	} else {
+		keyfactorAPIStruct = &request{
+			Method:   "GET",
+			Endpoint: endpoint,
+			Headers:  headers,
+		}
+	}
+
+	resp, err := c.sendRequest(keyfactorAPIStruct)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonResp := &[]GetCertificateStoreResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	if err != nil {
+		return nil, err
+	}
+	//jsonResp.Properties = unmarshalPropertiesString(jsonResp.PropertiesString)
 	return jsonResp, nil
 }
 

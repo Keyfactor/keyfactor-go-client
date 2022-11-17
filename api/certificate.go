@@ -20,7 +20,7 @@ func (c *Client) EnrollPFX(ea *EnrollPFXFctArgs) (*EnrollResponse, error) {
 	log.Println("[INFO] Enrolling PFX certificate with Keyfactor")
 
 	/* Ensure required inputs exist */
-	missingFields := []string{}
+	var missingFields []string
 
 	// TODO: Probably a better way to express these if blocks
 	if ea.Template == "" {
@@ -387,6 +387,56 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 		return &lCerts[0], nil
 	}
 	return &jsonResp, err
+}
+
+func (c *Client) ListCertificates(q map[string]string) ([]GetCertificateResponse, error) {
+	// Set Keyfactor-specific headers
+	headers := &apiHeaders{
+		Headers: []StringTuple{
+			{"x-keyfactor-api-version", "1"},
+			{"x-keyfactor-requested-with", "APIClient"},
+		},
+	}
+
+	// Construct URL query for /Certificates/{ID} requests
+	query := apiQuery{
+		Query: []StringTuple{},
+	}
+	query.Query = append(query.Query, StringTuple{
+		"includeLocations", "true",
+	})
+	searchCollection, ok := q["collection"]
+	if ok {
+		query.Query = append(query.Query, StringTuple{
+			"collectionId", searchCollection,
+		})
+	}
+	subjectName, ok := q["subject"]
+	if ok {
+		query.Query = append(query.Query, StringTuple{
+			"pq.queryString", fmt.Sprintf(`IssuedCN -eq "%s"`, subjectName),
+		})
+	}
+
+	keyfactorAPIStruct := &request{
+		Method:   "GET",
+		Endpoint: "Certificates",
+		Headers:  headers,
+		Query:    &query,
+		Payload:  nil,
+	}
+
+	resp, err := c.sendRequest(keyfactorAPIStruct)
+	if err != nil {
+		return nil, err
+	}
+
+	var jsonResp []GetCertificateResponse
+	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	if err != nil {
+		return nil, err
+	}
+	return jsonResp, err
 }
 
 // RecoverCertificate takes arguments for RecoverCertArgs to facilitate a call to Keyfactor

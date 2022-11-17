@@ -127,12 +127,11 @@ type CertStoreTypeResponse struct {
 	EnrollmentJobType  string   `json:"EnrollmentJobType"`
 }
 
-// GetStoreByIDResp contains the response elements returned from the GetCertificateStoreByID method.
-type GetStoreByIDResp struct {
+type GetCertificateStoreResponse struct {
 	Id                      string              `json:"Id,omitempty"`
 	ContainerId             int                 `json:"ContainerId,omitempty"`
 	ClientMachine           string              `json:"ClientMachine,omitempty"`
-	StorePath               string              `json:"StorePath,omitempty"`
+	StorePath               string              `json:"Storepath,omitempty"`
 	CertStoreInventoryJobId string              `json:"CertStoreInventoryJobId,omitempty"`
 	CertStoreType           int                 `json:"CertStoreType,omitempty"`
 	Approved                bool                `json:"Approved,omitempty"`
@@ -237,25 +236,6 @@ type CertificateStore struct {
 
 	// A Boolean that sets whether to include the private key of the certificate in the certificate store if private keys are optional for the given certificate store (true) or not (false). The default is false.
 	IncludePrivateKey bool `json:"IncludePrivateKey,omitempty"`
-}
-
-type GetCertificateStoreResponse struct {
-	Id                      string              `json:"Id"`
-	ContainerId             int                 `json:"ContainerId"`
-	ClientMachine           string              `json:"ClientMachine"`
-	Storepath               string              `json:"Storepath"`
-	CertStoreInventoryJobId string              `json:"CertStoreInventoryJobId"`
-	CertStoreType           int                 `json:"cert_store_type"`
-	Approved                bool                `json:"Approved"`
-	CreateIfMissing         bool                `json:"CreateIfMissing"`
-	PropertiesString        string              `json:"Properties"`
-	AgentId                 string              `json:"AgentId"`
-	AgentAssigned           bool                `json:"AgentAssigned"`
-	ContainerName           string              `json:"ContainerName"`
-	InventorySchedule       InventorySchedule   `json:"InventorySchedule"`
-	ReenrollmentStatus      ReEnrollmnentConfig `json:"ReenrollmentStatus"`
-	SetNewPasswordAllowed   bool                `json:"SetNewPasswordAllowed"`
-	Password                string              `json:"Password"`
 }
 
 type ListCertificateStoresResponse struct {

@@ -1,25 +1,30 @@
-# Keyfactor Go Client
+# Keyfactor Command Golang Client
 
+The Keyfactor Command Golang Client is a Go module that provides abstracted methods of interacting with the Keyfactor API. The primary supported functionality is the creation and modification of SSL/TLS certificates, updating certificate metadata, and creating certificate stores.
 
-#### Integration status: Pilot - Ready for use in test environments. Not for use in production.
+#### Integration status: Production - Ready for use in production environments.
 
 ## About the Keyfactor API Client
-The Keyfactor Go Client is a Go module that provides abstracted
-methods of interacting with the Keyfactor API. The primary supported 
-functionality is the creation and modification of SSL/TLS certificates,
-updating certificate metadata, and creating certificate stores.
 
-## Support for Keyfactor Go Client
+This API client allows for programmatic management of Keyfactor resources.
 
-Keyfactor Go Client is open source and there is **no SLA** for this tool/library/client.
-Keyfactor will address issues as resources become available. Keyfactor customers may request escalation by opening up a
-support ticket through their Keyfactor representative.
+
+
+## Support for Keyfactor Command Golang Client
+
+Keyfactor Command Golang Client is open source and there is **no SLA** for this tool/library/client. Keyfactor will address issues as resources become available. Keyfactor customers may request escalation by opening up a support ticket through their Keyfactor representative.
+
+###### To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
+___
+
+
+
+
+# Keyfactor Command Go Client
+The client is a Golang module for the Keyfactor Command Web API
 
 ### Usage
-This module's primary use is as a client to connect to Keyfactor using the
-Keyfactor API. For example, if a plugin for
-a 3rd party tool such as HashiCorp Terraform is in development, this Go
-module can be imported and used to facilitate a connection to Keyfactor.
+This module's primary use is as a client to connect to Keyfactor Command using the Command API. 
 
 To use this module, include
 ```github.com/Keyfactor/keyfactor-go-client/pkg/keyfactor```, add at least 
@@ -28,11 +33,11 @@ one invocation to a function/structure used by the module, then run
 
 #### Example
 Let's suppose that a Go project needs to download a certificate from Keyfactor.
-The Keyfactor Go Client must be initialized by creating and populating an
-```AuthConfig``` structure, and passing it to ```NewKeyfactorClient```. This
+The Keyfactor Command Go Client must be initialized by creating and populating an
+`AuthConfig` structure, and passing it to `NewKeyfactorClient`. This
 function ensures that the provided configuration data is valid by making a test
-call to Keyfactor. If no error occurs, a ```Client``` structure is returned with
-associated methods for interacting with Keyfactor.
+call to Keyfactor. If no error occurs, a `Client` structure is returned with
+associated methods for interacting with Keyfactor Command.
 ```go
 // Step 1: Create authentication structure
 clientConfig := &keyfactor.AuthConfig{
@@ -45,13 +50,11 @@ if err != nil {
     log.Fatal(err)
 }
 ```
-* Note: As of the time of writing, a better alternative to ```Basic``` API authentication
-  is known for interfacing with the Keyfactor API.
 
-Next, an ```arguments``` structure for the specific API method must be created
-containing (at least) the required arguments for the call to Keyfactor. In this
+Next, an `arguments` structure for the specific API method must be created
+containing (at least) the required arguments for the call to Keyfactor Command. In this
 example, a certificate is being downloaded. In this case, we're assuming that
-the Keyfactor certificate ID is known. Other options can be specified, such as
+the Keyfactor Command certificate ID is known. Other options can be specified, such as
 the option to include metadata or deployed locations data. 
 ```go
 // Step 2: Create arguments structure
@@ -62,9 +65,9 @@ downloadArgs := &keyfactor.DownloadCertArgs{
 }
 ```
 
-Finally, call the appropriate ```keyfactor``` method for the required
-task. In this case, the ```DownloadCertificate``` method is used. As of the time of writing,
-all functions expect (unless otherwise stated) require two arguments as pointers to an ```APIClient```
+Finally, call the appropriate `keyfactor` method for the required
+task. In this case, the `DownloadCertificate` method is used. All functions expect (unless otherwise stated) require two 
+arguments as pointers to an `APIClient`
 structure and an arguments structure. 
 ```go
 // Step 3: Call associated function
