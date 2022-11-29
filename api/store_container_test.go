@@ -16,8 +16,8 @@ func TestClient_GetStoreContainer(t *testing.T) {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
 	}
-	containerID := os.Getenv("TEST_KEYFACTOR_STORE_CONTAINER_ID")
-	containerName := os.Getenv("TEST_KEYFACTOR_STORE_CONTAINER_NAME")
+	containerID := os.Getenv("TEST_KEYFACTOR_STORE_CONTAINER_ID1")
+	containerName := os.Getenv("TEST_KEYFACTOR_STORE_CONTAINER_NAME1")
 
 	type fields struct{}
 	type args struct {
