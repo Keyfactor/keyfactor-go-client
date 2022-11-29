@@ -405,16 +405,22 @@ func (c *Client) ListCertificates(q map[string]string) ([]GetCertificateResponse
 	query.Query = append(query.Query, StringTuple{
 		"includeLocations", "true",
 	})
-	searchCollection, ok := q["collection"]
-	if ok {
+	searchCollection, cOk := q["collection"]
+	if cOk {
 		query.Query = append(query.Query, StringTuple{
 			"collectionId", searchCollection,
 		})
 	}
-	subjectName, ok := q["subject"]
-	if ok {
+	subjectName, sOk := q["subject"]
+	if sOk {
 		query.Query = append(query.Query, StringTuple{
 			"pq.queryString", fmt.Sprintf(`IssuedCN -eq "%s"`, subjectName),
+		})
+	}
+	tp, tpOk := q["thumbprint"]
+	if tpOk {
+		query.Query = append(query.Query, StringTuple{
+			"pq.queryString", fmt.Sprintf(`Thumbprint -eq "%s"`, tp),
 		})
 	}
 
@@ -424,6 +430,12 @@ func (c *Client) ListCertificates(q map[string]string) ([]GetCertificateResponse
 		Headers:  headers,
 		Query:    &query,
 		Payload:  nil,
+	}
+
+	cid, cidOk := q["id"]
+	if cidOk {
+		keyfactorAPIStruct.Endpoint = fmt.Sprintf("Certificates/%s", cid)
+		keyfactorAPIStruct.Query = nil
 	}
 
 	resp, err := c.sendRequest(keyfactorAPIStruct)

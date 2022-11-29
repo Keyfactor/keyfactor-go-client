@@ -234,3 +234,50 @@ func buildBasicAuthString(auth *AuthConfig) string {
 func getTimestamp() string {
 	return time.Now().UTC().Format(time.RFC3339)
 }
+
+func buildQuery(params map[string]interface{}, filterName string) (apiQuery, error) {
+	query := apiQuery{
+		Query: []StringTuple{},
+	}
+	var qStr string
+	for k, v := range params {
+		switch v.(type) {
+		case []string:
+			var nestedQuery []string
+			for _, val := range v.([]string) {
+				if val != "" {
+					nestedQuery = append(nestedQuery, fmt.Sprintf("%s -eq \"%s\"", k, val))
+				}
+			}
+			if v != nil && len(v.([]string)) > 0 {
+				if qStr != "" {
+					qStr += fmt.Sprintf("AND (%s)", strings.Join(nestedQuery, " OR "))
+				} else {
+					qStr += fmt.Sprintf("(%s)", strings.Join(nestedQuery, " OR "))
+				}
+			}
+
+		case string:
+			if qStr != "" {
+				qStr += fmt.Sprintf("AND %s -eq \"%s\"", k, v.(string))
+			} else if v != "" {
+				qStr += fmt.Sprintf("(%s -eq \"%s\")", k, v.(string))
+			}
+		case int:
+			if qStr != "" {
+				qStr += fmt.Sprintf("AND %s -eq %d", k, v.(int))
+			} else {
+				qStr += fmt.Sprintf("(%s -eq %d)", k, v.(int))
+			}
+		case bool:
+			if qStr != "" {
+				qStr += fmt.Sprintf("AND %s -eq %t", k, v.(bool))
+			} else {
+				qStr += fmt.Sprintf("(%s -eq %t)", k, v.(bool))
+			}
+		}
+
+	}
+	query.Query = append(query.Query, StringTuple{filterName, qStr})
+	return query, nil
+}

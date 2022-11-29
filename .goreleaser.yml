@@ -78,6 +78,9 @@ changelog:
     - title: 'Bug fixes'
       regexp: "^.*fix[(\\w)]*:+.*$"
       order: 200
+    - title: 'Breaking Changes'
+      regexp: "^.*break[(\\w)]*:+.*$"
+      order: 1
     - title: 'Documentation updates'
       regexp: "^.*docs[(\\w)]*:+.*$"
       order: 400
