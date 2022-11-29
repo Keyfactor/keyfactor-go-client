@@ -169,13 +169,25 @@ func (c *Client) ListCertificateStores(params *map[string]interface{}) (*[]GetCe
 	if params != nil {
 		sId, ok := (*params)["Id"]
 		if ok {
-			var resp, err = c.GetCertificateStoreByID(fmt.Sprintf("%s", sId.([]string)[0]))
-			if err != nil {
-				return nil, err
+			switch sId.(type) {
+			case string:
+				var resp, err = c.GetCertificateStoreByID(fmt.Sprintf("%s", sId.(string)))
+				if err != nil {
+					return nil, err
+				}
+				return &[]GetCertificateStoreResponse{*resp}, nil
+			case []string:
+				// Only single ID lookup is supported
+				lookup := sId.([]string)
+				if len(lookup) > 0 {
+					var resp, err = c.GetCertificateStoreByID(fmt.Sprintf("%s", lookup[0]))
+					if err != nil {
+						return nil, err
+					}
+					return &[]GetCertificateStoreResponse{*resp}, nil
+				}
 			}
-			return &[]GetCertificateStoreResponse{*resp}, nil
 		}
-
 		query, _ = buildQuery(*params, "certificateStoreQuery.queryString")
 	}
 
