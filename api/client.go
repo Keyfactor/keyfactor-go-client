@@ -2,15 +2,16 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Keyfactor/keyfactor-go-client-sdk"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
 	"path"
 	"strings"
 	"time"
@@ -53,61 +54,79 @@ func NewKeyfactorClient(auth *AuthConfig) (*Client, error) {
 // loginToKeyfactor is a helper function that creates a new Keyfactor client instance. A configured Client is returned
 // with methods used to interact with Keyfactor.
 func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
-	if auth.Hostname == "" {
-		envHostname := os.Getenv(EnvCommandHostname)
-		if envHostname != "" {
-			auth.Hostname = envHostname
-		} else {
-			return nil, fmt.Errorf("%s is required", EnvCommandHostname)
-		}
-	}
-	if auth.Username == "" {
-		envUsername := os.Getenv(EnvCommandUsername)
-		if envUsername != "" {
-			envDomain := os.Getenv(EnvCommandDomain)
-			if envDomain != "" && auth.Domain == "" && !strings.Contains(envUsername, envDomain) {
-				auth.Domain = envDomain
-			}
-			if auth.Domain != "" && !strings.Contains(envUsername, envDomain) {
-				auth.Username = auth.Domain + "\\" + envUsername
-			} else {
-				auth.Username = envUsername
-			}
-		} else {
-			return nil, fmt.Errorf("%s is required", EnvCommandUsername)
-		}
-	}
-	if auth.Password == "" {
-		envPassword := os.Getenv(EnvCommandPassword)
-		if envPassword != "" {
-			auth.Password = envPassword
-		} else {
-			return nil, fmt.Errorf("%s is required", EnvCommandPassword)
-		}
-	}
+	//if auth.Hostname == "" {
+	//	envHostname := os.Getenv(EnvCommandHostname)
+	//	if envHostname != "" {
+	//		auth.Hostname = envHostname
+	//	} else {
+	//		return nil, fmt.Errorf("%s is required", EnvCommandHostname)
+	//	}
+	//}
+	//if auth.Username == "" {
+	//	envUsername := os.Getenv(EnvCommandUsername)
+	//	if envUsername != "" {
+	//		envDomain := os.Getenv(EnvCommandDomain)
+	//		if envDomain != "" && auth.Domain == "" && !strings.Contains(envUsername, envDomain) {
+	//			auth.Domain = envDomain
+	//		}
+	//		if auth.Domain != "" && !strings.Contains(envUsername, envDomain) {
+	//			auth.Username = auth.Domain + "\\" + envUsername
+	//		} else {
+	//			auth.Username = envUsername
+	//		}
+	//	} else {
+	//		return nil, fmt.Errorf("%s is required", EnvCommandUsername)
+	//	}
+	//}
+	//if auth.Password == "" {
+	//	envPassword := os.Getenv(EnvCommandPassword)
+	//	if envPassword != "" {
+	//		auth.Password = envPassword
+	//	} else {
+	//		return nil, fmt.Errorf("%s is required", EnvCommandPassword)
+	//	}
+	//}
+	//
+	//headers := &apiHeaders{
+	//	Headers: []StringTuple{
+	//		{"x-keyfactor-api-version", "1"},
+	//		{"x-keyfactor-requested-with", "APIClient"},
+	//	},
+	//}
+	//
+	//keyfactorAPIStruct := &request{
+	//	Method:   "GET",
+	//	Endpoint: "Status/Endpoints",
+	//	Headers:  headers,
+	//}
+	//
+	//c := &Client{
+	//	hostname:        auth.Hostname,
+	//	httpClient:      &http.Client{Timeout: 10 * time.Second},
+	//	basicAuthString: buildBasicAuthString(auth),
+	//}
+	//
+	//_, err := c.sendRequest(keyfactorAPIStruct)
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: "Status/Endpoints",
-		Headers:  headers,
+	configuration := keyfactor_command_client_api.NewConfiguration()
+	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+
+	_, _, err := apiClient.StatusApi.StatusGetEndpoints(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
+	if err != nil {
+		return nil, err
 	}
 
 	c := &Client{
 		hostname:        auth.Hostname,
 		httpClient:      &http.Client{Timeout: 10 * time.Second},
 		basicAuthString: buildBasicAuthString(auth),
-	}
-
-	_, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return nil, err
 	}
 
 	log.Printf("[INFO] Successfully logged into Keyfactor at host %s", c.hostname)
