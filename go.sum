@@ -2,8 +2,6 @@ github.com/Keyfactor/keyfactor-go-client-sdk v0.0.0-20230124033418-e4bb88c78570 
 github.com/Keyfactor/keyfactor-go-client-sdk v0.0.0-20230124033418-e4bb88c78570/go.mod h1:vDv1/UDRv3BQHyThh1ibGlOpxsN73FK9KkLVSPnWUFA=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/fatih/structs v1.1.0 h1:Q7juDM0QtcnhCpeyLGQKyg4TOIghuNXrkL32pHAUMxo=
-github.com/fatih/structs v1.1.0/go.mod h1:9NiDSp5zOcgEDl+j00MP/WkGVPOlPRLejGD8Ga6PJ7M=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/spbsoluble/go-pkcs12 v0.3.1 h1:3DWrjdP3HOeYW6aTUSO9pqqAgRL8VKZLqvD5PGkLVMo=
 github.com/spbsoluble/go-pkcs12 v0.3.1/go.mod h1:MX7DY37hx8xHKEMuJ16EMaVT8sT+4KPqK4gTTLFGcH0=
