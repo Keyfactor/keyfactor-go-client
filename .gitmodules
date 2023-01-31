@@ -1,3 +1,0 @@
-[submodule "api/keyfactor-go-client-sdk"]
-	path = api/keyfactor-go-client-sdk
-	url = https://github.com/Keyfactor/keyfactor-go-client-sdk.git
