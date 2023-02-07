@@ -9,6 +9,41 @@ import (
 	"log"
 )
 
+//type StringInt int32
+//
+//// UnmarshalJSON create a custom unmarshal for the StringInt
+///// this helps us check the type of our value before unmarshalling it
+//
+//func (st *StringInt) UnmarshalJSON(b []byte) error {
+//	//convert the bytes into an interface
+//	//this will help us check the type of our value
+//	//if it is a string that can be converted into an int we convert it
+//	///otherwise we return an error
+//	var item interface{}
+//	if err := json.Unmarshal(b, &item); err != nil {
+//		return err
+//	}
+//	switch v := item.(type) {
+//	case int32:
+//		*st = StringInt(v)
+//	case float64:
+//		*st = StringInt(int(v))
+//	case string:
+//		///here convert the string into
+//		///an integer
+//		i, err := strconv.Atoi(v)
+//		if err != nil {
+//			///the string might not be of integer type
+//			///so return an error
+//			return err
+//
+//		}
+//		*st = StringInt(i)
+//
+//	}
+//	return nil
+//}
+
 // GetCertificateStoreType takes arguments for a certificate store type ID or name and if found will return the certificate store type
 func (c *Client) GetCertificateStoreType(id interface{}) (*CertificateStoreType, error) {
 	switch id.(type) {
@@ -120,11 +155,18 @@ func (c *Client) CreateStoreType(ca *CertificateStoreType) (*CertificateStoreTyp
 	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
 
 	var newReq keyfactor_command_client_api.KeyfactorApiModelsCertificateStoresTypesCertificateStoreTypeCreationRequest
-	jsonData, _ := json.Marshal(newReq)
+	jsonData, _ := json.Marshal(ca)
 	json.Unmarshal(jsonData, &newReq)
 
+	//if jErr != nil {
+	//	intPrivateKeyAllowed, _ := strconv.Atoi(ca.PrivateKeyAllowed)
+	//	int32PrivateKeyAllowed := int32(intPrivateKeyAllowed)
+	//	newReq.PrivateKeyAllowed = &int32PrivateKeyAllowed
+	//	log.Print(jErr)
+	//}
+	//var blah keyfactor_command_client_api.KeyfactorApiModelsCertificateStoresTypesCertificateStoreTypeResponse
 	resp, _, err := apiClient.CertificateStoreTypeApi.CertificateStoreTypeCreateCertificateStoreType(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).CertStoreType(newReq).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
-
+	fmt.Print(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +189,7 @@ func (c *Client) UpdateStoreType(ca *CertificateStoreType) (*CertificateStoreTyp
 	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
 
 	var newReq keyfactor_command_client_api.KeyfactorApiModelsCertificateStoresTypesCertificateStoreTypeUpdateRequest
-	jsonData, _ := json.Marshal(newReq)
+	jsonData, _ := json.Marshal(ca)
 	json.Unmarshal(jsonData, &newReq)
 
 	resp, _, err := apiClient.CertificateStoreTypeApi.CertificateStoreTypeUpdateCertificateStoreType(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).CertStoreType(newReq).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()

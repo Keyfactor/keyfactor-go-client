@@ -3,7 +3,7 @@ module github.com/Keyfactor/keyfactor-go-client
 go 1.18
 
 require (
-	github.com/Keyfactor/keyfactor-go-client-sdk v0.0.0-20230124033418-e4bb88c78570
+	github.com/Keyfactor/keyfactor-go-client-sdk v0.0.0-20230202220424-9f66584c7337
 	github.com/spbsoluble/go-pkcs12 v0.3.1
 	go.mozilla.org/pkcs7 v0.0.0-20210826202110-33d05740a352
 )

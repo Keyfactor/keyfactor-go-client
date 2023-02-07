@@ -26,13 +26,13 @@ func (c *Client) GetAgentList() ([]Agent, error) {
 	for i := range resp {
 		newAgent := Agent{
 			AgentId:          *resp[i].AgentId,
-			AgentPoolId:      "", //TODO
+			AgentPoolId:      "",
 			ClientMachine:    *resp[i].ClientMachine,
 			Username:         *resp[i].Username,
 			AgentPlatform:    int(*resp[i].AgentPlatform),
 			Status:           int(*resp[i].Status),
-			EnableDiscover:   true, //TODO
-			EnableMonitor:    true, //TODO
+			EnableDiscover:   false, //TODO
+			EnableMonitor:    false, //TODO
 			Version:          *resp[i].Version,
 			LastSeen:         resp[i].LastSeen.String(),
 			Thumbprint:       *resp[i].Thumbprint,
@@ -62,22 +62,20 @@ func (c *Client) GetAgent(id string) ([]Agent, error) {
 
 	revResp = []Agent{
 		{
-			AgentId:          *resp.AgentId,
-			AgentPoolId:      "", //TODO
-			ClientMachine:    *resp.ClientMachine,
-			Username:         *resp.Username,
-			AgentPlatform:    int(*resp.AgentPlatform),
-			Status:           int(*resp.Status),
-			EnableDiscover:   true, //TODO
-			EnableMonitor:    true, //TODO
-			Version:          *resp.Version,
-			LastSeen:         "",
-			Thumbprint:       *resp.Thumbprint,
-			LegacyThumbprint: *resp.LegacyThumbprint,
+			AgentId:          resp.GetAgentId(),
+			AgentPoolId:      "",
+			ClientMachine:    resp.GetClientMachine(),
+			Username:         resp.GetUsername(),
+			AgentPlatform:    int(resp.GetAgentPlatform()),
+			Status:           int(resp.GetStatus()),
+			EnableDiscover:   false, //TODO
+			EnableMonitor:    false, //TODO
+			Version:          resp.GetVersion(),
+			LastSeen:         resp.GetLastSeen().String(),
+			Thumbprint:       resp.GetThumbprint(),
+			LegacyThumbprint: resp.GetLegacyThumbprint(),
 		},
 	}
-
-	//TODO: error check
 
 	return revResp, nil
 }

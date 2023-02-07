@@ -4,6 +4,7 @@ import (
 	"github.com/Keyfactor/keyfactor-go-client/api"
 	"io"
 	"log"
+	"net/http"
 	"testing"
 )
 
@@ -22,9 +23,9 @@ type storeTypeTestArgs struct {
 	name      string
 }
 type storeTypeTestFields struct {
-	//hostname        string
-	//httpClient      *http.Client
-	//basicAuthString string
+	hostname        string
+	httpClient      *http.Client
+	basicAuthString string
 }
 type storeTypeTest struct {
 	name    string
@@ -35,9 +36,9 @@ type storeTypeTest struct {
 }
 
 var testStoreType = &api.CertificateStoreType{
-	Name:       "SampleStoreType",
-	ShortName:  "SAMPLETYPE",
-	Capability: "SAMPLETYPE",
+	Name:       "SampleStoreType13",
+	ShortName:  "SAMPTYPE13",
+	Capability: "SAMPTYPE13",
 	SupportedOperations: &api.StoreTypeSupportedOperations{
 		Add:        false,
 		Create:     false,
@@ -52,7 +53,7 @@ var testStoreType = &api.CertificateStoreType{
 		StoreRequired:  false,
 		Style:          "Default",
 	},
-	PrivateKeyAllowed:  "Forbidden",
+	PrivateKeyAllowed:  "forbidden",
 	JobProperties:      &[]string{},
 	ServerRequired:     false,
 	PowerShell:         false,
@@ -156,6 +157,7 @@ func runStoreTypeTests(t *testing.T, tests []storeTypeTest, c *api.Client) {
 	}
 }
 
+// TODO
 func TestClient_CreateStoreType(t *testing.T) {
 	log.SetOutput(io.Discard)
 	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
@@ -302,7 +304,7 @@ func TestClient_UpdateStoreType(t *testing.T) {
 		return
 	}
 	updatedStoreType := *testStoreType
-	updatedStoreType.Name = "TestStoreType2"
+	updatedStoreType.Name = "TestStoreType8"
 	updatedStoreType.PowerShell = !testStoreType.PowerShell
 
 	tests := []storeTypeTest{
