@@ -151,6 +151,7 @@ func (c *Client) DeleteCertificateStore(storeId string) error {
 
 // ListCertificateStores takes no arguments and returns a slice of CertificateStore objects
 // that represent all certificate stores associated with a Keyfactor Command instance.
+
 // TODO?
 func (c *Client) ListCertificateStores() (*[]GetCertificateStoreResponse, error) {
 	// Set Keyfactor-specific headers
@@ -161,12 +162,41 @@ func (c *Client) ListCertificateStores() (*[]GetCertificateStoreResponse, error)
 		},
 	}
 
+	query := apiQuery{
+		Query: []StringTuple{},
+	}
+	if params != nil {
+		sId, ok := (*params)["Id"]
+		if ok {
+			switch sId.(type) {
+			case string:
+				var resp, err = c.GetCertificateStoreByID(fmt.Sprintf("%s", sId.(string)))
+				if err != nil {
+					return nil, err
+				}
+				return &[]GetCertificateStoreResponse{*resp}, nil
+			case []string:
+				// Only single ID lookup is supported
+				lookup := sId.([]string)
+				if len(lookup) > 0 {
+					var resp, err = c.GetCertificateStoreByID(fmt.Sprintf("%s", lookup[0]))
+					if err != nil {
+						return nil, err
+					}
+					return &[]GetCertificateStoreResponse{*resp}, nil
+				}
+			}
+		}
+		query, _ = buildQuery(*params, "certificateStoreQuery.queryString")
+	}
+
 	endpoint := "CertificateStores/"
 	keyfactorAPIStruct := &request{
 		Method:   "GET",
 		Endpoint: endpoint,
 		Headers:  headers,
 		Payload:  nil,
+		Query:    &query,
 	}
 
 	resp, err := c.sendRequest(keyfactorAPIStruct)

@@ -399,6 +399,12 @@ func (c *Client) ListCertificates(q map[string]string) ([]GetCertificateResponse
 	if ok {
 		newQuery.pqQueryString = fmt.Sprintf(`IssuedCN -eq "%s"`, subjectName)
 	}
+	tp, tpOk := q["thumbprint"]
+	if tpOk {
+		query.Query = append(query.Query, StringTuple{
+			"pq.queryString", fmt.Sprintf(`Thumbprint -eq "%s"`, tp),
+		})
+	}
 
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"

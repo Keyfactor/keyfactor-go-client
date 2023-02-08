@@ -14,6 +14,7 @@ func TestClient_GetStoreContainer(t *testing.T) {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
 	}
+
 	containers, lErr := c.GetStoreContainers()
 	if lErr != nil {
 		t.Errorf("unable to list containers. %s", lErr)
@@ -25,6 +26,7 @@ func TestClient_GetStoreContainer(t *testing.T) {
 	}
 	containerID := (*containers)[0].Id
 	containerName := (*containers)[0].Name
+
 	type fields struct{}
 	type args struct {
 		id interface{}
