@@ -1,218 +1,169 @@
 package api
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"log"
+	"github.com/Keyfactor/keyfactor-go-client-sdk"
 )
 
 // GetAgentList returns a list of orchestrators registered in the Keyfactor instance
 func (c *Client) GetAgentList() ([]Agent, error) {
-	log.Println("[INFO] Getting a list of agents registered in Keyfactor")
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: "Agents",
-		Headers:  headers,
-		Payload:  nil,
-	}
+	configuration := keyfactor_command_client_api.NewConfiguration()
+	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	resp, _, err := apiClient.AgentApi.AgentGetAgents(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
+	var revResp []Agent
+
 	if err != nil {
-		return nil, err
+		return revResp, err
 	}
 
-	var jsonResp []Agent
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
+	for i := range resp {
+		newAgent := Agent{
+			AgentId:          *resp[i].AgentId,
+			AgentPoolId:      "",
+			ClientMachine:    *resp[i].ClientMachine,
+			Username:         *resp[i].Username,
+			AgentPlatform:    int(*resp[i].AgentPlatform),
+			Status:           int(*resp[i].Status),
+			EnableDiscover:   false, //TODO
+			EnableMonitor:    false, //TODO
+			Version:          *resp[i].Version,
+			LastSeen:         resp[i].LastSeen.String(),
+			Thumbprint:       *resp[i].Thumbprint,
+			LegacyThumbprint: *resp[i].LegacyThumbprint,
+		}
+		revResp = append(revResp, newAgent)
 	}
-	return jsonResp, nil
+
+	return revResp, nil
 }
 
 func (c *Client) GetAgent(id string) ([]Agent, error) {
-	log.Println("[INFO] Getting agent by ID or name.")
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
+
+	configuration := keyfactor_command_client_api.NewConfiguration()
+	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+
+	resp, _, err := apiClient.AgentApi.AgentGetAgentDetail(context.Background(), id).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
+	var revResp []Agent
+
+	if err != nil {
+		return revResp, err
+	}
+
+	revResp = []Agent{
+		{
+			AgentId:          resp.GetAgentId(),
+			AgentPoolId:      "",
+			ClientMachine:    resp.GetClientMachine(),
+			Username:         resp.GetUsername(),
+			AgentPlatform:    int(resp.GetAgentPlatform()),
+			Status:           int(resp.GetStatus()),
+			EnableDiscover:   false, //TODO
+			EnableMonitor:    false, //TODO
+			Version:          resp.GetVersion(),
+			LastSeen:         resp.GetLastSeen().String(),
+			Thumbprint:       resp.GetThumbprint(),
+			LegacyThumbprint: resp.GetLegacyThumbprint(),
 		},
 	}
-	query := apiQuery{
-		Query: []StringTuple{},
-	}
-	query.Query = append(query.Query, StringTuple{
-		"pq.queryString", fmt.Sprintf(`ClientMachine -eq "%s"`, id),
-	})
 
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: "Agents",
-		Headers:  headers,
-		Payload:  nil,
-		Query:    &query,
-	}
-
-	resp, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return nil, err
-	}
-
-	var jsonResp []Agent
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	if len(jsonResp) == 0 {
-		return jsonResp, fmt.Errorf("agent %s not found", id)
-	}
-	return jsonResp, nil
+	return revResp, nil
 }
 
 func (c *Client) ApproveAgent(id string) (string, error) {
-	log.Printf("[INFO] Approving agent %s in Keyfactor.\n", id)
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	keyfactorAPIStruct := &request{
-		Method:   "POST",
-		Endpoint: "Agents/Approve",
-		Headers:  headers,
-		Payload:  &[]string{id},
-	}
+	configuration := keyfactor_command_client_api.NewConfiguration()
+	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
 
-	resp, rErr := c.sendRequest(keyfactorAPIStruct)
-	if rErr != nil {
-		return "", rErr
-	}
+	var ids = []string{id}
+
+	resp, err := apiClient.AgentApi.AgentApprove(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).AgentIds(ids).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
 	if resp.StatusCode == 204 {
 		return "Approve agent successful.", nil
 	}
 
-	var jsonResp string
-	err := json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
 		return "", err
 	}
-	return jsonResp, nil
+
+	return resp.Status, nil
 }
 
 func (c *Client) DisApproveAgent(id string) (string, error) {
-	log.Printf("[INFO] Disapproving agent %s in Keyfactor.\n", id)
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	keyfactorAPIStruct := &request{
-		Method:   "POST",
-		Endpoint: "Agents/Disapprove",
-		Headers:  headers,
-		Payload:  &[]string{id},
-	}
+	configuration := keyfactor_command_client_api.NewConfiguration()
+	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
 
-	resp, rErr := c.sendRequest(keyfactorAPIStruct)
-	if rErr != nil {
-		return "", rErr
-	}
+	var ids = []string{id}
+
+	resp, err := apiClient.AgentApi.AgentDisapprove(context.Background()).AgentIds(ids).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
 	if resp.StatusCode == 204 {
 		return fmt.Sprintf("Disapproving %s successful.", id), nil
 	}
 
-	var jsonResp string
-	err := json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
 		return "", err
 	}
-	return jsonResp, nil
+
+	return resp.Status, nil
 }
 
 func (c *Client) ResetAgent(id string) (string, error) {
-	log.Printf("[INFO] Resetting agent %s in Keyfactor.\n", id)
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	keyfactorAPIStruct := &request{
-		Method:   "POST",
-		Endpoint: fmt.Sprintf("Agents/%s/Reset", id),
-		Headers:  headers,
-		Payload:  nil,
-	}
+	configuration := keyfactor_command_client_api.NewConfiguration()
+	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
 
-	resp, rErr := c.sendRequest(keyfactorAPIStruct)
-	if rErr != nil {
-		return "", rErr
-	}
+	resp, err := apiClient.AgentApi.AgentReset1(context.Background(), id).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
 	if resp.StatusCode == 204 {
 		return "Reset agent successful.", nil
 	}
-	var jsonResp string
-	err := json.NewDecoder(resp.Body).Decode(&jsonResp)
+
 	if err != nil {
 		return "", err
 	}
-	return jsonResp, nil
+
+	return resp.Status, nil
 }
 
 func (c *Client) FetchAgentLogs(id string) (string, error) {
-	log.Printf("[INFO] Fetching agent logs for %s.\n", id)
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	keyfactorAPIStruct := &request{
-		Method:   "POST",
-		Endpoint: fmt.Sprintf("Agents/%s/FetchLogs", id),
-		Headers:  headers,
-		Payload:  nil,
-	}
+	configuration := keyfactor_command_client_api.NewConfiguration()
+	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
 
-	resp, rErr := c.sendRequest(keyfactorAPIStruct)
-	if rErr != nil {
-		return "", rErr
-	}
+	resp, err := apiClient.AgentApi.AgentFetchLogs(context.Background(), id).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
 	if resp.StatusCode == 204 {
-		return "Fetch logs successful.", nil
+		return "Reset agent successful.", nil
 	}
-	var jsonResp string
-	err := json.NewDecoder(resp.Body).Decode(&jsonResp)
+
 	if err != nil {
 		return "", err
 	}
-	return jsonResp, nil
+
+	return resp.Status, nil
 }

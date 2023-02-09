@@ -1,8 +1,10 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Keyfactor/keyfactor-go-client-sdk"
 	"net/http"
 )
 
@@ -45,62 +47,63 @@ func (c *Client) UpdateMetadata(um *UpdateMetadataArgs) error {
 			allFields[field.Name] = ""
 		}
 	}
+
 	// Then, set um.Metadata back to this new field
 	um.Metadata = allFields
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	jsonData, _ := json.Marshal(um.Metadata)
+	var newReq keyfactor_command_client_api.ModelsMetadataUpdateRequest
+	json.Unmarshal(jsonData, &newReq)
 
-	keyfactorAPIStruct := &request{
-		Method:   "PUT",
-		Endpoint: "Certificates/Metadata",
-		Headers:  headers,
-		Payload:  um,
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	configuration := keyfactor_command_client_api.NewConfiguration()
+	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+
+	resp, err := apiClient.CertificateApi.CertificateUpdateMetadata(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).MetadataUpdate(newReq).CollectionId(int32(um.CollectionId)).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return err
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
+		return fmt.Errorf("[ERROR] Something unexpected happened, PUT call to /Certificates/Metadata returned status %d", resp.StatusCode)
 	}
 	return nil
 }
 
 func (c *Client) GetAllMetadataFields() ([]MetadataField, error) {
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: "MetadataFields",
-		Headers:  headers,
-		Payload:  nil,
-	}
+	configuration := keyfactor_command_client_api.NewConfiguration()
+	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	resp, _, err := apiClient.MetadataFieldApi.MetadataFieldGetAllMetadataFields(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return nil, err
 	}
 
-	var jsonResp []MetadataField
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
+	var newResp []MetadataField
+	for i := range resp {
+		mapResp, _ := resp[i].ToMap()
+		jsonData, _ := json.Marshal(mapResp)
+		var newMetField MetadataField
+		json.Unmarshal(jsonData, &newMetField)
+		newResp = append(newResp, newMetField)
 	}
-	return jsonResp, err
+
+	return newResp, nil
 
 }
+
+//func mapTupleArrayToString(i []StringTuple) map[string]string {
+//	temp := make(map[string]string, len(i)) // Create string-index-able interface array from tuple struct
+//	for _, field := range i {
+//		temp[field.Elem1] = field.Elem2
+//	}
+//	return temp
+//}

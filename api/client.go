@@ -110,6 +110,24 @@ func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
 		return nil, err
 	}
 
+	//xKeyfactorRequestedWith := "APIClient"
+	//xKeyfactorApiVersion := "1"
+	//
+	//configuration := keyfactor_command_client_api.NewConfiguration()
+	//apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	//
+	//_, _, err := apiClient.StatusApi.StatusGetEndpoints(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+	//
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//c := &Client{
+	//	hostname:        apiClient.GetConfig().Host,
+	//	httpClient:      &http.Client{Timeout: 10 * time.Second},
+	//	basicAuthString: buildBasicAuthString(auth),
+	//}
+
 	log.Printf("[INFO] Successfully logged into Keyfactor at host %s", c.hostname)
 
 	return c, nil
