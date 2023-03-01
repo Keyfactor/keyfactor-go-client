@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/Keyfactor/keyfactor-go-client-sdk"
+	keyfactor_command_client_api "github.com/spbsoluble/keyfactor-go-client-sdk"
 )
 
 // GetTemplate takes arguments for a template ID used to facilitate the retrieval

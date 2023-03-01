@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk"
 	"github.com/spbsoluble/go-pkcs12"
 	"go.mozilla.org/pkcs7"
 	"log"

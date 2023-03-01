@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk"
 	"net/http"
 )
 

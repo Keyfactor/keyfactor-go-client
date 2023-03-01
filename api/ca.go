@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"github.com/Keyfactor/keyfactor-go-client-sdk"
 )
 
 // GetCAList returns a list of certificate authorities supported by the Keyfactor instance
