@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spbsoluble/go-pkcs12"
+	"github.com/spbsoluble/keyfactor-go-client-sdk"
 	"go.mozilla.org/pkcs7"
 	"log"
 	"net/http"

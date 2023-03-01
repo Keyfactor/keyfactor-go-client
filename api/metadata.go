@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/spbsoluble/keyfactor-go-client-sdk"
 	"net/http"
 )
 

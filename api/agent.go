@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"github.com/spbsoluble/keyfactor-go-client-sdk"
 )
 
 // GetAgentList returns a list of orchestrators registered in the Keyfactor instance

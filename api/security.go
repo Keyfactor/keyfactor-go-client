@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/spbsoluble/keyfactor-go-client-sdk"
 	"log"
 	"net/http"
 )
