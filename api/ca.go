@@ -29,36 +29,10 @@ func (c *Client) GetCAList() ([]CA, error) {
 		Provider    int      `json:"Provider"`
 	}
 
-	for i := range resp {
-		jsonParameters, _ := json.Marshal(*resp[i].ExplicitPassword)
-		var newExplicitPassword ExplicitPassword
-		json.Unmarshal(jsonParameters, &newExplicitPassword)
-		newCA := CA{
-			Id:                     int(*resp[i].Id),
-			LogicalName:            *resp[i].LogicalName,
-			HostName:               *resp[i].HostName,
-			Delegate:               *resp[i].Delegate,
-			ForestRoot:             *resp[i].ForestRoot,
-			Remote:                 *resp[i].Remote,
-			Agent:                  *resp[i].Agent,
-			Standalone:             *resp[i].Standalone,
-			MonitorThresholds:      *resp[i].MonitorThresholds,
-			IssuanceMax:            int(*resp[i].IssuanceMax),
-			IssuanceMin:            int(*resp[i].IssuanceMin),
-			DenialMax:              int(*resp[i].DenialMax),
-			FailureMax:             int(*resp[i].FailureMax),
-			RFCEnforcement:         *resp[i].RFCEnforcement,
-			Properties:             *resp[i].Properties,
-			AllowedEnrollmentTypes: int(*resp[i].AllowedEnrollmentTypes),
-			KeyRetention:           int(*resp[i].KeyRetention),
-			KeyRetentionDays:       int(*resp[i].KeyRetentionDays),
-			ExplicitCredentials:    *resp[i].ExplicitCredentials,
-			SubscriberTerms:        *resp[i].SubscriberTerms,
-			ExplicitUser:           *resp[i].ExplicitUser,
-			ExplicitPassword:       newExplicitPassword,
-			UseAllowedRequesters:   *resp[i].UseAllowedRequesters,
-			AllowedRequesters:      resp[i].AllowedRequesters,
-		}
+	for _, val := range resp {
+		vJson, _ := json.Marshal(val)
+		var newCA CA
+		json.Unmarshal(vJson, &newCA)
 		revResp = append(revResp, newCA)
 	}
 
