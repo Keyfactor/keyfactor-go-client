@@ -153,7 +153,7 @@ func (c *Client) DeleteCertificateStore(storeId string) error {
 // that represent all certificate stores associated with a Keyfactor Command instance.
 
 // TODO?
-func (c *Client) ListCertificateStores() (*[]GetCertificateStoreResponse, error) {
+func (c *Client) ListCertificateStores(params *map[string]interface{}) (*[]GetCertificateStoreResponse, error) {
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{

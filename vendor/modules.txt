@@ -1,0 +1,13 @@
+# github.com/Keyfactor/keyfactor-go-client-sdk v0.0.0-20230202220424-9f66584c7337
+## explicit; go 1.13
+github.com/Keyfactor/keyfactor-go-client-sdk
+# github.com/spbsoluble/go-pkcs12 v0.3.1
+## explicit; go 1.15
+github.com/spbsoluble/go-pkcs12
+github.com/spbsoluble/go-pkcs12/internal/rc2
+# go.mozilla.org/pkcs7 v0.0.0-20210826202110-33d05740a352
+## explicit; go 1.11
+go.mozilla.org/pkcs7
+# golang.org/x/crypto v0.0.0-20220331220935-ae2d96664a29
+## explicit; go 1.17
+golang.org/x/crypto/pbkdf2

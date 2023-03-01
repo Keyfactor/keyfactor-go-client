@@ -376,6 +376,10 @@ func (c *Client) ListCertificates(q map[string]string) ([]GetCertificateResponse
 		pqIncludeExpired     bool
 	}
 
+	qry := apiQuery{
+		Query: []StringTuple{},
+	}
+
 	newQuery := query{
 		collectionId:         0,
 		pqQueryString:        "",
@@ -401,7 +405,7 @@ func (c *Client) ListCertificates(q map[string]string) ([]GetCertificateResponse
 	}
 	tp, tpOk := q["thumbprint"]
 	if tpOk {
-		query.Query = append(query.Query, StringTuple{
+		qry.Query = append(qry.Query, StringTuple{
 			"pq.queryString", fmt.Sprintf(`Thumbprint -eq "%s"`, tp),
 		})
 	}

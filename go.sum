@@ -1,5 +1,3 @@
-github.com/Keyfactor/keyfactor-go-client-sdk v0.0.0-20230124033418-e4bb88c78570 h1:Qb4AwwCOqQYV7asRC6yXr0t+gVLCU5rd8Spx6LZt5Ow=
-github.com/Keyfactor/keyfactor-go-client-sdk v0.0.0-20230124033418-e4bb88c78570/go.mod h1:vDv1/UDRv3BQHyThh1ibGlOpxsN73FK9KkLVSPnWUFA=
 github.com/Keyfactor/keyfactor-go-client-sdk v0.0.0-20230202220424-9f66584c7337 h1:yBMZWWVv8vnkoAl8hASH5lood58iacSSYKyVAH4bfzc=
 github.com/Keyfactor/keyfactor-go-client-sdk v0.0.0-20230202220424-9f66584c7337/go.mod h1:vDv1/UDRv3BQHyThh1ibGlOpxsN73FK9KkLVSPnWUFA=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
