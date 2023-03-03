@@ -229,20 +229,20 @@ func (c *Client) EnrollCSR(ea *EnrollCSRFctArgs) (*EnrollResponse, error) {
 // Required fields to revoke a list of certificates in Keyfactor are:
 //   - CertificateIds : []int
 //   - Comment        : string
-func (c *Client) RevokeCert(ra *RevokeCertArgs) error {
+func (c *Client) RevokeCert(rvargs *RevokeCertArgs) error {
 	log.Println("[INFO] Revoking certificates")
-	for _, certs := range ra.CertificateIds {
+	for _, certs := range rvargs.CertificateIds {
 		log.Printf("[TRACE] Revoking ID %d", certs)
 	}
 
 	// Fields required by revoke cert API request are cert ID & comment
 	// Go initializes integers to 0, check for zero input
-	if (ra.CertificateIds[0] == 0) && (ra.Comment == "") {
+	if (rvargs.CertificateIds[0] == 0) && (rvargs.Comment == "") {
 		return errors.New("invalid or nonexistent values required for certificate revocation")
 	}
 
-	if ra.EffectiveDate != "" {
-		ra.EffectiveDate = getTimestamp()
+	if rvargs.EffectiveDate == "" {
+		rvargs.EffectiveDate = getTimestamp()
 	}
 
 	// Set Keyfactor-specific headers
@@ -257,7 +257,7 @@ func (c *Client) RevokeCert(ra *RevokeCertArgs) error {
 		Method:   "POST",
 		Endpoint: "Certificates/Revoke",
 		Headers:  headers,
-		Payload:  &ra,
+		Payload:  &rvargs,
 	}
 
 	resp, err := c.sendRequest(keyfactorAPIStruct)
@@ -265,7 +265,7 @@ func (c *Client) RevokeCert(ra *RevokeCertArgs) error {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusNoContent {
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
 	}
 	return nil
