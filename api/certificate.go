@@ -347,7 +347,7 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 		}
 		if gca.CollectionId != nil {
 			query.Query = append(query.Query, StringTuple{
-				"collectionId", fmt.Sprintf("%d", gca.CollectionId),
+				"collectionId", fmt.Sprintf("%d", *gca.CollectionId),
 			})
 		}
 	}
