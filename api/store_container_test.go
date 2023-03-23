@@ -1,7 +1,6 @@
-package api_test
+package api
 
 import (
-	"github.com/Keyfactor/keyfactor-go-client/api"
 	"io"
 	"log"
 	"testing"
@@ -9,7 +8,7 @@ import (
 
 func TestClient_GetStoreContainer(t *testing.T) {
 	log.SetOutput(io.Discard)
-	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	c, kfcErr := NewKeyfactorClient(&AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
@@ -35,7 +34,7 @@ func TestClient_GetStoreContainer(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *api.CertStoreContainer
+		want    *CertStoreContainer
 		wantErr bool
 	}{
 		{
@@ -44,7 +43,7 @@ func TestClient_GetStoreContainer(t *testing.T) {
 			args: args{
 				id: *containerID,
 			},
-			want:    &api.CertStoreContainer{},
+			want:    &CertStoreContainer{},
 			wantErr: false,
 		},
 		{
@@ -53,7 +52,7 @@ func TestClient_GetStoreContainer(t *testing.T) {
 			args: args{
 				id: "-1",
 			},
-			want:    &api.CertStoreContainer{},
+			want:    &CertStoreContainer{},
 			wantErr: true,
 		},
 		{
@@ -62,7 +61,7 @@ func TestClient_GetStoreContainer(t *testing.T) {
 			args: args{
 				id: containerName,
 			},
-			want:    &api.CertStoreContainer{},
+			want:    &CertStoreContainer{},
 			wantErr: false,
 		},
 		{
@@ -71,7 +70,7 @@ func TestClient_GetStoreContainer(t *testing.T) {
 			args: args{
 				id: "invalid-container-name",
 			},
-			want:    &api.CertStoreContainer{},
+			want:    &CertStoreContainer{},
 			wantErr: true,
 		},
 	}
@@ -89,7 +88,7 @@ func TestClient_GetStoreContainer(t *testing.T) {
 func TestClient_GetStoreContainers(t *testing.T) {
 	log.SetOutput(io.Discard)
 	log.SetOutput(io.Discard)
-	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	c, kfcErr := NewKeyfactorClient(&AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
@@ -99,13 +98,13 @@ func TestClient_GetStoreContainers(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    *[]api.CertStoreContainer
+		want    *[]CertStoreContainer
 		wantErr bool
 	}{
 		{
 			name:    "List store containers",
 			fields:  fields{},
-			want:    &[]api.CertStoreContainer{},
+			want:    &[]CertStoreContainer{},
 			wantErr: false,
 		},
 	}

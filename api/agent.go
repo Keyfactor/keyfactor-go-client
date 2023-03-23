@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
 // GetAgentList returns a list of orchestrators registered in the Keyfactor instance
@@ -12,8 +12,8 @@ func (c *Client) GetAgentList() ([]Agent, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.AgentApi.AgentGetAgents(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
@@ -49,8 +49,8 @@ func (c *Client) GetAgent(id string) ([]Agent, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.AgentApi.AgentGetAgentDetail(context.Background(), id).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
@@ -85,8 +85,8 @@ func (c *Client) ApproveAgent(id string) (string, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	var ids = []string{id}
 
@@ -108,8 +108,8 @@ func (c *Client) DisApproveAgent(id string) (string, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	var ids = []string{id}
 
@@ -131,8 +131,8 @@ func (c *Client) ResetAgent(id string) (string, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, err := apiClient.AgentApi.AgentReset1(context.Background(), id).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
@@ -152,8 +152,8 @@ func (c *Client) FetchAgentLogs(id string) (string, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, err := apiClient.AgentApi.AgentFetchLogs(context.Background(), id).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 

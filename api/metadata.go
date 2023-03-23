@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"net/http"
 )
 
@@ -52,14 +52,14 @@ func (c *Client) UpdateMetadata(um *UpdateMetadataArgs) error {
 	um.Metadata = allFields
 
 	jsonData, _ := json.Marshal(um.Metadata)
-	var newReq keyfactor_command_client_api.ModelsMetadataUpdateRequest
+	var newReq keyfactor.ModelsMetadataUpdateRequest
 	json.Unmarshal(jsonData, &newReq)
 
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, err := apiClient.CertificateApi.CertificateUpdateMetadata(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).MetadataUpdate(newReq).CollectionId(int32(um.CollectionId)).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
@@ -78,8 +78,8 @@ func (c *Client) GetAllMetadataFields() ([]MetadataField, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.MetadataFieldApi.MetadataFieldGetAllMetadataFields(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
@@ -99,11 +99,3 @@ func (c *Client) GetAllMetadataFields() ([]MetadataField, error) {
 	return newResp, nil
 
 }
-
-//func mapTupleArrayToString(i []StringTuple) map[string]string {
-//	temp := make(map[string]string, len(i)) // Create string-index-able interface array from tuple struct
-//	for _, field := range i {
-//		temp[field.Elem1] = field.Elem2
-//	}
-//	return temp
-//}

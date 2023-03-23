@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	keyfactor_command_client_api "github.com/Keyfactor/keyfactor-go-client-sdk"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"log"
 	"strconv"
 )
@@ -16,8 +16,8 @@ func (c *Client) GetStoreContainers() (*[]CertStoreContainer, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.CertificateStoreContainerApi.CertificateStoreContainerGetAllCertificateStoreContainers(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 

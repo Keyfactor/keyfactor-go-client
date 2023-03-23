@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"log"
 	"net/http"
 )
@@ -91,8 +91,8 @@ func (c *Client) DeleteSecurityIdentity(id int) error {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	_, httpResp, err := apiClient.SecurityApi.SecurityIdentityPermissions(context.Background(), int32(id)).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
@@ -220,8 +220,8 @@ func (c *Client) DeleteSecurityRole(id int) error {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, err := apiClient.SecurityRolesApi.SecurityRolesDeleteSecurityRole(context.Background(), int32(id)).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
