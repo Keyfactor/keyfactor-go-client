@@ -107,7 +107,7 @@ func (c *Client) DeleteSecurityIdentity(id int) error {
 }
 
 // TODO?
-func (c *Client) GetSecurityRoles() ([]GetSecurityRolesResponse, error) {
+func (c *Client) GetSecurityRoles() (GetSecurityRolesResponse, error) {
 	log.Println("[INFO] Getting list of Keyfactor security roles")
 
 	// Set Keyfactor-specific headers
@@ -130,7 +130,7 @@ func (c *Client) GetSecurityRoles() ([]GetSecurityRolesResponse, error) {
 		return nil, err
 	}
 
-	var jsonResp []GetSecurityRolesResponse
+	var jsonResp GetSecurityRolesResponse
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
 		return nil, err
