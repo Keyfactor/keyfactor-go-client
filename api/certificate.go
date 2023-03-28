@@ -12,6 +12,7 @@ import (
 	"go.mozilla.org/pkcs7"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -359,77 +360,75 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 	return &newResp, err
 }
 
-//func (c *Client) ListCertificates(q map[string]string) ([]GetCertificateResponse, error) {
-//
-//	type query struct {
-//		collectionId         int32
-//		pqQueryString        string
-//		includeMetadata      bool
-//		includeHasPrivateKey bool
-//		verbose              int32
-//		pqPageReturned       int32
-//		pqReturnLimit        int32
-//		pqSortField          string
-//		pqSortAscending      int32
-//		pqIncludeRevoked     bool
-//		pqIncludeExpired     bool
-//	}
-//
-//	newQuery := query{
-//		collectionId:         0,
-//		pqQueryString:        "",
-//		includeMetadata:      false,
-//		includeHasPrivateKey: false,
-//		verbose:              0,
-//		pqPageReturned:       0,
-//		pqReturnLimit:        0,
-//		pqSortField:          "",
-//		pqSortAscending:      0,
-//		pqIncludeRevoked:     false,
-//		pqIncludeExpired:     false,
-//	}
-//
-//	searchCollection, ok := q["collection"]
-//	if ok {
-//		collectionIdInt, _ := strconv.ParseInt(searchCollection, 10, 64)
-//		newQuery.collectionId = int32(collectionIdInt)
-//	}
-//	subjectName, ok := q["subject"]
-//	if ok {
-//		newQuery.pqQueryString = fmt.Sprintf(`IssuedCN -eq "%s"`, subjectName)
-//	}
-//	tp, tpOk := q["thumbprint"]
-//
-//	if tpOk {
-//		newQuery.pqQueryString = append(query.Query, StringTuple{
-//			"pq.queryString", fmt.Sprintf(`Thumbprint -eq "%s"`, tp),
-//		})
-//	}
-//
-//	xKeyfactorRequestedWith := "APIClient"
-//	xKeyfactorApiVersion := "1"
-//
-//	configuration := keyfactor.NewConfiguration()
-//	apiClient := keyfactor.NewAPIClient(configuration)
-//
-//	resp, _, err := apiClient.CertificateApi.CertificateQueryCertificates(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).CollectionId(newQuery.collectionId).IncludeLocations(true).IncludeMetadata(newQuery.includeMetadata).IncludeHasPrivateKey(newQuery.includeHasPrivateKey).Verbose(newQuery.verbose).XKeyfactorApiVersion(xKeyfactorApiVersion).PqQueryString(newQuery.pqQueryString).PqPageReturned(newQuery.pqPageReturned).PqReturnLimit(newQuery.pqReturnLimit).PqSortField(newQuery.pqSortField).PqSortAscending(newQuery.pqSortAscending).PqIncludeRevoked(newQuery.pqIncludeRevoked).PqIncludeExpired(newQuery.pqIncludeExpired).Execute()
-//
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	var newResp []GetCertificateResponse
-//
-//	for i := range resp {
-//		mapResp, _ := resp[i].ToMap()
-//		jsonData, _ := json.Marshal(mapResp)
-//		var newCert GetCertificateResponse
-//		json.Unmarshal(jsonData, &newCert)
-//		newResp = append(newResp, newCert)
-//	}
-//
-//	return newResp, err
-//}
+func (c *Client) ListCertificates(q map[string]string) ([]GetCertificateResponse, error) {
+
+	type query struct {
+		collectionId         int32
+		pqQueryString        string
+		includeMetadata      bool
+		includeHasPrivateKey bool
+		verbose              int32
+		pqPageReturned       int32
+		pqReturnLimit        int32
+		pqSortField          string
+		pqSortAscending      int32
+		pqIncludeRevoked     bool
+		pqIncludeExpired     bool
+	}
+
+	newQuery := query{
+		collectionId:         0,
+		pqQueryString:        "",
+		includeMetadata:      false,
+		includeHasPrivateKey: false,
+		verbose:              0,
+		pqPageReturned:       0,
+		pqReturnLimit:        0,
+		pqSortField:          "",
+		pqSortAscending:      0,
+		pqIncludeRevoked:     false,
+		pqIncludeExpired:     false,
+	}
+
+	searchCollection, ok := q["collection"]
+	if ok {
+		collectionIdInt, _ := strconv.ParseInt(searchCollection, 10, 64)
+		newQuery.collectionId = int32(collectionIdInt)
+	}
+	subjectName, ok := q["subject"]
+	if ok {
+		newQuery.pqQueryString = fmt.Sprintf(`IssuedCN -eq "%s"`, subjectName)
+	}
+	tp, tpOk := q["thumbprint"]
+
+	if tpOk {
+		newQuery.pqQueryString = fmt.Sprintf(`Thumbprint -eq "%s"`, tp)
+	}
+
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
+
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
+
+	resp, _, err := apiClient.CertificateApi.CertificateQueryCertificates(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).CollectionId(newQuery.collectionId).IncludeLocations(true).IncludeMetadata(newQuery.includeMetadata).IncludeHasPrivateKey(newQuery.includeHasPrivateKey).Verbose(newQuery.verbose).XKeyfactorApiVersion(xKeyfactorApiVersion).PqQueryString(newQuery.pqQueryString).PqPageReturned(newQuery.pqPageReturned).PqReturnLimit(newQuery.pqReturnLimit).PqSortField(newQuery.pqSortField).PqSortAscending(newQuery.pqSortAscending).PqIncludeRevoked(newQuery.pqIncludeRevoked).PqIncludeExpired(newQuery.pqIncludeExpired).Execute()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var newResp []GetCertificateResponse
+
+	for i := range resp {
+		mapResp, _ := resp[i].ToMap()
+		jsonData, _ := json.Marshal(mapResp)
+		var newCert GetCertificateResponse
+		json.Unmarshal(jsonData, &newCert)
+		newResp = append(newResp, newCert)
+	}
+
+	return newResp, err
+}
 
 // RecoverCertificate takes arguments for RecoverCertArgs to facilitate a call to Keyfactor
 // that recovers a certificate and associated private key (if retained) in the specified format.
