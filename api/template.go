@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/Keyfactor/keyfactor-go-client-sdk"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
 // GetTemplate takes arguments for a template ID used to facilitate the retrieval
@@ -18,8 +18,8 @@ func (c *Client) GetTemplate(Id interface{}) (*GetTemplateResponse, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	newId := Id.(int32)
 
@@ -44,8 +44,8 @@ func (c *Client) GetTemplates() ([]GetTemplateResponse, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.TemplateApi.TemplateGetTemplates(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
@@ -73,10 +73,10 @@ func (c *Client) UpdateTemplate(uta *UpdateTemplateArg) (*UpdateTemplateResponse
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
-	var newReq keyfactor_command_client_api.ModelsTemplateUpdateRequest
+	var newReq keyfactor.ModelsTemplateUpdateRequest
 	jsonData, _ := json.Marshal(newReq)
 	json.Unmarshal(jsonData, &newReq)
 

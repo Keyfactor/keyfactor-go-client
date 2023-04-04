@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"github.com/spbsoluble/go-pkcs12"
 	"go.mozilla.org/pkcs7"
 	"log"
@@ -60,8 +60,8 @@ func (c *Client) EnrollPFX(ea *EnrollPFXFctArgs) (*EnrollResponse, error) {
 	xKeyfactorApiVersion := "1"
 	xCertificateFormat := ea.CertFormat
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	newRenewalCertId := int32(ea.RenewalCertificateId)
 	newTimestamp, err := time.Parse(ea.Timestamp, ea.Timestamp)
@@ -70,7 +70,7 @@ func (c *Client) EnrollPFX(ea *EnrollPFXFctArgs) (*EnrollResponse, error) {
 	data, _ := json.Marshal(ea.SANs)
 	json.Unmarshal(data, &newSANs)
 
-	req := keyfactor_command_client_api.ModelsEnrollmentPFXEnrollmentRequest{
+	req := keyfactor.ModelsEnrollmentPFXEnrollmentRequest{
 		CustomFriendlyName:          &ea.CustomFriendlyName,
 		Password:                    &ea.Password,
 		PopulateMissingValuesFromAD: &ea.PopulateMissingValuesFromAD,
@@ -153,14 +153,14 @@ func (c *Client) DownloadCertificate(certId int, thumbprint string, serialNumber
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	newCertId := int32(certId)
-	newIssuerDN := keyfactor_command_client_api.NullableString{}
+	newIssuerDN := keyfactor.NullableString{}
 	newIssuerDN.Set(&issuerDn)
 
-	rq := keyfactor_command_client_api.ModelsCertificateDownloadRequest{
+	rq := keyfactor.ModelsCertificateDownloadRequest{
 		CertID:       &newCertId,
 		SerialNumber: &serialNumber,
 		IssuerDN:     newIssuerDN,
@@ -220,11 +220,11 @@ func (c *Client) EnrollCSR(ea *EnrollCSRFctArgs) (*EnrollResponse, error) {
 	xKeyfactorApiVersion := "1"
 	xCertificateFormat := ea.CertFormat
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	eaJson, _ := json.Marshal(ea)
-	var req keyfactor_command_client_api.ModelsEnrollmentCSREnrollmentRequest
+	var req keyfactor.ModelsEnrollmentCSREnrollmentRequest
 	json.Unmarshal(eaJson, &req)
 
 	resp, _, err := apiClient.EnrollmentApi.EnrollmentPostCSREnroll(context.Background()).XCertificateformat(xCertificateFormat).Request(req).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
@@ -271,11 +271,11 @@ func (c *Client) RevokeCert(ra *RevokeCertArgs) error {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	raJson, _ := json.Marshal(ra)
-	var req keyfactor_command_client_api.ModelsRevokeCertificateRequest
+	var req keyfactor.ModelsRevokeCertificateRequest
 	json.Unmarshal(raJson, &req)
 
 	_, httpResp, err := apiClient.CertificateApi.CertificateRevoke(context.Background()).Request(req).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
@@ -307,11 +307,11 @@ func (c *Client) DeployPFXCertificate(args *DeployPFXArgs) (*DeployPFXResp, erro
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	argsJson, _ := json.Marshal(args)
-	var req keyfactor_command_client_api.KeyfactorApiModelsEnrollmentEnrollmentManagementRequest
+	var req keyfactor.KeyfactorApiModelsEnrollmentEnrollmentManagementRequest
 	json.Unmarshal(argsJson, &req)
 
 	resp, _, err := apiClient.EnrollmentApi.EnrollmentInstallPFXToCertStore(context.Background()).Request(req).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
@@ -343,8 +343,8 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.CertificateApi.CertificateGetCertificate(context.Background(), int32(gca.Id)).IncludeLocations(*gca.IncludeLocations).IncludeMetadata(*gca.IncludeMetadata).CollectionId(int32(*gca.CollectionId)).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
@@ -400,17 +400,16 @@ func (c *Client) ListCertificates(q map[string]string) ([]GetCertificateResponse
 		newQuery.pqQueryString = fmt.Sprintf(`IssuedCN -eq "%s"`, subjectName)
 	}
 	tp, tpOk := q["thumbprint"]
+
 	if tpOk {
-		query.Query = append(query.Query, StringTuple{
-			"pq.queryString", fmt.Sprintf(`Thumbprint -eq "%s"`, tp),
-		})
+		newQuery.pqQueryString = fmt.Sprintf(`Thumbprint -eq "%s"`, tp)
 	}
 
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.CertificateApi.CertificateQueryCertificates(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).CollectionId(newQuery.collectionId).IncludeLocations(true).IncludeMetadata(newQuery.includeMetadata).IncludeHasPrivateKey(newQuery.includeHasPrivateKey).Verbose(newQuery.verbose).XKeyfactorApiVersion(xKeyfactorApiVersion).PqQueryString(newQuery.pqQueryString).PqPageReturned(newQuery.pqPageReturned).PqReturnLimit(newQuery.pqReturnLimit).PqSortField(newQuery.pqSortField).PqSortAscending(newQuery.pqSortAscending).PqIncludeRevoked(newQuery.pqIncludeRevoked).PqIncludeExpired(newQuery.pqIncludeExpired).Execute()
 
@@ -472,15 +471,15 @@ func (c *Client) RecoverCertificate(certId int, thumbprint string, serialNumber 
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	newCertId := int32(certId)
-	newIssuerDN := keyfactor_command_client_api.NullableString{}
+	newIssuerDN := keyfactor.NullableString{}
 	newIssuerDN.Set(&issuerDn)
 	newIncludeChain := true
 
-	newReq := keyfactor_command_client_api.ModelsCertificateRecoveryRequest{
+	newReq := keyfactor.ModelsCertificateRecoveryRequest{
 		Password:     password,
 		CertID:       &newCertId,
 		SerialNumber: &serialNumber,

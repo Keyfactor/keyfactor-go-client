@@ -1,10 +1,10 @@
-package api_test
+package api
 
 import (
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client/api"
 	"io"
 	"log"
+	"os"
 	"testing"
 )
 
@@ -18,7 +18,7 @@ const (
 
 func TestClient_ApproveAgent(t *testing.T) {
 	log.SetOutput(io.Discard)
-	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	c, kfcErr := NewKeyfactorClient(&AuthConfig{})
 
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
@@ -95,13 +95,13 @@ func TestClient_ApproveAgent(t *testing.T) {
 // TODO
 func TestClient_FetchAgentLogs(t *testing.T) {
 	log.SetOutput(io.Discard)
-	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	c, kfcErr := NewKeyfactorClient(&AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
 	}
-	agentID := "190d2ab2-8559-4a95-b686-37e561aae191" //os.Getenv("TEST_KEYFACTOR_AGENT_ID")
-	agentClientName := "CAGTWSRV02.cslnorth.local"    //os.Getenv("TEST_KEYFACTOR_AGENT_NAME")
+	agentID := os.Getenv("TEST_KEYFACTOR_AGENT_ID")
+	agentClientName := os.Getenv("TEST_KEYFACTOR_AGENT_NAME")
 	type fields struct{}
 	type args struct {
 		id         string
@@ -174,7 +174,7 @@ func TestClient_FetchAgentLogs(t *testing.T) {
 
 func TestClient_GetAgent(t *testing.T) {
 	log.SetOutput(io.Discard)
-	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	c, kfcErr := NewKeyfactorClient(&AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
@@ -197,7 +197,7 @@ func TestClient_GetAgent(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []api.Agent
+		want    []Agent
 		wantErr bool
 	}{
 		{
@@ -205,7 +205,7 @@ func TestClient_GetAgent(t *testing.T) {
 			fields: fields{}, args: args{
 				id: "invalid-agent-name",
 			},
-			want:    []api.Agent{},
+			want:    []Agent{},
 			wantErr: true,
 		},
 		{
@@ -213,7 +213,7 @@ func TestClient_GetAgent(t *testing.T) {
 			fields: fields{}, args: args{
 				id: agentID,
 			},
-			want:    []api.Agent{},
+			want:    []Agent{},
 			wantErr: false,
 		},
 	}
@@ -239,7 +239,7 @@ func TestClient_GetAgent(t *testing.T) {
 func TestClient_GetAgentList(t *testing.T) {
 	log.SetOutput(io.Discard)
 	log.SetOutput(io.Discard)
-	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	c, kfcErr := NewKeyfactorClient(&AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
@@ -249,13 +249,13 @@ func TestClient_GetAgentList(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    []api.Agent
+		want    []Agent
 		wantErr bool
 	}{
 		{
 			name:    "GetAgentList",
 			fields:  fields{},
-			want:    []api.Agent{},
+			want:    []Agent{},
 			wantErr: false,
 		},
 	}
@@ -285,7 +285,7 @@ func TestClient_GetAgentList(t *testing.T) {
 
 func TestClient_ResetAgent(t *testing.T) {
 	log.SetOutput(io.Discard)
-	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	c, kfcErr := NewKeyfactorClient(&AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return

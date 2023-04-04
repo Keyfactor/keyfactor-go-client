@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	keyfactor_command_client_api "github.com/Keyfactor/keyfactor-go-client-sdk"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"log"
 	"net/http"
 )
@@ -133,8 +133,8 @@ func (c *Client) DeleteCertificateStore(storeId string) error {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, err := apiClient.CertificateStoreApi.CertificateStoreDeleteCertificateStore(context.Background(), storeId).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
@@ -164,30 +164,6 @@ func (c *Client) ListCertificateStores() (*[]GetCertificateStoreResponse, error)
 
 	query := apiQuery{
 		Query: []StringTuple{},
-	}
-	if params != nil {
-		sId, ok := (*params)["Id"]
-		if ok {
-			switch sId.(type) {
-			case string:
-				var resp, err = c.GetCertificateStoreByID(fmt.Sprintf("%s", sId.(string)))
-				if err != nil {
-					return nil, err
-				}
-				return &[]GetCertificateStoreResponse{*resp}, nil
-			case []string:
-				// Only single ID lookup is supported
-				lookup := sId.([]string)
-				if len(lookup) > 0 {
-					var resp, err = c.GetCertificateStoreByID(fmt.Sprintf("%s", lookup[0]))
-					if err != nil {
-						return nil, err
-					}
-					return &[]GetCertificateStoreResponse{*resp}, nil
-				}
-			}
-		}
-		query, _ = buildQuery(*params, "certificateStoreQuery.queryString")
 	}
 
 	endpoint := "CertificateStores/"
@@ -322,22 +298,22 @@ func (c *Client) AddCertificateToStores(config *AddCertificateToStore) ([]string
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	newCollectionId := int32(config.CollectionId)
-	var newCertStoresList []keyfactor_command_client_api.ModelsCertificateStoreEntry
+	var newCertStoresList []keyfactor.ModelsCertificateStoreEntry
 	for _, cert := range *config.CertificateStores {
 		newProvider := int32(cert.EntryPassword.Provider)
 		var newParams map[string]string
 		data, _ := json.Marshal(cert.EntryPassword.Parameters)
 		json.Unmarshal(data, &newParams)
-		var newEntryPassword = keyfactor_command_client_api.ModelsKeyfactorAPISecret{
+		var newEntryPassword = keyfactor.ModelsKeyfactorAPISecret{
 			SecretValue: &cert.EntryPassword.SecretValue,
 			Parameters:  &newParams,
 			Provider:    &newProvider,
 		}
-		var newCert = keyfactor_command_client_api.ModelsCertificateStoreEntry{
+		var newCert = keyfactor.ModelsCertificateStoreEntry{
 			CertificateStoreId: cert.CertificateStoreId,
 			Alias:              &cert.Alias,
 			JobFields:          nil,
@@ -350,9 +326,9 @@ func (c *Client) AddCertificateToStores(config *AddCertificateToStore) ([]string
 	}
 
 	jsonInvSched, _ := json.Marshal(config.InventorySchedule)
-	var newSchedule keyfactor_command_client_api.KeyfactorCommonSchedulingKeyfactorSchedule
+	var newSchedule keyfactor.KeyfactorCommonSchedulingKeyfactorSchedule
 	json.Unmarshal(jsonInvSched, newSchedule)
-	var newReq = keyfactor_command_client_api.KeyfactorApiModelsCertificateStoresAddCertificateRequest{
+	var newReq = keyfactor.KeyfactorApiModelsCertificateStoresAddCertificateRequest{
 		CertificateId:     int32(config.CertificateId),
 		CertificateStores: newCertStoresList,
 		Schedule:          newSchedule,
@@ -376,13 +352,13 @@ func (c *Client) RemoveCertificateFromStores(config *RemoveCertificateFromStore)
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	newCollectionId := int32(config.CollectionId)
-	var newCertStoresList []keyfactor_command_client_api.ModelsCertificateLocationSpecifier
+	var newCertStoresList []keyfactor.ModelsCertificateLocationSpecifier
 	for _, cert := range *config.CertificateStores {
-		var newCert = keyfactor_command_client_api.ModelsCertificateLocationSpecifier{
+		var newCert = keyfactor.ModelsCertificateLocationSpecifier{
 			Alias:              &cert.Alias,
 			CertificateStoreId: &cert.CertificateStoreId,
 			JobFields:          nil,
@@ -391,9 +367,9 @@ func (c *Client) RemoveCertificateFromStores(config *RemoveCertificateFromStore)
 	}
 
 	jsonInvSched, _ := json.Marshal(config.InventorySchedule)
-	var newSchedule keyfactor_command_client_api.KeyfactorCommonSchedulingKeyfactorSchedule
+	var newSchedule keyfactor.KeyfactorCommonSchedulingKeyfactorSchedule
 	json.Unmarshal(jsonInvSched, newSchedule)
-	var newReq = keyfactor_command_client_api.KeyfactorApiModelsCertificateStoresRemoveCertificateRequest{
+	var newReq = keyfactor.KeyfactorApiModelsCertificateStoresRemoveCertificateRequest{
 		CertificateStores: newCertStoresList,
 		Schedule:          newSchedule,
 		CollectionId:      &newCollectionId,
@@ -413,8 +389,8 @@ func (c *Client) GetCertStoreInventory(storeId string) (*[]CertStoreInventory, e
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	apiClient := keyfactor_command_client_api.NewAPIClient(configuration)
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.CertificateStoreApi.CertificateStoreGetCertificateStoreInventory(context.Background(), storeId).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
