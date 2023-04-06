@@ -264,7 +264,7 @@ func (c *Client) RevokeCert(rvargs *RevokeCertArgs) error {
 		return errors.New("invalid or nonexistent values required for certificate revocation")
 	}
 
-	if rvargs.EffectiveDate == "" || rvargs.EffectiveDate == "{null}" || rvargs.EffectiveDate == "null" {
+	if rvargs.EffectiveDate == "" {
 		rvargs.EffectiveDate = getTimestamp()
 	}
 
