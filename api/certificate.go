@@ -1,17 +1,20 @@
 package api
 
 import (
+	"context"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"github.com/spbsoluble/go-pkcs12"
 	"go.mozilla.org/pkcs7"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // EnrollPFX takes arguments for EnrollPFXFctArgs to facilitate a call to Keyfactor
@@ -32,21 +35,9 @@ func (c *Client) EnrollPFX(ea *EnrollPFXFctArgs) (*EnrollResponse, error) {
 	if ea.CertFormat == "" {
 		missingFields = append(missingFields, "CertFormat")
 	}
-	//if ea.Password == "" {
-	//	missingFields = append(missingFields, "Password")
-	//}
 
 	if len(missingFields) > 0 {
 		return nil, errors.New("Required field(s) missing: " + strings.Join(missingFields, ", "))
-	}
-
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-			{"x-certificateformat", ea.CertFormat},
-		},
 	}
 
 	if ea.Timestamp == "" {
@@ -65,28 +56,65 @@ func (c *Client) EnrollPFX(ea *EnrollPFXFctArgs) (*EnrollResponse, error) {
 		}
 	}
 
-	keyfactorAPIStruct := &request{
-		Method:   "POST",
-		Endpoint: "Enrollment/PFX",
-		Headers:  headers,
-		Payload:  &ea,
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
+	xCertificateFormat := ea.CertFormat
+
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
+	apiClient := keyfactor.NewAPIClient(configuration)
+
+	newRenewalCertId := int32(ea.RenewalCertificateId)
+	newTimestamp, err := time.Parse(ea.Timestamp, ea.Timestamp)
+
+	var newSANs map[string][]string
+	data, _ := json.Marshal(ea.SANs)
+	json.Unmarshal(data, &newSANs)
+
+	req := keyfactor.ModelsEnrollmentPFXEnrollmentRequest{
+		CustomFriendlyName:          &ea.CustomFriendlyName,
+		Password:                    &ea.Password,
+		PopulateMissingValuesFromAD: &ea.PopulateMissingValuesFromAD,
+		Subject:                     &ea.SubjectString, //TODO
+		IncludeChain:                &ea.IncludeChain,
+		RenewalCertificateId:        &newRenewalCertId,
+		CertificateAuthority:        &ea.CertificateAuthority,
+		Metadata:                    ea.Metadata,
+		AdditionalEnrollmentFields:  nil,
+		Timestamp:                   &newTimestamp,
+		Template:                    &ea.Template,
+		SANs:                        &newSANs,
 	}
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	resp, _, err := apiClient.EnrollmentApi.EnrollmentPostPFXEnroll(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XCertificateformat(xCertificateFormat).XKeyfactorApiVersion(xKeyfactorApiVersion).Request(req).Execute()
+
+	//newIssuerDN := resp.CertificateInformation.IssuerDN.Get()
+
+	mapResp, _ := resp.ToMap()
+	jsonData, _ := json.Marshal(mapResp)
+	var newResp EnrollResponse
+	json.Unmarshal(jsonData, &newResp)
+
+	//newResp := EnrollResponse{
+	//	Certificates: nil, //TODO
+	//	CertificateInformation: CertificateInformation{
+	//		SerialNumber:       *resp.CertificateInformation.SerialNumber,
+	//		IssuerDN:           *newIssuerDN,
+	//		Thumbprint:         *resp.CertificateInformation.Thumbprint,
+	//		KeyfactorID:        int(*resp.CertificateInformation.KeyfactorId),
+	//		KeyfactorRequestID: int(*resp.CertificateInformation.KeyfactorRequestId),
+	//		PKCS12Blob:         *resp.CertificateInformation.Pkcs12Blob,
+	//		Certificates:       nil, //TODO
+	//		RequestDisposition: *resp.CertificateInformation.RequestDisposition,
+	//		DispositionMessage: *resp.CertificateInformation.DispositionMessage,
+	//		EnrollmentContext:  &resp.CertificateInformation.EnrollmentContext,
+	//	},
+	//}
+
 	if err != nil {
 		return nil, err
 	}
 
-	jsonResp := &EnrollResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	err = decodePKCS12Blob(jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	return jsonResp, nil
+	return &newResp, nil
 }
 
 // DownloadCertificate takes arguments for DownloadCertArgs to facilitate a call to Keyfactor
@@ -122,41 +150,35 @@ func (c *Client) DownloadCertificate(certId int, thumbprint string, serialNumber
 		return nil, nil, fmt.Errorf("certID, thumbprint, or serial number AND issuer DN required to dowload certificate")
 	}
 
-	payload := &downloadCertificateBody{
-		CertID:       certId,
-		SerialNumber: serialNumber,
-		IssuerDN:     issuerDn,
-		Thumbprint:   thumbprint,
-		IncludeChain: true,
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
+
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
+	apiClient := keyfactor.NewAPIClient(configuration)
+
+	newCertId := int32(certId)
+	newIssuerDN := keyfactor.NullableString{}
+	newIssuerDN.Set(&issuerDn)
+
+	rq := keyfactor.ModelsCertificateDownloadRequest{
+		CertID:       &newCertId,
+		SerialNumber: &serialNumber,
+		IssuerDN:     newIssuerDN,
+		Thumbprint:   &thumbprint,
+		IncludeChain: nil,
 	}
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-			{"x-certificateformat", "P7B"},
-		},
-	}
+	resp, _, err := apiClient.CertificateApi.CertificateDownloadCertificateAsync(context.Background()).Rq(rq).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
-	keyfactorAPIStruct := &request{
-		Method:   "POST",
-		Endpoint: "Certificates/Download",
-		Headers:  headers,
-		Payload:  &payload,
-	}
+	mapResp, _ := resp.ToMap()
+	jsonData, _ := json.Marshal(mapResp)
+	var newResp downloadCertificateResponse
+	json.Unmarshal(jsonData, &newResp)
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	jsonResp := &downloadCertificateResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, nil, err
-	}
-	buf, err := base64.StdEncoding.DecodeString(jsonResp.Content)
+	buf, err := base64.StdEncoding.DecodeString(newResp.Content)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -190,38 +212,39 @@ func (c *Client) EnrollCSR(ea *EnrollCSRFctArgs) (*EnrollResponse, error) {
 		return nil, errors.New("invalid or nonexistent values required for csr enrollment")
 	}
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-			{"x-certificateformat", ea.CertFormat},
-		},
-	}
-
 	if ea.Timestamp == "" {
 		ea.Timestamp = getTimestamp()
 	}
 
-	keyfactorAPIStruct := &request{
-		Method:   "POST",
-		Endpoint: "Enrollment/CSR",
-		Headers:  headers,
-		Payload:  &ea,
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
+	xCertificateFormat := ea.CertFormat
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
+	apiClient := keyfactor.NewAPIClient(configuration)
+
+	eaJson, _ := json.Marshal(ea)
+	var req keyfactor.ModelsEnrollmentCSREnrollmentRequest
+	json.Unmarshal(eaJson, &req)
+
+	resp, _, err := apiClient.EnrollmentApi.EnrollmentPostCSREnroll(context.Background()).XCertificateformat(xCertificateFormat).Request(req).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return nil, err
 	}
 
-	jsonResp := &EnrollResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	mapResp, _ := resp.ToMap()
+	jsonData, _ := json.Marshal(mapResp)
+	var newResp EnrollResponse
+	json.Unmarshal(jsonData, &newResp)
+
 	if err != nil {
 		return nil, err
 	}
-	jsonResp.Certificates = jsonResp.CertificateInformation.Certificates
-	return jsonResp, nil
+
+	newResp.Certificates = newResp.CertificateInformation.Certificates
+
+	return &newResp, nil
 }
 
 // RevokeCert takes arguments for RevokeCertArgs to facilitate the revocation of
@@ -241,32 +264,28 @@ func (c *Client) RevokeCert(rvargs *RevokeCertArgs) error {
 		return errors.New("invalid or nonexistent values required for certificate revocation")
 	}
 
-	if rvargs.EffectiveDate == "" {
+	if rvargs.EffectiveDate == "" || rvargs.EffectiveDate == "{null}" || rvargs.EffectiveDate == "null" {
 		rvargs.EffectiveDate = getTimestamp()
 	}
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	keyfactorAPIStruct := &request{
-		Method:   "POST",
-		Endpoint: "Certificates/Revoke",
-		Headers:  headers,
-		Payload:  &rvargs,
-	}
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
+	apiClient := keyfactor.NewAPIClient(configuration)
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	raJson, _ := json.Marshal(rvargs)
+	var req keyfactor.ModelsRevokeCertificateRequest
+	json.Unmarshal(raJson, &req)
+
+	_, httpResp, err := apiClient.CertificateApi.CertificateRevoke(context.Background()).Request(req).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
+	if httpResp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("[ERROR] Something unexpected happened, POST call to /Certificates/Revoke returned status %d", httpResp.StatusCode)
 	}
 	return nil
 }
@@ -285,170 +304,130 @@ func (c *Client) DeployPFXCertificate(args *DeployPFXArgs) (*DeployPFXResp, erro
 		return nil, err
 	}
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	keyfactorAPIStruct := &request{
-		Method:   "POST",
-		Endpoint: "Enrollment/PFX/Deploy",
-		Headers:  headers,
-		Payload:  &args,
-	}
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
+	apiClient := keyfactor.NewAPIClient(configuration)
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	argsJson, _ := json.Marshal(args)
+	var req keyfactor.KeyfactorApiModelsEnrollmentEnrollmentManagementRequest
+	json.Unmarshal(argsJson, &req)
+
+	resp, _, err := apiClient.EnrollmentApi.EnrollmentInstallPFXToCertStore(context.Background()).Request(req).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return nil, err
 	}
 
-	jsonResp := &DeployPFXResp{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	return jsonResp, nil
+	mapResp, _ := resp.ToMap()
+	jsonData, _ := json.Marshal(mapResp)
+	var newResp DeployPFXResp
+	json.Unmarshal(jsonData, &newResp)
+
+	return &newResp, nil
 }
 
 // GetCertificateContext takes arguments for GetCertificateContextArgs used to facilitate the retrieval
 // of certificate context. The primary query required to get certificate context is the certificate ID. Include metadata
 // and include locations add additional data, but can be set to false if they are unneeded. A pointer to a
 // GetCertificateResponse structure is returned, containing the certificate context.
+
+// TODO: change to allow acception of Thumbprint in place of ID
 func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCertificateResponse, error) {
-	if gca.Id == 0 && gca.Thumbprint == "" {
-		return nil, errors.New("keyfactor certificate id or thumbprint are required to get certificate")
+
+	if gca.Id == 0 {
+		return nil, errors.New("keyfactor certificate id is required to get certificate")
 	}
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	// Construct URL query for /Certificates/{ID} requests
-	query := apiQuery{
-		Query: []StringTuple{},
-	}
-	if gca.IncludeLocations != nil || gca.CollectionId != nil || gca.IncludeMetadata != nil {
-		if gca.IncludeLocations != nil {
-			query.Query = append(query.Query, StringTuple{
-				"includeLocations", strconv.FormatBool(*gca.IncludeLocations),
-			})
-		}
-		if gca.IncludeMetadata != nil {
-			query.Query = append(query.Query, StringTuple{
-				"includeMetadata", strconv.FormatBool(*gca.IncludeMetadata),
-			})
-		}
-		if gca.CollectionId != nil {
-			query.Query = append(query.Query, StringTuple{
-				"collectionId", fmt.Sprintf("%d", gca.CollectionId),
-			})
-		}
-	}
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
+	apiClient := keyfactor.NewAPIClient(configuration)
 
-	var endpoint string
-	if gca.Id <= 0 && gca.Thumbprint != "" {
-		query.Query = append(query.Query, StringTuple{
-			"pq.queryString", fmt.Sprintf(`Thumbprint -eq "%s"`, gca.Thumbprint),
-		})
-		endpoint = "Certificates"
-	} else {
-		endpoint = "Certificates/" + fmt.Sprintf("%d", gca.Id)
-	}
+	resp, _, err := apiClient.CertificateApi.CertificateGetCertificate(context.Background(), int32(gca.Id)).IncludeLocations(*gca.IncludeLocations).IncludeMetadata(*gca.IncludeMetadata).CollectionId(int32(*gca.CollectionId)).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: endpoint,
-		Headers:  headers,
-		Query:    &query,
-		Payload:  nil,
-	}
-
-	resp, err := c.sendRequest(keyfactorAPIStruct)
 	if err != nil {
 		return nil, err
 	}
 
-	jsonResp := GetCertificateResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		var lCerts []GetCertificateResponse
-		lResp, _ := c.sendRequest(keyfactorAPIStruct)
-		lErr := json.NewDecoder(lResp.Body).Decode(&lCerts)
-		if lErr != nil {
-			return nil, lErr
-		}
-		return &lCerts[0], nil
-	}
-	return &jsonResp, err
+	mapResp, _ := resp.ToMap()
+	jsonData, _ := json.Marshal(mapResp)
+	var newResp GetCertificateResponse
+	json.Unmarshal(jsonData, &newResp)
+
+	return &newResp, err
 }
 
 func (c *Client) ListCertificates(q map[string]string) ([]GetCertificateResponse, error) {
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
+
+	type query struct {
+		collectionId         int32
+		pqQueryString        string
+		includeMetadata      bool
+		includeHasPrivateKey bool
+		verbose              int32
+		pqPageReturned       int32
+		pqReturnLimit        int32
+		pqSortField          string
+		pqSortAscending      int32
+		pqIncludeRevoked     bool
+		pqIncludeExpired     bool
 	}
 
-	// Construct URL query for /Certificates/{ID} requests
-	query := apiQuery{
-		Query: []StringTuple{},
+	newQuery := query{
+		collectionId:         0,
+		pqQueryString:        "",
+		includeMetadata:      false,
+		includeHasPrivateKey: false,
+		verbose:              0,
+		pqPageReturned:       0,
+		pqReturnLimit:        0,
+		pqSortField:          "",
+		pqSortAscending:      0,
+		pqIncludeRevoked:     false,
+		pqIncludeExpired:     false,
 	}
-	query.Query = append(query.Query, StringTuple{
-		"includeLocations", "true",
-	})
-	searchCollection, cOk := q["collection"]
-	if cOk {
-		query.Query = append(query.Query, StringTuple{
-			"collectionId", searchCollection,
-		})
+
+	searchCollection, ok := q["collection"]
+	if ok {
+		collectionIdInt, _ := strconv.ParseInt(searchCollection, 10, 64)
+		newQuery.collectionId = int32(collectionIdInt)
 	}
-	subjectName, sOk := q["subject"]
-	if sOk {
-		query.Query = append(query.Query, StringTuple{
-			"pq.queryString", fmt.Sprintf(`IssuedCN -eq "%s"`, subjectName),
-		})
+	subjectName, ok := q["subject"]
+	if ok {
+		newQuery.pqQueryString = fmt.Sprintf(`IssuedCN -eq "%s"`, subjectName)
 	}
 	tp, tpOk := q["thumbprint"]
+
 	if tpOk {
-		query.Query = append(query.Query, StringTuple{
-			"pq.queryString", fmt.Sprintf(`Thumbprint -eq "%s"`, tp),
-		})
+		newQuery.pqQueryString = fmt.Sprintf(`Thumbprint -eq "%s"`, tp)
 	}
 
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: "Certificates",
-		Headers:  headers,
-		Query:    &query,
-		Payload:  nil,
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	cid, cidOk := q["id"]
-	if cidOk {
-		keyfactorAPIStruct.Endpoint = fmt.Sprintf("Certificates/%s", cid)
-		keyfactorAPIStruct.Query = nil
-	}
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
+	apiClient := keyfactor.NewAPIClient(configuration)
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	resp, _, err := apiClient.CertificateApi.CertificateQueryCertificates(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).CollectionId(newQuery.collectionId).IncludeLocations(true).IncludeMetadata(newQuery.includeMetadata).IncludeHasPrivateKey(newQuery.includeHasPrivateKey).Verbose(newQuery.verbose).XKeyfactorApiVersion(xKeyfactorApiVersion).PqQueryString(newQuery.pqQueryString).PqPageReturned(newQuery.pqPageReturned).PqReturnLimit(newQuery.pqReturnLimit).PqSortField(newQuery.pqSortField).PqSortAscending(newQuery.pqSortAscending).PqIncludeRevoked(newQuery.pqIncludeRevoked).PqIncludeExpired(newQuery.pqIncludeExpired).Execute()
+
 	if err != nil {
 		return nil, err
 	}
 
-	var jsonResp []GetCertificateResponse
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
+	var newResp []GetCertificateResponse
+
+	for i := range resp {
+		mapResp, _ := resp[i].ToMap()
+		jsonData, _ := json.Marshal(mapResp)
+		var newCert GetCertificateResponse
+		json.Unmarshal(jsonData, &newCert)
+		newResp = append(newResp, newCert)
 	}
-	return jsonResp, err
+
+	return newResp, err
 }
 
 // RecoverCertificate takes arguments for RecoverCertArgs to facilitate a call to Keyfactor
@@ -489,45 +468,40 @@ func (c *Client) RecoverCertificate(certId int, thumbprint string, serialNumber 
 		return nil, nil, nil, fmt.Errorf("password required to recover private key with certificate")
 	}
 
-	rca := &recoverCertArgs{
-		CertId:       certId,
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
+
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
+	apiClient := keyfactor.NewAPIClient(configuration)
+
+	newCertId := int32(certId)
+	newIssuerDN := keyfactor.NullableString{}
+	newIssuerDN.Set(&issuerDn)
+	newIncludeChain := true
+
+	newReq := keyfactor.ModelsCertificateRecoveryRequest{
 		Password:     password,
-		SerialNumber: serialNumber,
-		IssuerDN:     issuerDn,
-		Thumbprint:   thumbprint,
-		IncludeChain: true,
+		CertID:       &newCertId,
+		SerialNumber: &serialNumber,
+		IssuerDN:     newIssuerDN,
+		Thumbprint:   &thumbprint,
+		IncludeChain: &newIncludeChain,
 	}
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-			{"x-certificateformat", "PFX"},
-		},
-	}
+	resp, _, err := apiClient.CertificateApi.CertificateRecoverCertificateAsync(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).Rq(newReq).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
-	keyfactorAPIStruct := &request{
-		Method:   "POST",
-		Endpoint: "Certificates/Recover",
-		Headers:  headers,
-		Payload:  &rca,
-	}
-
-	resp, err := c.sendRequest(keyfactorAPIStruct)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	jsonResp := &recoverCertResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, nil, nil, err
-	}
+	mapResp, _ := resp.ToMap()
+	jsonData, _ := json.Marshal(mapResp)
+	var newResp recoverCertResponse
+	json.Unmarshal(jsonData, &newResp)
 
-	pfxDer, err := base64.StdEncoding.DecodeString(jsonResp.PFX)
+	pfxDer, err := base64.StdEncoding.DecodeString(newResp.PFX)
 
-	priv, leaf, chain, err := pkcs12.DecodeChain(pfxDer, rca.Password)
+	priv, leaf, chain, err := pkcs12.DecodeChain(pfxDer, newReq.Password)
 	if err != nil {
 		return nil, nil, nil, err
 	}
