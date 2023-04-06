@@ -1,38 +1,40 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
-	"log"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
 // GetCAList returns a list of certificate authorities supported by the Keyfactor instance
 func (c *Client) GetCAList() ([]CA, error) {
-	log.Println("[INFO] Getting a list of CAs from Keyfactor instance")
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: "CertificateAuthority",
-		Headers:  headers,
-		Payload:  nil,
-	}
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	resp, _, err := apiClient.CertificateAuthorityApi.CertificateAuthorityGetCas(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
+	var revResp []CA
+
 	if err != nil {
-		return nil, err
+		return revResp, err
 	}
 
-	var jsonResp []CA
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
+	type ExplicitPassword struct {
+		SecretValue string   `json:"SecretValue"`
+		Parameters  struct{} `json:"Parameters"`
+		Provider    int      `json:"Provider"`
 	}
-	return jsonResp, nil
+
+	for _, val := range resp {
+		vJson, _ := json.Marshal(val)
+		var newCA CA
+		json.Unmarshal(vJson, &newCA)
+		revResp = append(revResp, newCA)
+	}
+
+	return revResp, nil
 }

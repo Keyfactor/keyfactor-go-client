@@ -1,15 +1,18 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"log"
 	"net/http"
 )
 
 // GetSecurityIdentities hits the /Security/Identities endpoint with a GET request and returns a list of
 // GetSecurityIdentityResponse structs. The function takes no arguments.
+// TODO?
 func (c *Client) GetSecurityIdentities() ([]GetSecurityIdentityResponse, error) {
 	log.Println("[INFO] Getting Keyfactor security identity list")
 
@@ -43,6 +46,7 @@ func (c *Client) GetSecurityIdentities() ([]GetSecurityIdentityResponse, error) 
 
 // CreateSecurityIdentity hits the /Security/Identities endpoint with a POST request to create a new Keyfactor security
 // and returns a CreateSecurityIdentityResponse struct. The function takes argument for a CreateSecurityIdentityArg struct
+// TODO?
 func (c *Client) CreateSecurityIdentity(csia *CreateSecurityIdentityArg) (*CreateSecurityIdentityResponse, error) {
 	log.Println("[INFO] Creating new Keyfactor security identity")
 
@@ -84,29 +88,20 @@ func (c *Client) CreateSecurityIdentity(csia *CreateSecurityIdentityArg) (*Creat
 func (c *Client) DeleteSecurityIdentity(id int) error {
 	log.Printf("[INFO] Deleting Keyfactor security identity with ID %d", id)
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	endpoint := "Security/Identities/" + fmt.Sprintf("%d", id) // Append ID to complete endpoint
-	keyfactorAPIStruct := &request{
-		Method:   "DELETE",
-		Endpoint: endpoint,
-		Headers:  headers,
-		Payload:  nil,
-	}
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	_, httpResp, err := apiClient.SecurityApi.SecurityIdentityPermissions(context.Background(), int32(id)).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
+	if httpResp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("[ERROR] Something unexpected happened, DELETE call to Security/Identities/{id} returned status %d", httpResp.StatusCode)
 	}
 	return nil
 }
@@ -142,6 +137,7 @@ func (c *Client) GetSecurityRoles() (GetSecurityRolesResponse, error) {
 	return jsonResp, nil
 }
 
+// TODO?
 func (c *Client) GetSecurityRole(id interface{}) (*GetSecurityRoleResponse, error) {
 	log.Printf("[INFO] Getting Keyfactor security role with ID %v", id)
 
@@ -220,35 +216,27 @@ func (c *Client) GetSecurityRole(id interface{}) (*GetSecurityRoleResponse, erro
 func (c *Client) DeleteSecurityRole(id int) error {
 	log.Printf("[INFO] Deleting Keyfactor security role with ID %d", id)
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	endpoint := "Security/Roles/" + fmt.Sprintf("%d", id) // Append ID to complete endpoint
-	keyfactorAPIStruct := &request{
-		Method:   "DELETE",
-		Endpoint: endpoint,
-		Headers:  headers,
-		Payload:  nil,
-	}
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	resp, err := apiClient.SecurityRolesApi.SecurityRolesDeleteSecurityRole(context.Background(), int32(id)).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return err
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
+		return fmt.Errorf("[ERROR] Something unexpected happened, DELETE call to /Security/Roles/{id} returned status %d", resp.StatusCode)
 	}
 	return nil
 }
 
 // CreateSecurityRole creates a new Keyfacor security role. This function takes argument for a CreateSecurityRoleArg
 // struct and returns a CreateSecurityRoleResponse struct.
+// TODO?
 func (c *Client) CreateSecurityRole(input *CreateSecurityRoleArg) (*CreateSecurityRoleResponse, error) {
 	log.Println("[INFO] Creating new Keyfactor security role")
 
@@ -287,6 +275,7 @@ func (c *Client) CreateSecurityRole(input *CreateSecurityRoleArg) (*CreateSecuri
 
 // UpdateSecurityRole updates the Keyfacor security role. This function takes argument for a CreateSecurityRoleArg
 // struct and returns a CreateSecurityRoleResponse struct.
+// TODO?
 func (c *Client) UpdateSecurityRole(input *UpdateSecurityRoleArg) (*UpdateSecurityRoleResponse, error) {
 	log.Printf("[INFO] Updating Keyfactor security role with ID %d", input.Id)
 

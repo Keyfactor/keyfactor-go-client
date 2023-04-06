@@ -1,9 +1,9 @@
-package api_test
+package api
 
 import (
-	"github.com/Keyfactor/keyfactor-go-client/api"
 	"io"
 	"log"
+	"net/http"
 	"testing"
 )
 
@@ -16,43 +16,43 @@ const (
 )
 
 type storeTypeTestArgs struct {
-	storeType *api.CertificateStoreType
+	storeType *CertificateStoreType
 	action    string
 	id        int
 	name      string
 }
 type storeTypeTestFields struct {
-	//hostname        string
-	//httpClient      *http.Client
-	//basicAuthString string
+	hostname        string
+	httpClient      *http.Client
+	basicAuthString string
 }
 type storeTypeTest struct {
 	name    string
 	fields  storeTypeTestFields
 	args    storeTypeTestArgs
-	want    *api.CertificateStoreType
+	want    *CertificateStoreType
 	wantErr bool
 }
 
-var testStoreType = &api.CertificateStoreType{
-	Name:       "SampleStoreType",
-	ShortName:  "SAMPLETYPE",
-	Capability: "SAMPLETYPE",
-	SupportedOperations: &api.StoreTypeSupportedOperations{
+var testStoreType = &CertificateStoreType{
+	Name:       "Testy38",
+	ShortName:  "Testy38",
+	Capability: "Testy38",
+	SupportedOperations: &StoreTypeSupportedOperations{
 		Add:        false,
 		Create:     false,
 		Discovery:  false,
 		Enrollment: false,
 		Remove:     false,
 	},
-	Properties:      &[]api.StoreTypePropertyDefinition{},
-	EntryParameters: &[]api.EntryParameter{},
-	PasswordOptions: &api.StoreTypePasswordOptions{
+	Properties:      &[]StoreTypePropertyDefinition{},
+	EntryParameters: &[]EntryParameter{},
+	PasswordOptions: &StoreTypePasswordOptions{
 		EntrySupported: false,
 		StoreRequired:  false,
 		Style:          "Default",
 	},
-	PrivateKeyAllowed:  "Forbidden",
+	PrivateKeyAllowed:  "forbidden",
 	JobProperties:      &[]string{},
 	ServerRequired:     false,
 	PowerShell:         false,
@@ -60,7 +60,7 @@ var testStoreType = &api.CertificateStoreType{
 	CustomAliasAllowed: "Forbidden",
 }
 
-func runStoreTypeTests(t *testing.T, tests []storeTypeTest, c *api.Client) {
+func runStoreTypeTests(t *testing.T, tests []storeTypeTest, c *Client) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			switch tt.args.action {
@@ -156,9 +156,10 @@ func runStoreTypeTests(t *testing.T, tests []storeTypeTest, c *api.Client) {
 	}
 }
 
+// TODO
 func TestClient_CreateStoreType(t *testing.T) {
 	log.SetOutput(io.Discard)
-	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	c, kfcErr := NewKeyfactorClient(&AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
@@ -183,7 +184,7 @@ func TestClient_CreateStoreType(t *testing.T) {
 				storeType: testStoreType,
 				action:    ActionDelete,
 			},
-			want: &api.CertificateStoreType{
+			want: &CertificateStoreType{
 				Name: testStoreType.Name,
 			},
 			wantErr: false,
@@ -194,7 +195,7 @@ func TestClient_CreateStoreType(t *testing.T) {
 
 func TestClient_DeleteCertificateStoreType(t *testing.T) {
 	log.SetOutput(io.Discard)
-	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	c, kfcErr := NewKeyfactorClient(&AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
@@ -230,7 +231,7 @@ func TestClient_DeleteCertificateStoreType(t *testing.T) {
 
 func TestClient_GetCertificateStoreType(t *testing.T) {
 	log.SetOutput(io.Discard)
-	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	c, kfcErr := NewKeyfactorClient(&AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
@@ -273,7 +274,7 @@ func TestClient_GetCertificateStoreType(t *testing.T) {
 
 func TestClient_ListCertificateStoreTypes(t *testing.T) {
 	log.SetOutput(io.Discard)
-	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	c, kfcErr := NewKeyfactorClient(&AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
@@ -296,13 +297,13 @@ func TestClient_ListCertificateStoreTypes(t *testing.T) {
 
 func TestClient_UpdateStoreType(t *testing.T) {
 	log.SetOutput(io.Discard)
-	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	c, kfcErr := NewKeyfactorClient(&AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
 	}
 	updatedStoreType := *testStoreType
-	updatedStoreType.Name = "TestStoreType2"
+	updatedStoreType.Name = "TestStoreType8"
 	updatedStoreType.PowerShell = !testStoreType.PowerShell
 
 	tests := []storeTypeTest{
