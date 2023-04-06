@@ -27,6 +27,7 @@ type Client struct {
 	hostname        string
 	httpClient      *http.Client
 	basicAuthString string
+	apiPath         string
 }
 
 // AuthConfig is a struct holding all necessary client configuration data
@@ -37,6 +38,7 @@ type AuthConfig struct {
 	Username string
 	Password string
 	Domain   string
+	APIPath  string
 }
 
 // NewKeyfactorClient creates a new Keyfactor client instance. A configured Client is returned with methods used to
@@ -103,6 +105,7 @@ func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
 		hostname:        auth.Hostname,
 		httpClient:      &http.Client{Timeout: 10 * time.Second},
 		basicAuthString: buildBasicAuthString(auth),
+		apiPath:         auth.APIPath,
 	}
 
 	_, err := c.sendRequest(keyfactorAPIStruct)
@@ -129,7 +132,31 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	if u.Scheme != "https" {
 		u.Scheme = "https"
 	}
-	endpoint := "KeyfactorAPI/" + request.Endpoint
+
+	// Set request endpoint
+	var (
+		apiPrefix string
+		prefixSet bool
+	)
+	if c.apiPath == "" {
+		apiPrefix, prefixSet = os.LookupEnv("KEYFACTOR_API_PATH")
+		if !prefixSet { // If not set, use default
+			apiPrefix = "KeyfactorAPI/"
+		}
+	} else {
+		apiPrefix = c.apiPath
+	}
+
+	//check if trailing slash is present
+	if !strings.HasSuffix(apiPrefix, "/") {
+		apiPrefix = apiPrefix + "/"
+	}
+	//check if leading slash is present
+	if strings.HasPrefix(apiPrefix, "/") {
+		apiPrefix = strings.TrimPrefix(apiPrefix, "/")
+	}
+
+	endpoint := apiPrefix + request.Endpoint
 	u.Path = path.Join(u.Path, endpoint) // Attach enroll endpoint
 
 	// Set request query
