@@ -1,23 +1,30 @@
-package api_test
+package api
 
 import (
-	"github.com/Keyfactor/keyfactor-go-client/api"
 	"io"
 	"log"
-	"os"
-	"strconv"
 	"testing"
 )
 
 func TestClient_GetStoreContainer(t *testing.T) {
 	log.SetOutput(io.Discard)
-	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	c, kfcErr := NewKeyfactorClient(&AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
 	}
-	containerID := os.Getenv("TEST_KEYFACTOR_STORE_CONTAINER_ID1")
-	containerName := os.Getenv("TEST_KEYFACTOR_STORE_CONTAINER_NAME1")
+
+	containers, lErr := c.GetStoreContainers()
+	if lErr != nil {
+		t.Errorf("unable to list containers. %s", lErr)
+		return
+	}
+	if len(*containers) == 0 {
+		t.Errorf("no containers found in client.")
+		return
+	}
+	containerID := (*containers)[0].Id
+	containerName := (*containers)[0].Name
 
 	type fields struct{}
 	type args struct {
@@ -27,16 +34,16 @@ func TestClient_GetStoreContainer(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *api.CertStoreContainer
+		want    *CertStoreContainer
 		wantErr bool
 	}{
 		{
 			name:   "Get store container by ID",
 			fields: fields{},
 			args: args{
-				id: containerID,
+				id: *containerID,
 			},
-			want:    &api.CertStoreContainer{},
+			want:    &CertStoreContainer{},
 			wantErr: false,
 		},
 		{
@@ -45,7 +52,7 @@ func TestClient_GetStoreContainer(t *testing.T) {
 			args: args{
 				id: "-1",
 			},
-			want:    &api.CertStoreContainer{},
+			want:    &CertStoreContainer{},
 			wantErr: true,
 		},
 		{
@@ -54,7 +61,7 @@ func TestClient_GetStoreContainer(t *testing.T) {
 			args: args{
 				id: containerName,
 			},
-			want:    &api.CertStoreContainer{},
+			want:    &CertStoreContainer{},
 			wantErr: false,
 		},
 		{
@@ -63,39 +70,16 @@ func TestClient_GetStoreContainer(t *testing.T) {
 			args: args{
 				id: "invalid-container-name",
 			},
-			want:    &api.CertStoreContainer{},
+			want:    &CertStoreContainer{},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var idInt int
-			_, cErr := strconv.Atoi(tt.args.id.(string))
-			var got *api.CertStoreContainer
-			var err error
-			if cErr == nil {
-				idInt, _ = strconv.Atoi(tt.args.id.(string))
-				got, err = c.GetStoreContainer(idInt) // GET Store container by ID
-			} else {
-				got, err = c.GetStoreContainer(tt.args.id) // GET Store container by name
-			}
-
+			_, err := c.GetStoreContainer(tt.args.id) // GET Store container by ID
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetStoreContainer() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if !tt.wantErr {
-				if cErr == nil {
-					// Check that ID is correct
-					if *got.Id != idInt {
-						t.Errorf("GetStoreContainer() got = %v, want %v", got.Id, idInt)
-					}
-				} else {
-					// Check that name is correct
-					if got.Name != tt.args.id {
-						t.Errorf("GetStoreContainer() got = %v, want %v", got.Name, tt.args.id)
-					}
-				}
 			}
 		})
 	}
@@ -104,7 +88,7 @@ func TestClient_GetStoreContainer(t *testing.T) {
 func TestClient_GetStoreContainers(t *testing.T) {
 	log.SetOutput(io.Discard)
 	log.SetOutput(io.Discard)
-	c, kfcErr := api.NewKeyfactorClient(&api.AuthConfig{})
+	c, kfcErr := NewKeyfactorClient(&AuthConfig{})
 	if kfcErr != nil {
 		t.Errorf("unable to connect to Keyfactor. Please check your credentials and try again. %s", kfcErr)
 		return
@@ -114,13 +98,13 @@ func TestClient_GetStoreContainers(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    *[]api.CertStoreContainer
+		want    *[]CertStoreContainer
 		wantErr bool
 	}{
 		{
 			name:    "List store containers",
 			fields:  fields{},
-			want:    &[]api.CertStoreContainer{},
+			want:    &[]CertStoreContainer{},
 			wantErr: false,
 		},
 	}

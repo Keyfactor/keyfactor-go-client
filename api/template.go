@@ -1,9 +1,10 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
 // GetTemplate takes arguments for a template ID used to facilitate the retrieval
@@ -14,68 +15,54 @@ func (c *Client) GetTemplate(Id interface{}) (*GetTemplateResponse, error) {
 		return nil, errors.New("template id required to get template")
 	}
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	endpoint := "Templates/" + fmt.Sprintf("%d", Id) // Append ID to complete endpoint
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: endpoint,
-		Headers:  headers,
-		Query:    nil,
-		Payload:  nil,
-	}
+	newId := Id.(int32)
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	resp, _, err := apiClient.TemplateApi.TemplateGetTemplate(context.Background(), newId).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return nil, err
 	}
 
-	jsonResp := &GetTemplateResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	return jsonResp, err
+	var newResp GetTemplateResponse
+	mapResp, _ := resp.ToMap()
+	jsonData, _ := json.Marshal(mapResp)
+	json.Unmarshal(jsonData, &newResp)
+
+	return &newResp, err
 }
 
 // GetTemplates asks Keyfactor for a complete list of known certificate templates. A list of
 // GetTemplateResponse structures is returned, containing the template context.
 func (c *Client) GetTemplates() ([]GetTemplateResponse, error) {
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: "Templates/",
-		Headers:  headers,
-		Query:    nil,
-		Payload:  nil,
-	}
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	resp, _, err := apiClient.TemplateApi.TemplateGetTemplates(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return nil, err
 	}
 
-	var jsonResp []GetTemplateResponse
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
+	var newResp []GetTemplateResponse
+	for i, _ := range resp {
+		var newTemp GetTemplateResponse
+		mapResp, _ := resp[i].ToMap()
+		jsonData, _ := json.Marshal(mapResp)
+		json.Unmarshal(jsonData, &newTemp)
+		newResp = append(newResp, newTemp)
 	}
-	return jsonResp, err
+
+	return newResp, err
 }
 
 // UpdateTemplate takes arguments for a UpdateTemplateArg structure used to facilitate the modification
@@ -83,31 +70,30 @@ func (c *Client) GetTemplates() ([]GetTemplateResponse, error) {
 // to a UpdateTemplateResponse structure is returned, containing the template context.
 func (c *Client) UpdateTemplate(uta *UpdateTemplateArg) (*UpdateTemplateResponse, error) {
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	keyfactorAPIStruct := &request{
-		Method:   "PUT",
-		Endpoint: "Templates/",
-		Headers:  headers,
-		Query:    nil,
-		Payload:  uta,
-	}
+	configuration := keyfactor.NewConfiguration()
+	apiClient := keyfactor.NewAPIClient(configuration)
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	var newReq keyfactor.ModelsTemplateUpdateRequest
+	jsonData, _ := json.Marshal(newReq)
+	json.Unmarshal(jsonData, &newReq)
+
+	resp, _, err := apiClient.TemplateApi.TemplateUpdateTemplate(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).Template(newReq).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return nil, err
 	}
 
-	jsonResp := &UpdateTemplateResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
+	var newTemp GetTemplateResponse
+	mapResp, _ := resp.ToMap()
+	jsonData, _ = json.Marshal(mapResp)
+	json.Unmarshal(jsonData, &newTemp)
+
+	newResp := UpdateTemplateResponse{
+		GetTemplateResponse: newTemp,
 	}
-	return jsonResp, err
+
+	return &newResp, err
 }
