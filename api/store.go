@@ -505,15 +505,15 @@ func validateUpdateStoreArgs(ca *UpdateStoreFctArgs) error {
 
 // buildPropertiesInterface takes argument for an array of StringTuple and returns an interface of the associated values
 // in map[string]interface{} elements.
-func buildPropertiesInterface(properties map[string]string) interface{} {
+func buildPropertiesInterface(properties map[string]interface{}) interface{} {
 	// Create temporary array of interfaces
 	// When updating a property in Keyfactor, API expects {"key": {"value": "key-value"}} - Build this interface
 	propertiesInterface := make(map[string]interface{})
 
 	for key, value := range properties {
 		inside := make(map[string]interface{}) // Create {"value": "<key-value>"} interface
-		inside["value"] = value
-		propertiesInterface[key] = inside // Create {"<key>": {"value": "key-value"}} interface
+		inside["value"] = value                // TODO: put plain string if not an interface
+		propertiesInterface[key] = inside      // Create {"<key>": {"value": "key-value"}} interface
 	}
 
 	return propertiesInterface

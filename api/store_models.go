@@ -13,14 +13,14 @@ type CreateStoreFctArgs struct {
 	// automatically populated by the CreateStore method. However, if configured, this field will be used.
 	PropertiesString string `json:"Properties,omitempty"`
 	// Mapped name-value pair field used to configure properties.
-	Properties            map[string]string    `json:"-"`
-	AgentId               string               `json:"AgentId"`
-	AgentAssigned         *bool                `json:"AgentAssigned,omitempty"`
-	ContainerName         *string              `json:"ContainerName,omitempty"`
-	InventorySchedule     *InventorySchedule   `json:"InventorySchedule,omitempty"`
-	ReEnrollmentStatus    *ReEnrollmnentConfig `json:"ReEnrollmentStatus,omitempty"`
-	SetNewPasswordAllowed *bool                `json:"SetNewPasswordAllowed,omitempty"`
-	Password              *StorePasswordConfig `json:"Password,omitempty"`
+	Properties            map[string]interface{} `json:"-"`
+	AgentId               string                 `json:"AgentId"`
+	AgentAssigned         *bool                  `json:"AgentAssigned,omitempty"`
+	ContainerName         *string                `json:"ContainerName,omitempty"`
+	InventorySchedule     *InventorySchedule     `json:"InventorySchedule,omitempty"`
+	ReEnrollmentStatus    *ReEnrollmnentConfig   `json:"ReEnrollmentStatus,omitempty"`
+	SetNewPasswordAllowed *bool                  `json:"SetNewPasswordAllowed,omitempty"`
+	Password              *StorePasswordConfig   `json:"Password,omitempty"`
 }
 
 // UpdateStoreFctArgs holds the function arguments used for calling the UpdateStore method.
@@ -62,33 +62,50 @@ type ReEnrollmnentConfig struct {
 }
 
 // StorePasswordConfig configures the password field for a new certificate store.
+// USED FOR GETTING SECRET TYPE FIELDS
 type StorePasswordConfig struct {
-	Value          *string `json:"Value"`
-	SecretTypeGuid *string `json:"SecretTypeGuid,omitempty"`
-	InstanceId     *string `json:"InstanceId,omitempty"`
-} // ProviderTypeParameterValues - Not yet implemented
-// ProviderTypeParameterValues ProviderTypeParams - Not implemented
+	Value                       *string                    `json:"Value"`
+	SecretTypeGuid              *string                    `json:"SecretTypeGuid"`
+	InstanceId                  *string                    `json:"InstanceId"`
+	InstanceGuid                *string                    `json:"InstanceGuid"`
+	ProviderTypeParameterValues *[]ProviderTypeParamValues `json:"ProviderTypeParameterValues"`
+	ProviderId                  *string                    `json:"ProviderId"`
+	IsManaged                   bool                       `json:"IsManaged"`
+}
 
 /* Future non-critical functionality */
 
+type ProviderTypeParamValues struct {
+	Id                 *string             `json:"Id"`
+	Value              *string             `json:"Value"`
+	InstanceId         *string             `json:InstanceId"`
+	InstanceGuid       *string             `json:InstanceGuid"`
+	ProviderTypeParams *ProviderTypeParams `json:"ProviderTypeParams"`
+	// Provider     ProviderParams
+}
+
 type ProviderTypeParams struct {
-	Id           string
-	Value        string
-	InstanceId   string
-	InstanceGuid string
-	Provider     ProviderParams
+	Id            *string `json:"Id"`
+	Name          *string `json:"Name`
+	DisplayName   *string `json:"DisplayName`
+	DataType      *int    `json:"DataType"`
+	InstanceLevel bool    `json:"InstanceLevel`
+	// ProviderType
 }
 
-type ProviderParams struct {
-	Id           int
-	Name         string
-	Area         int
-	ProviderType ProviderType
+// Used to post regular secret-type fields
+type SecretField struct {
+	SecretValue string `json:"SecretValue`
 }
 
-type ProviderType struct {
-	Id   string
-	Name string
+// Used to post PAM-type secret fields
+type PAMField struct {
+	// this interface should be a json object
+	// key is the parameter name
+	// value is the parameter value
+	Parameters interface{} `json:"Parameters"`
+	// Provider int id
+	Provider string `json:Provider"`
 }
 
 // CertStoreTypeResponse contains the response elements returned from the GetCertificateStoreType method.
