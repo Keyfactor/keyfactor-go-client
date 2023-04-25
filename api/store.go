@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
 // CreateStore takes arguments for CreateStoreFctArgs to facilitate the creation
@@ -457,22 +455,22 @@ func (c *Client) GetCertStoreInventory(storeId string) (*[]CertStoreInventory, e
 }
 
 // unmarshalPropertiesString unmarshalls a JSON string and serializes it into an array of StringTuple.
-func unmarshalPropertiesString(properties string) map[string]string {
+func unmarshalPropertiesString(properties string) map[string]interface{} {
 	if properties != "" {
 		// First, unmarshal JSON properties string to []interface{}
 		var tempInterface interface{}
 		if err := json.Unmarshal([]byte(properties), &tempInterface); err != nil {
-			return make(map[string]string)
+			return make(map[string]interface{})
 		}
 		// Then, iterate through each key:value pair and serialize into map[string]string
-		newMap := make(map[string]string)
+		newMap := make(map[string]interface{})
 		for key, value := range tempInterface.(map[string]interface{}) {
-			newMap[key] = value.(string)
+			newMap[key] = value
 		}
 		return newMap
 	}
 
-	return make(map[string]string)
+	return make(map[string]interface{})
 }
 
 func validateCreateStoreArgs(ca *CreateStoreFctArgs) error {

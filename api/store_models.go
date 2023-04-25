@@ -20,7 +20,7 @@ type CreateStoreFctArgs struct {
 	InventorySchedule     *InventorySchedule     `json:"InventorySchedule,omitempty"`
 	ReEnrollmentStatus    *ReEnrollmnentConfig   `json:"ReEnrollmentStatus,omitempty"`
 	SetNewPasswordAllowed *bool                  `json:"SetNewPasswordAllowed,omitempty"`
-	Password              *StorePasswordConfig   `json:"Password,omitempty"`
+	Password              *interface{}           `json:"Password,omitempty"` // type: api.StorePasswordConfig
 }
 
 // UpdateStoreFctArgs holds the function arguments used for calling the UpdateStore method.
@@ -64,28 +64,28 @@ type ReEnrollmnentConfig struct {
 // StorePasswordConfig configures the password field for a new certificate store.
 // USED FOR GETTING SECRET TYPE FIELDS
 type StorePasswordConfig struct {
-	Value                       *string                    `json:"Value"`
+	Value                       string                     `json:"Value"`
 	SecretTypeGuid              *string                    `json:"SecretTypeGuid"`
 	InstanceId                  *string                    `json:"InstanceId"`
 	InstanceGuid                *string                    `json:"InstanceGuid"`
 	ProviderTypeParameterValues *[]ProviderTypeParamValues `json:"ProviderTypeParameterValues"`
-	ProviderId                  *string                    `json:"ProviderId"`
+	ProviderId                  *int                       `json:"ProviderId"`
 	IsManaged                   bool                       `json:"IsManaged"`
 }
 
 /* Future non-critical functionality */
 
 type ProviderTypeParamValues struct {
-	Id                 *string             `json:"Id"`
-	Value              *string             `json:"Value"`
-	InstanceId         *string             `json:InstanceId"`
-	InstanceGuid       *string             `json:InstanceGuid"`
-	ProviderTypeParams *ProviderTypeParams `json:"ProviderTypeParams"`
+	Id                *int                `json:"Id"`
+	Value             *string             `json:"Value"`
+	InstanceId        *string             `json:InstanceId"`
+	InstanceGuid      *string             `json:InstanceGuid"`
+	ProviderTypeParam *ProviderTypeParams `json:"ProviderTypeParam"`
 	// Provider     ProviderParams
 }
 
 type ProviderTypeParams struct {
-	Id            *string `json:"Id"`
+	Id            *int    `json:"Id"`
 	Name          *string `json:"Name`
 	DisplayName   *string `json:"DisplayName`
 	DataType      *int    `json:"DataType"`
@@ -145,23 +145,23 @@ type CertStoreTypeResponse struct {
 }
 
 type GetCertificateStoreResponse struct {
-	Id                      string              `json:"Id,omitempty"`
-	ContainerId             int                 `json:"ContainerId,omitempty"`
-	ClientMachine           string              `json:"ClientMachine,omitempty"`
-	StorePath               string              `json:"Storepath,omitempty"`
-	CertStoreInventoryJobId string              `json:"CertStoreInventoryJobId,omitempty"`
-	CertStoreType           int                 `json:"CertStoreType,omitempty"`
-	Approved                bool                `json:"Approved,omitempty"`
-	CreateIfMissing         bool                `json:"CreateIfMissing,omitempty"`
-	PropertiesString        string              `json:"Properties,omitempty"`
-	Properties              map[string]string   `json:"-"`
-	AgentId                 string              `json:"AgentId,omitempty"`
-	AgentAssigned           bool                `json:"AgentAssigned,omitempty"`
-	ContainerName           string              `json:"ContainerName,omitempty"`
-	InventorySchedule       InventorySchedule   `json:"InventorySchedule"`
-	ReenrollmentStatus      ReEnrollmnentConfig `json:"ReenrollmentStatus,omitempty"`
-	SetNewPasswordAllowed   bool                `json:"SetNewPasswordAllowed,omitempty"`
-	Password                StorePasswordConfig `json:"Password,omitempty"`
+	Id                      string                 `json:"Id,omitempty"`
+	ContainerId             int                    `json:"ContainerId,omitempty"`
+	ClientMachine           string                 `json:"ClientMachine,omitempty"`
+	StorePath               string                 `json:"Storepath,omitempty"`
+	CertStoreInventoryJobId string                 `json:"CertStoreInventoryJobId,omitempty"`
+	CertStoreType           int                    `json:"CertStoreType,omitempty"`
+	Approved                bool                   `json:"Approved,omitempty"`
+	CreateIfMissing         bool                   `json:"CreateIfMissing,omitempty"`
+	PropertiesString        string                 `json:"Properties,omitempty"`
+	Properties              map[string]interface{} `json:"-"`
+	AgentId                 string                 `json:"AgentId,omitempty"`
+	AgentAssigned           bool                   `json:"AgentAssigned,omitempty"`
+	ContainerName           string                 `json:"ContainerName,omitempty"`
+	InventorySchedule       InventorySchedule      `json:"InventorySchedule"`
+	ReenrollmentStatus      ReEnrollmnentConfig    `json:"ReenrollmentStatus,omitempty"`
+	SetNewPasswordAllowed   bool                   `json:"SetNewPasswordAllowed,omitempty"`
+	Password                StorePasswordConfig    `json:"Password,omitempty"`
 }
 
 // PropertyDefinition defines property fields associated with a certificate store type, and is returned by the
