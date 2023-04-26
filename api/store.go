@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"log"
 	"net/http"
+
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
 // CreateStore takes arguments for CreateStoreFctArgs to facilitate the creation
@@ -153,7 +154,7 @@ func (c *Client) DeleteCertificateStore(storeId string) error {
 // that represent all certificate stores associated with a Keyfactor Command instance.
 
 // TODO?
-func (c *Client) ListCertificateStores() (*[]GetCertificateStoreResponse, error) {
+func (c *Client) ListCertificateStores(params *map[string]interface{}) (*[]GetCertificateStoreResponse, error) {
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -164,6 +165,18 @@ func (c *Client) ListCertificateStores() (*[]GetCertificateStoreResponse, error)
 
 	query := apiQuery{
 		Query: []StringTuple{},
+	}
+	if params != nil {
+		sId, ok := (*params)["Id"]
+		if ok {
+			var resp, err = c.GetCertificateStoreByID(fmt.Sprintf("%s", sId.([]string)[0]))
+			if err != nil {
+				return nil, err
+			}
+			return &[]GetCertificateStoreResponse{*resp}, nil
+		}
+
+		query, _ = buildQuery(*params, "certificateStoreQuery.queryString")
 	}
 
 	endpoint := "CertificateStores/"
