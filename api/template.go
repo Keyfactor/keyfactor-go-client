@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
 	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
@@ -18,7 +19,7 @@ func (c *Client) GetTemplate(Id interface{}) (*GetTemplateResponse, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	newId := Id.(int32)
@@ -44,7 +45,7 @@ func (c *Client) GetTemplates() ([]GetTemplateResponse, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.TemplateApi.TemplateGetTemplates(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
@@ -73,7 +74,7 @@ func (c *Client) UpdateTemplate(uta *UpdateTemplateArg) (*UpdateTemplateResponse
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	var newReq keyfactor.ModelsTemplateUpdateRequest

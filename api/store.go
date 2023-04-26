@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"log"
 	"net/http"
+
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
 // CreateStore takes arguments for CreateStoreFctArgs to facilitate the creation
@@ -133,7 +134,7 @@ func (c *Client) DeleteCertificateStore(storeId string) error {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, err := apiClient.CertificateStoreApi.CertificateStoreDeleteCertificateStore(context.Background(), storeId).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
@@ -153,7 +154,7 @@ func (c *Client) DeleteCertificateStore(storeId string) error {
 // that represent all certificate stores associated with a Keyfactor Command instance.
 
 // TODO?
-func (c *Client) ListCertificateStores() (*[]GetCertificateStoreResponse, error) {
+func (c *Client) ListCertificateStores(params *map[string]interface{}) (*[]GetCertificateStoreResponse, error) {
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -164,6 +165,18 @@ func (c *Client) ListCertificateStores() (*[]GetCertificateStoreResponse, error)
 
 	query := apiQuery{
 		Query: []StringTuple{},
+	}
+	if params != nil {
+		sId, ok := (*params)["Id"]
+		if ok {
+			var resp, err = c.GetCertificateStoreByID(fmt.Sprintf("%s", sId.([]string)[0]))
+			if err != nil {
+				return nil, err
+			}
+			return &[]GetCertificateStoreResponse{*resp}, nil
+		}
+
+		query, _ = buildQuery(*params, "certificateStoreQuery.queryString")
 	}
 
 	endpoint := "CertificateStores/"
@@ -298,7 +311,7 @@ func (c *Client) AddCertificateToStores(config *AddCertificateToStore) ([]string
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	newCollectionId := int32(config.CollectionId)
@@ -352,7 +365,7 @@ func (c *Client) RemoveCertificateFromStores(config *RemoveCertificateFromStore)
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	newCollectionId := int32(config.CollectionId)
@@ -389,7 +402,7 @@ func (c *Client) GetCertStoreInventory(storeId string) (*[]CertStoreInventory, e
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.CertificateStoreApi.CertificateStoreGetCertificateStoreInventory(context.Background(), storeId).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
@@ -444,22 +457,22 @@ func (c *Client) GetCertStoreInventory(storeId string) (*[]CertStoreInventory, e
 }
 
 // unmarshalPropertiesString unmarshalls a JSON string and serializes it into an array of StringTuple.
-func unmarshalPropertiesString(properties string) map[string]string {
+func unmarshalPropertiesString(properties string) map[string]interface{} {
 	if properties != "" {
 		// First, unmarshal JSON properties string to []interface{}
 		var tempInterface interface{}
 		if err := json.Unmarshal([]byte(properties), &tempInterface); err != nil {
-			return make(map[string]string)
+			return make(map[string]interface{})
 		}
 		// Then, iterate through each key:value pair and serialize into map[string]string
-		newMap := make(map[string]string)
+		newMap := make(map[string]interface{})
 		for key, value := range tempInterface.(map[string]interface{}) {
-			newMap[key] = value.(string)
+			newMap[key] = value
 		}
 		return newMap
 	}
 
-	return make(map[string]string)
+	return make(map[string]interface{})
 }
 
 func validateCreateStoreArgs(ca *CreateStoreFctArgs) error {
@@ -492,15 +505,15 @@ func validateUpdateStoreArgs(ca *UpdateStoreFctArgs) error {
 
 // buildPropertiesInterface takes argument for an array of StringTuple and returns an interface of the associated values
 // in map[string]interface{} elements.
-func buildPropertiesInterface(properties map[string]string) interface{} {
+func buildPropertiesInterface(properties map[string]interface{}) interface{} {
 	// Create temporary array of interfaces
 	// When updating a property in Keyfactor, API expects {"key": {"value": "key-value"}} - Build this interface
 	propertiesInterface := make(map[string]interface{})
 
 	for key, value := range properties {
 		inside := make(map[string]interface{}) // Create {"value": "<key-value>"} interface
-		inside["value"] = value
-		propertiesInterface[key] = inside // Create {"<key>": {"value": "key-value"}} interface
+		inside["value"] = value                // TODO: put plain string if not an interface
+		propertiesInterface[key] = inside      // Create {"<key>": {"value": "key-value"}} interface
 	}
 
 	return propertiesInterface

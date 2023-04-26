@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"log"
 	"net/http"
+
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
 // GetSecurityIdentities hits the /Security/Identities endpoint with a GET request and returns a list of
@@ -91,7 +92,7 @@ func (c *Client) DeleteSecurityIdentity(id int) error {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	_, httpResp, err := apiClient.SecurityApi.SecurityIdentityPermissions(context.Background(), int32(id)).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
@@ -220,7 +221,7 @@ func (c *Client) DeleteSecurityRole(id int) error {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, err := apiClient.SecurityRolesApi.SecurityRolesDeleteSecurityRole(context.Background(), int32(id)).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()

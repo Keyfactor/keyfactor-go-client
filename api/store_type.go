@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"log"
+
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
 //type StringInt int32
@@ -63,7 +64,7 @@ func (c *Client) GetCertificateStoreTypeByName(name string) (*CertificateStoreTy
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.CertificateStoreTypeApi.CertificateStoreTypeGetCertificateStoreType1(context.Background(), name).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
@@ -94,7 +95,7 @@ func (c *Client) GetCertificateStoreTypeById(id int) (*CertificateStoreType, err
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.CertificateStoreTypeApi.CertificateStoreTypeGetCertificateStoreType0(context.Background(), int32(id)).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
@@ -117,7 +118,7 @@ func (c *Client) ListCertificateStoreTypes() (*[]CertificateStoreType, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.CertificateStoreTypeApi.CertificateStoreTypeGetTypes(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
@@ -151,7 +152,7 @@ func (c *Client) CreateStoreType(ca *CertificateStoreType) (*CertificateStoreTyp
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	var newReq keyfactor.KeyfactorApiModelsCertificateStoresTypesCertificateStoreTypeCreationRequest
@@ -186,7 +187,7 @@ func (c *Client) UpdateStoreType(ca *CertificateStoreType) (*CertificateStoreTyp
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	var newReq keyfactor.KeyfactorApiModelsCertificateStoresTypesCertificateStoreTypeUpdateRequest
@@ -215,7 +216,7 @@ func (c *Client) DeleteCertificateStoreType(id int) (*DeleteStoreType, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, err := apiClient.CertificateStoreTypeApi.CertificateStoreTypeDeleteCertificateStoreType(context.Background(), int32(id)).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()

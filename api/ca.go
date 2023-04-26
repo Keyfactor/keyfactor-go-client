@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
@@ -12,7 +13,7 @@ func (c *Client) GetCAList() ([]CA, error) {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration()
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.CertificateAuthorityApi.CertificateAuthorityGetCas(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
