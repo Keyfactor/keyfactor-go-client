@@ -33,7 +33,7 @@ func (c *Client) CreateStore(ca *CreateStoreFctArgs) (*CreateStoreResponse, erro
 	// API doesn't know what a StringTuple type is. Convert this type to an array of interfaces
 	// that the JSON library can serialize. Then, serialize to JSON, and convert to string.
 	if ca.PropertiesString == "" {
-		propertiesInterface := buildPropertiesInterface(ca.Properties)
+		propertiesInterface := ca.Properties
 		propertiesJson, err := json.Marshal(propertiesInterface)
 		if err != nil {
 			return nil, err
@@ -91,7 +91,7 @@ func (c *Client) UpdateStore(ua *UpdateStoreFctArgs) (*UpdateStoreResponse, erro
 	// API doesn't know what a StringTuple type is. Convert this type to an array of interfaces
 	// that the JSON library can serialize. Then, serialize to JSON, and convert to string.
 	if ua.PropertiesString == "" {
-		propertiesInterface := buildPropertiesInterface(ua.Properties)
+		propertiesInterface := ua.Properties
 		propertiesJson, err := json.Marshal(propertiesInterface)
 		if err != nil {
 			return nil, err
