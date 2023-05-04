@@ -1,5 +1,10 @@
 # Keyfactor Command Golang Client
 
+| :warning: | This Repository is Deprecated |
+|:---------:|:-----------------------------|
+|  Reason   | All future development of the `keyfactor-go-client` is ceased in favor of the `keyfactor-go-client-sdk`. |
+|  Alternative | [The Keyfactor Go Client SDK](https://github.com/Keyfactor/keyfactor-go-client-sdk) |
+
 The Keyfactor Command Golang Client is a Go module that provides abstracted methods of interacting with the Keyfactor API. The primary supported functionality is the creation and modification of SSL/TLS certificates, updating certificate metadata, and creating certificate stores.
 
 #### Integration status: Production - Ready for use in production environments.
