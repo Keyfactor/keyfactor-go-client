@@ -128,23 +128,23 @@ type CertStoreTypeResponse struct {
 }
 
 type GetCertificateStoreResponse struct {
-	Id                      string              `json:"Id,omitempty"`
-	ContainerId             int                 `json:"ContainerId,omitempty"`
-	ClientMachine           string              `json:"ClientMachine,omitempty"`
-	StorePath               string              `json:"Storepath,omitempty"`
-	CertStoreInventoryJobId string              `json:"CertStoreInventoryJobId,omitempty"`
-	CertStoreType           int                 `json:"CertStoreType,omitempty"`
-	Approved                bool                `json:"Approved,omitempty"`
-	CreateIfMissing         bool                `json:"CreateIfMissing,omitempty"`
-	PropertiesString        string              `json:"Properties,omitempty"`
-	Properties              map[string]string   `json:"-"`
-	AgentId                 string              `json:"AgentId,omitempty"`
-	AgentAssigned           bool                `json:"AgentAssigned,omitempty"`
-	ContainerName           string              `json:"ContainerName,omitempty"`
-	InventorySchedule       InventorySchedule   `json:"InventorySchedule"`
-	ReenrollmentStatus      ReEnrollmnentConfig `json:"ReenrollmentStatus,omitempty"`
-	SetNewPasswordAllowed   bool                `json:"SetNewPasswordAllowed,omitempty"`
-	Password                StorePasswordConfig `json:"Password,omitempty"`
+	Id                      string                 `json:"Id,omitempty"`
+	ContainerId             int                    `json:"ContainerId,omitempty"`
+	ClientMachine           string                 `json:"ClientMachine,omitempty"`
+	StorePath               string                 `json:"Storepath,omitempty"`
+	CertStoreInventoryJobId string                 `json:"CertStoreInventoryJobId,omitempty"`
+	CertStoreType           int                    `json:"CertStoreType,omitempty"`
+	Approved                bool                   `json:"Approved,omitempty"`
+	CreateIfMissing         bool                   `json:"CreateIfMissing,omitempty"`
+	PropertiesString        string                 `json:"Properties,omitempty"`
+	Properties              map[string]interface{} `json:"-"`
+	AgentId                 string                 `json:"AgentId,omitempty"`
+	AgentAssigned           bool                   `json:"AgentAssigned,omitempty"`
+	ContainerName           string                 `json:"ContainerName,omitempty"`
+	InventorySchedule       InventorySchedule      `json:"InventorySchedule"`
+	ReenrollmentStatus      ReEnrollmnentConfig    `json:"ReenrollmentStatus,omitempty"`
+	SetNewPasswordAllowed   bool                   `json:"SetNewPasswordAllowed,omitempty"`
+	Password                StorePasswordConfig    `json:"Password,omitempty"`
 }
 
 // PropertyDefinition defines property fields associated with a certificate store type, and is returned by the

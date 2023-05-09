@@ -28,7 +28,7 @@ func (c *Client) CreateStore(ca *CreateStoreFctArgs) (*CreateStoreResponse, erro
 	// API doesn't know what a StringTuple type is. Convert this type to an array of interfaces
 	// that the JSON library can serialize. Then, serialize to JSON, and convert to string.
 	if ca.PropertiesString == "" {
-		propertiesInterface := buildPropertiesInterface(ca.Properties)
+		propertiesInterface := ca.Properties
 		propertiesJson, err := json.Marshal(propertiesInterface)
 		if err != nil {
 			return nil, err
@@ -84,7 +84,7 @@ func (c *Client) UpdateStore(ua *UpdateStoreFctArgs) (*UpdateStoreResponse, erro
 	// API doesn't know what a StringTuple type is. Convert this type to an array of interfaces
 	// that the JSON library can serialize. Then, serialize to JSON, and convert to string.
 	if ua.PropertiesString == "" {
-		propertiesInterface := buildPropertiesInterface(ua.Properties)
+		propertiesInterface := ua.Properties
 		propertiesJson, err := json.Marshal(propertiesInterface)
 		if err != nil {
 			return nil, err
@@ -441,22 +441,23 @@ func (c *Client) GetCertStoreInventory(storeId string) (*[]CertStoreInventory, e
 }
 
 // unmarshalPropertiesString unmarshalls a JSON string and serializes it into an array of StringTuple.
-func unmarshalPropertiesString(properties string) map[string]string {
+func unmarshalPropertiesString(properties string) map[string]interface{} {
 	if properties != "" {
 		// First, unmarshal JSON properties string to []interface{}
 		var tempInterface interface{}
 		if err := json.Unmarshal([]byte(properties), &tempInterface); err != nil {
-			return make(map[string]string)
+			return make(map[string]interface{})
 		}
 		// Then, iterate through each key:value pair and serialize into map[string]string
-		newMap := make(map[string]string)
-		for key, value := range tempInterface.(map[string]interface{}) {
-			newMap[key] = value.(string)
-		}
-		return newMap
+		//newMap := make(map[string]string)
+		//for key, value := range tempInterface.(map[string]interface{}) {
+		//	newMap[key] = value.(string)
+		//}
+		//return newMap
+		return tempInterface.(map[string]interface{})
 	}
 
-	return make(map[string]string)
+	return make(map[string]interface{})
 }
 
 func validateCreateStoreArgs(ca *CreateStoreFctArgs) error {
