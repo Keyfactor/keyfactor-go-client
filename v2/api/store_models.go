@@ -25,8 +25,26 @@ type CreateStoreFctArgs struct {
 
 // UpdateStoreFctArgs holds the function arguments used for calling the UpdateStore method.
 type UpdateStoreFctArgs struct {
-	Id string `json:"Id,omitempty"`
-	CreateStoreFctArgs
+	Id                      string  `json:"Id,omitempty"`
+	ContainerId             *int    `json:"ContainerId,omitempty"`
+	ClientMachine           string  `json:"ClientMachine"`
+	StorePath               string  `json:"StorePath"`
+	CertStoreInventoryJobId *string `json:"CertStoreInventoryJobId,omitempty"`
+	CertStoreType           int     `json:"CertStoreType"`
+	Approved                *bool   `json:"Approved,omitempty"`
+	CreateIfMissing         *bool   `json:"CreateIfMissing,omitempty"`
+	// String JSON name-value pairs; this field is not recommended. Instead, please use Properties. This field is
+	// automatically populated by the CreateStore method. However, if configured, this field will be used.
+	PropertiesString string `json:"Properties,omitempty"`
+	// Mapped name-value pair field used to configure properties.
+	Properties            map[string]interface{} `json:"-"`
+	AgentId               string                 `json:"AgentId"`
+	AgentAssigned         *bool                  `json:"AgentAssigned,omitempty"`
+	ContainerName         *string                `json:"ContainerName,omitempty"`
+	InventorySchedule     *InventorySchedule     `json:"InventorySchedule,omitempty"`
+	ReEnrollmentStatus    *ReEnrollmnentConfig   `json:"ReEnrollmentStatus,omitempty"`
+	SetNewPasswordAllowed *bool                  `json:"SetNewPasswordAllowed,omitempty"`
+	Password              *StorePasswordConfig   `json:"Password,omitempty"`
 }
 
 // InventorySchedule holds configuration data for creating an inventory schedule for a certificate store in Keyfactor
@@ -63,7 +81,7 @@ type ReEnrollmnentConfig struct {
 
 // StorePasswordConfig configures the password field for a new certificate store.
 type StorePasswordConfig struct {
-	Value          *string `json:"Value"`
+	Value          *string `json:"SecretValue"`
 	SecretTypeGuid *string `json:"SecretTypeGuid,omitempty"`
 	InstanceId     *string `json:"InstanceId,omitempty"`
 } // ProviderTypeParameterValues - Not yet implemented
