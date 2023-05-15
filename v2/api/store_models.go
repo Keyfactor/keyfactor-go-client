@@ -20,7 +20,7 @@ type CreateStoreFctArgs struct {
 	InventorySchedule     *InventorySchedule   `json:"InventorySchedule,omitempty"`
 	ReEnrollmentStatus    *ReEnrollmnentConfig `json:"ReEnrollmentStatus,omitempty"`
 	SetNewPasswordAllowed *bool                `json:"SetNewPasswordAllowed,omitempty"`
-	Password              *StorePasswordConfig `json:"Password,omitempty"`
+	Password              *StorePasswordConfig `json:"Password"`
 }
 
 // UpdateStoreFctArgs holds the function arguments used for calling the UpdateStore method.
@@ -44,7 +44,7 @@ type UpdateStoreFctArgs struct {
 	InventorySchedule     *InventorySchedule     `json:"InventorySchedule,omitempty"`
 	ReEnrollmentStatus    *ReEnrollmnentConfig   `json:"ReEnrollmentStatus,omitempty"`
 	SetNewPasswordAllowed *bool                  `json:"SetNewPasswordAllowed,omitempty"`
-	Password              *StorePasswordConfig   `json:"Password,omitempty"`
+	Password              *StorePasswordConfig   `json:"Password"`
 }
 
 // InventorySchedule holds configuration data for creating an inventory schedule for a certificate store in Keyfactor
