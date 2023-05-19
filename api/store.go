@@ -1,11 +1,14 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
 // CreateStore takes arguments for CreateStoreFctArgs to facilitate the creation
@@ -16,6 +19,8 @@ import (
 //   - StorePath     : string
 //   - Properties    : []StringTuple *Note - Method converts this array of StringTuples to a JSON string if provided
 //   - AgentId       : string
+//
+// TODO?
 func (c *Client) CreateStore(ca *CreateStoreFctArgs) (*CreateStoreResponse, error) {
 	log.Println("[INFO] Creating new certificate store with Keyfactor")
 
@@ -72,6 +77,8 @@ func (c *Client) CreateStore(ca *CreateStoreFctArgs) (*CreateStoreResponse, erro
 //   - StorePath     : string
 //   - Properties    : []StringTuple *Note - Method converts this slice of StringTuples to a JSON string if provided
 //   - AgentId       : string
+//
+// TODO?
 func (c *Client) UpdateStore(ua *UpdateStoreFctArgs) (*UpdateStoreResponse, error) {
 	log.Println("[INFO] Creating new certificate store with Keyfactor")
 
@@ -123,29 +130,21 @@ func (c *Client) UpdateStore(ua *UpdateStoreFctArgs) (*UpdateStoreResponse, erro
 // DeleteCertificateStore takes arguments for a certificate store ID to facilitate a call to Keyfactor
 // that deletes a certificate store. Only the store ID is required.
 func (c *Client) DeleteCertificateStore(storeId string) error {
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
 
-	endpoint := "CertificateStores/" + fmt.Sprintf("%s", storeId) // Append GUID to complete endpoint
-	keyfactorAPIStruct := &request{
-		Method:   "DELETE",
-		Endpoint: endpoint,
-		Headers:  headers,
-		Payload:  nil,
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
+	apiClient := keyfactor.NewAPIClient(configuration)
+
+	resp, err := apiClient.CertificateStoreApi.CertificateStoreDeleteCertificateStore(context.Background(), storeId).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return err
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
+		return fmt.Errorf("[ERROR] Something unexpected happened, DELETE call to /Certificate/Store/{id} returned status %d", resp.StatusCode)
 	}
 
 	return nil
@@ -154,6 +153,7 @@ func (c *Client) DeleteCertificateStore(storeId string) error {
 // ListCertificateStores takes no arguments and returns a slice of CertificateStore objects
 // that represent all certificate stores associated with a Keyfactor Command instance.
 
+// TODO?
 func (c *Client) ListCertificateStores(params *map[string]interface{}) (*[]GetCertificateStoreResponse, error) {
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
@@ -207,6 +207,7 @@ func (c *Client) ListCertificateStores(params *map[string]interface{}) (*[]GetCe
 // GetCertificateStoreByID takes arguments for a certificate store ID to facilitate a call to Keyfactor
 // that retrieves a certificate store context. Only the store ID is required. A pointer to a GetStoreByIDResp struct
 // is returned that contains information on the certificate store.
+// TODO?
 func (c *Client) GetCertificateStoreByID(storeId string) (*GetCertificateStoreResponse, error) {
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
@@ -241,6 +242,7 @@ func (c *Client) GetCertificateStoreByID(storeId string) (*GetCertificateStoreRe
 // GetCertificateStoreByID takes arguments for a certificate store ID to facilitate a call to Keyfactor
 // that retrieves a certificate store context. Only the store ID is required. A pointer to a GetStoreByIDResp struct
 // is returned that contains information on the certificate store.
+// TODO?
 func (c *Client) GetCertificateStoreByContainerID(containerID interface{}) (*[]GetCertificateStoreResponse, error) {
 
 	query := apiQuery{
@@ -301,37 +303,58 @@ func (c *Client) GetCertificateStoreByContainerID(containerID interface{}) (*[]G
 	return jsonResp, nil
 }
 
-// AddCertificateToStores takes argument for a AddCertificateToStore structure and is used to remove a configured certificate
+// AddCertificateToStores takes argument for a AddCertificateToStore structure and is used to add a configured certificate
 // from one or more certificate stores.
 func (c *Client) AddCertificateToStores(config *AddCertificateToStore) ([]string, error) {
 	log.Printf("[INFO] Adding certificate with ID %d to one or more certificate stores", config.CertificateId)
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
+
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
+	apiClient := keyfactor.NewAPIClient(configuration)
+
+	newCollectionId := int32(config.CollectionId)
+	var newCertStoresList []keyfactor.ModelsCertificateStoreEntry
+	for _, cert := range *config.CertificateStores {
+		newProvider := int32(cert.EntryPassword.Provider)
+		var newParams map[string]string
+		data, _ := json.Marshal(cert.EntryPassword.Parameters)
+		json.Unmarshal(data, &newParams)
+		var newEntryPassword = keyfactor.ModelsKeyfactorAPISecret{
+			SecretValue: &cert.EntryPassword.SecretValue,
+			Parameters:  &newParams,
+			Provider:    &newProvider,
+		}
+		var newCert = keyfactor.ModelsCertificateStoreEntry{
+			CertificateStoreId: cert.CertificateStoreId,
+			Alias:              &cert.Alias,
+			JobFields:          nil,
+			Overwrite:          &cert.Overwrite,
+			EntryPassword:      &newEntryPassword,
+			PfxPassword:        nil,
+			IncludePrivateKey:  nil,
+		}
+		newCertStoresList = append(newCertStoresList, newCert)
 	}
 
-	keyfactorAPIStruct := &request{
-		Method:   "POST",
-		Endpoint: "CertificateStores/Certificates/Add",
-		Headers:  headers,
-		Payload:  &config,
+	jsonInvSched, _ := json.Marshal(config.InventorySchedule)
+	var newSchedule keyfactor.KeyfactorCommonSchedulingKeyfactorSchedule
+	json.Unmarshal(jsonInvSched, newSchedule)
+	var newReq = keyfactor.KeyfactorApiModelsCertificateStoresAddCertificateRequest{
+		CertificateId:     int32(config.CertificateId),
+		CertificateStores: newCertStoresList,
+		Schedule:          newSchedule,
+		CollectionId:      &newCollectionId,
 	}
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	resp, _, err := apiClient.CertificateStoreApi.CertificateStoreAddCertificate(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).AddRequest(newReq).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return nil, err
 	}
 
-	var jsonResp []string
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	return jsonResp, nil
+	return resp, nil
 }
 
 // RemoveCertificateFromStores takes argument for a RemoveCertificateFromStore structure, and is used to remove a certificate
@@ -339,105 +362,98 @@ func (c *Client) AddCertificateToStores(config *AddCertificateToStore) ([]string
 func (c *Client) RemoveCertificateFromStores(config *RemoveCertificateFromStore) ([]string, error) {
 	log.Println("[INFO] Removing certificate from one or more certificate stores")
 
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
+
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
+	apiClient := keyfactor.NewAPIClient(configuration)
+
+	newCollectionId := int32(config.CollectionId)
+	var newCertStoresList []keyfactor.ModelsCertificateLocationSpecifier
+	for _, cert := range *config.CertificateStores {
+		var newCert = keyfactor.ModelsCertificateLocationSpecifier{
+			Alias:              &cert.Alias,
+			CertificateStoreId: &cert.CertificateStoreId,
+			JobFields:          nil,
+		}
+		newCertStoresList = append(newCertStoresList, newCert)
 	}
 
-	keyfactorAPIStruct := &request{
-		Method:   "POST",
-		Endpoint: "CertificateStores/Certificates/Remove",
-		Headers:  headers,
-		Payload:  &config,
+	jsonInvSched, _ := json.Marshal(config.InventorySchedule)
+	var newSchedule keyfactor.KeyfactorCommonSchedulingKeyfactorSchedule
+	json.Unmarshal(jsonInvSched, newSchedule)
+	var newReq = keyfactor.KeyfactorApiModelsCertificateStoresRemoveCertificateRequest{
+		CertificateStores: newCertStoresList,
+		Schedule:          newSchedule,
+		CollectionId:      &newCollectionId,
 	}
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	resp, _, err := apiClient.CertificateStoreApi.CertificateStoreRemoveCertificate(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).RemovalRequest(newReq).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return nil, err
 	}
 
-	var jsonResp []string
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	return jsonResp, nil
+	return resp, nil
 }
 
 func (c *Client) GetCertStoreInventory(storeId string) (*[]CertStoreInventory, error) {
-	// Set Keyfactor-specific headers
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
 
-	endpoint := fmt.Sprintf("CertificateStores/%s/Inventory", storeId)
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: endpoint,
-		Headers:  headers,
-		Payload:  nil,
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
+	apiClient := keyfactor.NewAPIClient(configuration)
+
+	resp, _, err := apiClient.CertificateStoreApi.CertificateStoreGetCertificateStoreInventory(context.Background(), storeId).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return nil, err
 	}
-	var inv []interface{}
-	jsonResp := inv
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	//err = json.Unmarshal(resp.Body, &jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	var invResp []CertStoreInventory
-	if len(jsonResp) == 0 {
-		invResp = []CertStoreInventory{}
+
+	var newResp []CertStoreInventory
+
+	if len(resp) == 0 {
+		newResp = []CertStoreInventory{}
 	} else {
-		//invResp = jsonResp[0]
-
-		for _, storedCert := range jsonResp {
-			params, ok := storedCert.(map[string]interface{})["Parameters"].(map[string]interface{})
-			if !ok {
-				params = map[string]interface{}{}
-			}
-			invC := CertStoreInventory{
-				Name:                     storedCert.(map[string]interface{})["Name"].(string),
-				CertStoreInventoryItemId: int(storedCert.(map[string]interface{})["CertStoreInventoryItemId"].(float64)),
-				Certificates:             []InventoriedCertificate{},
-				Parameters:               params,
-				Thumbprints:              map[string]bool{},
-				Serials:                  map[string]bool{},
-				Ids:                      map[int]bool{},
-			}
-			for _, cert := range storedCert.(map[string]interface{})["Certificates"].([]interface{}) {
-				iCert := InventoriedCertificate{
-					Id:                       int(cert.(map[string]interface{})["Id"].(float64)),
-					IssuedDN:                 cert.(map[string]interface{})["IssuedDN"].(string),
-					SerialNumber:             cert.(map[string]interface{})["SerialNumber"].(string),
-					NotBefore:                cert.(map[string]interface{})["NotBefore"].(string),
-					NotAfter:                 cert.(map[string]interface{})["NotAfter"].(string),
-					SigningAlgorithm:         cert.(map[string]interface{})["SigningAlgorithm"].(string),
-					IssuerDN:                 cert.(map[string]interface{})["IssuerDN"].(string),
-					Thumbprint:               cert.(map[string]interface{})["Thumbprint"].(string),
-					CertStoreInventoryItemId: int(cert.(map[string]interface{})["CertStoreInventoryItemId"].(float64)),
+		for _, certInv := range resp {
+			var newInvCertList []InventoriedCertificate
+			var newParams = make(map[string]interface{})
+			for _, param := range certInv.Parameters {
+				for key, value := range param {
+					newParams[key] = value
 				}
-				invC.Certificates = append(invC.Certificates, iCert)
-				invC.Thumbprints[cert.(map[string]interface{})["Thumbprint"].(string)] = true
-				invC.Serials[cert.(map[string]interface{})["SerialNumber"].(string)] = true
-				invC.Ids[int(cert.(map[string]interface{})["Id"].(float64))] = true
-				invResp = append(invResp, invC)
 			}
+			for _, storedCert := range certInv.Certificates {
+				var newInvCert = InventoriedCertificate{
+					Id:                       int(*storedCert.Id),
+					IssuedDN:                 *storedCert.IssuedDN.Get(),
+					SerialNumber:             *storedCert.SerialNumber,
+					NotBefore:                storedCert.NotBefore.String(),
+					NotAfter:                 storedCert.NotAfter.String(),
+					SigningAlgorithm:         *storedCert.SigningAlgorithm,
+					IssuerDN:                 *storedCert.IssuerDN.Get(),
+					Thumbprint:               *storedCert.Thumbprint,
+					CertStoreInventoryItemId: int(*storedCert.CertStoreInventoryItemId),
+				}
+				newInvCertList = append(newInvCertList, newInvCert)
+			}
+			var newInv = CertStoreInventory{
+				CertStoreInventoryItemId: 0,
+				Name:                     *certInv.Name,
+				Certificates:             newInvCertList,
+				Thumbprints:              nil,
+				Serials:                  nil,
+				Ids:                      nil,
+				Properties:               nil,
+				Parameters:               newParams,
+			}
+			newResp = append(newResp, newInv)
 		}
 	}
 
 	//jsonResp.Properties = unmarshalPropertiesString(jsonResp.PropertiesString)
-	return &invResp, nil
+	return &newResp, nil
 }
 
 // unmarshalPropertiesString unmarshalls a JSON string and serializes it into an array of StringTuple.
@@ -449,12 +465,11 @@ func unmarshalPropertiesString(properties string) map[string]interface{} {
 			return make(map[string]interface{})
 		}
 		// Then, iterate through each key:value pair and serialize into map[string]string
-		//newMap := make(map[string]string)
-		//for key, value := range tempInterface.(map[string]interface{}) {
-		//	newMap[key] = value.(string)
-		//}
-		//return newMap
-		return tempInterface.(map[string]interface{})
+		newMap := make(map[string]interface{})
+		for key, value := range tempInterface.(map[string]interface{}) {
+			newMap[key] = value
+		}
+		return newMap
 	}
 
 	return make(map[string]interface{})
@@ -490,15 +505,15 @@ func validateUpdateStoreArgs(ca *UpdateStoreFctArgs) error {
 
 // buildPropertiesInterface takes argument for an array of StringTuple and returns an interface of the associated values
 // in map[string]interface{} elements.
-func buildPropertiesInterface(properties map[string]string) interface{} {
+func buildPropertiesInterface(properties map[string]interface{}) interface{} {
 	// Create temporary array of interfaces
 	// When updating a property in Keyfactor, API expects {"key": {"value": "key-value"}} - Build this interface
 	propertiesInterface := make(map[string]interface{})
 
 	for key, value := range properties {
 		inside := make(map[string]interface{}) // Create {"value": "<key-value>"} interface
-		inside["value"] = value
-		propertiesInterface[key] = inside // Create {"<key>": {"value": "key-value"}} interface
+		inside["value"] = value                // TODO: put plain string if not an interface
+		propertiesInterface[key] = inside      // Create {"<key>": {"value": "key-value"}} interface
 	}
 
 	return propertiesInterface

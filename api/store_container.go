@@ -1,47 +1,47 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
+
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
 // GetStoreContainers returns a list of store containers
 func (c *Client) GetStoreContainers() (*[]CertStoreContainer, error) {
 	log.Println("[INFO] Listing certificate store containers.")
 
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
 
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: "CertificateStoreContainers",
-		Headers:  headers,
-		Payload:  nil,
-	}
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
+	apiClient := keyfactor.NewAPIClient(configuration)
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
+	resp, _, err := apiClient.CertificateStoreContainerApi.CertificateStoreContainerGetAllCertificateStoreContainers(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
 	if err != nil {
 		return nil, err
 	}
 
-	jsonResp := &[]CertStoreContainer{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
+	var newResp []CertStoreContainer
+	for i, _ := range resp {
+		var newCont CertStoreContainer
+		mapResp, _ := resp[i].ToMap()
+		jsonData, _ := json.Marshal(mapResp)
+		json.Unmarshal(jsonData, &newCont)
+		newResp = append(newResp, newCont)
 	}
-	return jsonResp, nil
+
+	return &newResp, nil
 }
 
 // GetStoreContainer takes an ID and returns a single store container
+// TODO?
 func (c *Client) GetStoreContainer(id interface{}) (*CertStoreContainer, error) {
-	log.Printf("[INFO] Fetching certificat store containers %s.\n", id)
-
+	log.Printf("[INFO] Fetching certificate store containers %s.\n", id)
 	var endpoint string
 	var query apiQuery
 	var jsonResp interface{}

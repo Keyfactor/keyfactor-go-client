@@ -206,7 +206,7 @@ func TestClient_ListCertificateStores(t *testing.T) {
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
-			got, err := c.ListCertificateStores(nil)
+			got, err := c.ListCertificateStores()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListCertificateStores() error = %v, wantErr %v", err, tt.wantErr)
 				return

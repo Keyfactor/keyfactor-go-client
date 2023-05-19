@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"testing"
@@ -120,6 +121,7 @@ func Test_loginToKeyfactor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := loginToKeyfactor(tt.args.auth)
+			fmt.Print(got)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("loginToKeyfactor() error = %v, wantErr %v", err, tt.wantErr)
 				return

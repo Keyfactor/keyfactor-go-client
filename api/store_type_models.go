@@ -62,9 +62,9 @@ type EntryParameter struct {
 }
 
 type StoreTypePasswordOptions struct {
-	EntrySupported bool   `json:"EntrySupported"`
-	StoreRequired  bool   `json:"StoreRequired"`
-	Style          string `json:"Style"`
+	EntrySupported bool   `json:"EntrySupported,omitempty"`
+	StoreRequired  bool   `json:"StoreRequired,omitempty"`
+	Style          string `json:"string,Style,omitempty"`
 }
 
 type StoreTypeSupportedOperations struct {
