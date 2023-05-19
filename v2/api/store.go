@@ -406,9 +406,22 @@ func (c *Client) GetCertStoreInventory(storeId string) (*[]CertStoreInventory, e
 			if !ok {
 				params = map[string]interface{}{}
 			}
+
+			certMetadata := storedCert.(map[string]interface{})
+			// certMetadata["Certificates"] is an array of interface{}s
+			invItemId := 0
+			if certMetadata["Certificates"] != nil {
+				certsList := certMetadata["Certificates"].([]interface{})
+				certInstances := certsList[0].(map[string]interface{}) // todo: will this ever contain > 1?
+				invItemId = int(certInstances["Id"].(float64))
+				//certInstances := certsList["Certificates"].(map[string]interface{})
+				//invItemId = int(certInstances["Id"].(float64))
+				//invItemId = int(certObjs.([]interface{})[0].(map[string]interface{})["Id"].(float64))
+			}
+
 			invC := CertStoreInventory{
 				Name:                     storedCert.(map[string]interface{})["Name"].(string),
-				CertStoreInventoryItemId: int(storedCert.(map[string]interface{})["CertStoreInventoryItemId"].(float64)),
+				CertStoreInventoryItemId: invItemId,
 				Certificates:             []InventoriedCertificate{},
 				Parameters:               params,
 				Thumbprints:              map[string]bool{},

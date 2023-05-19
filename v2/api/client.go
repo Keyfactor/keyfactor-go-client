@@ -21,12 +21,15 @@ var (
 	EnvCommandUsername = "KEYFACTOR_USERNAME"
 	EnvCommandPassword = "KEYFACTOR_PASSWORD"
 	EnvCommandDomain   = "KEYFACTOR_DOMAIN"
+	EnvCommandAPI      = "KEYFACTOR_API_PATH"
+	DefaultAPIPath     = "KeyfactorAPI"
 )
 
 type Client struct {
 	hostname        string
 	httpClient      *http.Client
 	basicAuthString string
+	apiPath         string
 }
 
 // AuthConfig is a struct holding all necessary client configuration data
@@ -37,6 +40,7 @@ type AuthConfig struct {
 	Username string
 	Password string
 	Domain   string
+	APIPath  string
 }
 
 // NewKeyfactorClient creates a new Keyfactor client instance. A configured Client is returned with methods used to
@@ -59,6 +63,14 @@ func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
 			auth.Hostname = envHostname
 		} else {
 			return nil, fmt.Errorf("%s is required", EnvCommandHostname)
+		}
+	}
+	if auth.APIPath == "" {
+		envAPIPath := os.Getenv(EnvCommandAPI)
+		if envAPIPath != "" {
+			auth.APIPath = envAPIPath
+		} else {
+			auth.APIPath = DefaultAPIPath
 		}
 	}
 	if auth.Username == "" {
@@ -103,6 +115,7 @@ func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
 		hostname:        auth.Hostname,
 		httpClient:      &http.Client{Timeout: 10 * time.Second},
 		basicAuthString: buildBasicAuthString(auth),
+		apiPath:         auth.APIPath,
 	}
 
 	_, err := c.sendRequest(keyfactorAPIStruct)
@@ -129,7 +142,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	if u.Scheme != "https" {
 		u.Scheme = "https"
 	}
-	endpoint := "KeyfactorAPI/" + request.Endpoint
+	endpoint := fmt.Sprintf("%s/", strings.Trim(c.apiPath, "/")) + request.Endpoint
 	u.Path = path.Join(u.Path, endpoint) // Attach enroll endpoint
 
 	// Set request query
