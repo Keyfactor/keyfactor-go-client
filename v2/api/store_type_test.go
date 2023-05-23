@@ -22,7 +22,7 @@ type storeTypeTestArgs struct {
 	name      string
 }
 type storeTypeTestFields struct {
-	//hostname        string
+	//Hostname        string
 	//httpClient      *http.Client
 	//basicAuthString string
 }

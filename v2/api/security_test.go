@@ -27,7 +27,7 @@ func TestClient_CreateSecurityIdentity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -64,7 +64,7 @@ func TestClient_CreateSecurityRole(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -100,7 +100,7 @@ func TestClient_DeleteSecurityIdentity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -131,7 +131,7 @@ func TestClient_DeleteSecurityRole(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -159,7 +159,7 @@ func TestClient_GetSecurityIdentities(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -196,7 +196,7 @@ func TestClient_GetSecurityRole(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -229,7 +229,7 @@ func TestClient_GetSecurityRoles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -266,7 +266,7 @@ func TestClient_UpdateSecurityRole(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}

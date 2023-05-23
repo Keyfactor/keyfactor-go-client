@@ -27,7 +27,7 @@ func TestClient_AddCertificateToStores(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -64,7 +64,7 @@ func TestClient_CreateStore(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -100,7 +100,7 @@ func TestClient_DeleteCertificateStore(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -132,7 +132,7 @@ func TestClient_GetCertStoreInventory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -169,7 +169,7 @@ func TestClient_GetCertificateStoreByID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -202,7 +202,7 @@ func TestClient_ListCertificateStores(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -239,7 +239,7 @@ func TestClient_RemoveCertificateFromStores(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -276,7 +276,7 @@ func TestClient_UpdateStore(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}

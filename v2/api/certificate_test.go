@@ -8,7 +8,7 @@ package api
 //
 //func TestClient_DeployPFXCertificate(t *testing.T) {
 //	type fields struct {
-//		hostname        string
+//		Hostname        string
 //		httpClient      *http.Client
 //		basicAuthString string
 //	}
@@ -27,7 +27,7 @@ package api
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			c := &Client{
-//				hostname:        tt.fields.hostname,
+//				Hostname:        tt.fields.Hostname,
 //				httpClient:      tt.fields.httpClient,
 //				basicAuthString: tt.fields.basicAuthString,
 //			}
@@ -45,7 +45,7 @@ package api
 //
 //func TestClient_DownloadCertificate(t *testing.T) {
 //	type fields struct {
-//		hostname        string
+//		Hostname        string
 //		httpClient      *http.Client
 //		basicAuthString string
 //	}
@@ -68,7 +68,7 @@ package api
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			c := &Client{
-//				hostname:        tt.fields.hostname,
+//				Hostname:        tt.fields.Hostname,
 //				httpClient:      tt.fields.httpClient,
 //				basicAuthString: tt.fields.basicAuthString,
 //			}
@@ -89,7 +89,7 @@ package api
 //
 //func TestClient_EnrollCSR(t *testing.T) {
 //	type fields struct {
-//		hostname        string
+//		Hostname        string
 //		httpClient      *http.Client
 //		basicAuthString string
 //	}
@@ -108,7 +108,7 @@ package api
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			c := &Client{
-//				hostname:        tt.fields.hostname,
+//				Hostname:        tt.fields.Hostname,
 //				httpClient:      tt.fields.httpClient,
 //				basicAuthString: tt.fields.basicAuthString,
 //			}
@@ -126,7 +126,7 @@ package api
 //
 //func TestClient_EnrollPFX(t *testing.T) {
 //	type fields struct {
-//		hostname        string
+//		Hostname        string
 //		httpClient      *http.Client
 //		basicAuthString string
 //	}
@@ -145,7 +145,7 @@ package api
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			c := &Client{
-//				hostname:        tt.fields.hostname,
+//				Hostname:        tt.fields.Hostname,
 //				httpClient:      tt.fields.httpClient,
 //				basicAuthString: tt.fields.basicAuthString,
 //			}
@@ -163,7 +163,7 @@ package api
 //
 //func TestClient_GetCertificateContext(t *testing.T) {
 //	type fields struct {
-//		hostname        string
+//		Hostname        string
 //		httpClient      *http.Client
 //		basicAuthString string
 //	}
@@ -182,7 +182,7 @@ package api
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			c := &Client{
-//				hostname:        tt.fields.hostname,
+//				Hostname:        tt.fields.Hostname,
 //				httpClient:      tt.fields.httpClient,
 //				basicAuthString: tt.fields.basicAuthString,
 //			}
@@ -200,7 +200,7 @@ package api
 //
 //func TestClient_RecoverCertificate(t *testing.T) {
 //	type fields struct {
-//		hostname        string
+//		Hostname        string
 //		httpClient      *http.Client
 //		basicAuthString string
 //	}
@@ -225,7 +225,7 @@ package api
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			c := &Client{
-//				hostname:        tt.fields.hostname,
+//				Hostname:        tt.fields.Hostname,
 //				httpClient:      tt.fields.httpClient,
 //				basicAuthString: tt.fields.basicAuthString,
 //			}
@@ -249,7 +249,7 @@ package api
 //
 //func TestClient_RevokeCert(t *testing.T) {
 //	type fields struct {
-//		hostname        string
+//		Hostname        string
 //		httpClient      *http.Client
 //		basicAuthString string
 //	}
@@ -267,7 +267,7 @@ package api
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			c := &Client{
-//				hostname:        tt.fields.hostname,
+//				Hostname:        tt.fields.Hostname,
 //				httpClient:      tt.fields.httpClient,
 //				basicAuthString: tt.fields.basicAuthString,
 //			}

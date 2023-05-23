@@ -26,14 +26,14 @@ var (
 )
 
 type Client struct {
-	hostname        string
+	Hostname        string
 	httpClient      *http.Client
 	basicAuthString string
-	apiPath         string
+	ApiPath         string
 }
 
 // AuthConfig is a struct holding all necessary client configuration data
-// for communicating with the Keyfactor API. This includes the hostname,
+// for communicating with the Keyfactor API. This includes the Hostname,
 // username, password, and domain.
 type AuthConfig struct {
 	Hostname string
@@ -112,10 +112,10 @@ func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
 	}
 
 	c := &Client{
-		hostname:        auth.Hostname,
+		Hostname:        auth.Hostname,
 		httpClient:      &http.Client{Timeout: 10 * time.Second},
 		basicAuthString: buildBasicAuthString(auth),
-		apiPath:         auth.APIPath,
+		ApiPath:         auth.APIPath,
 	}
 
 	_, err := c.sendRequest(keyfactorAPIStruct)
@@ -123,7 +123,7 @@ func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
 		return nil, err
 	}
 
-	log.Printf("[INFO] Successfully logged into Keyfactor at host %s", c.hostname)
+	log.Printf("[INFO] Successfully logged into Keyfactor at host %s", c.Hostname)
 
 	return c, nil
 }
@@ -135,14 +135,14 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	if c == nil {
 		return nil, errors.New("invalid Keyfactor client, please check your configuration")
 	}
-	u, err := url.Parse(c.hostname) // Parse raw hostname into URL structure
+	u, err := url.Parse(c.Hostname) // Parse raw Hostname into URL structure
 	if err != nil {
 		return nil, err
 	}
 	if u.Scheme != "https" {
 		u.Scheme = "https"
 	}
-	endpoint := fmt.Sprintf("%s/", strings.Trim(c.apiPath, "/")) + request.Endpoint
+	endpoint := fmt.Sprintf("%s/", strings.Trim(c.ApiPath, "/")) + request.Endpoint
 	u.Path = path.Join(u.Path, endpoint) // Attach enroll endpoint
 
 	// Set request query

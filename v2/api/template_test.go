@@ -27,7 +27,7 @@ func TestClient_GetTemplate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -60,7 +60,7 @@ func TestClient_GetTemplates(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
@@ -97,7 +97,7 @@ func TestClient_UpdateTemplate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Client{
-				hostname:        tt.fields.hostname,
+				Hostname:        tt.fields.hostname,
 				httpClient:      tt.fields.httpClient,
 				basicAuthString: tt.fields.basicAuthString,
 			}
