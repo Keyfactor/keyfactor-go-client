@@ -168,7 +168,7 @@ func (c *Client) ListCertificateStores(params *map[string]interface{}) (*[]GetCe
 	}
 	if params != nil {
 		sId, ok := (*params)["Id"]
-		if ok {
+		if ok && len(sId.([]string)) > 0 {
 			var resp, err = c.GetCertificateStoreByID(fmt.Sprintf("%s", sId.([]string)[0]))
 			if err != nil {
 				return nil, err
