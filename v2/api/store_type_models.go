@@ -9,14 +9,14 @@ type CertificateStoreTypeGeneric struct {
 	Properties          *[]StoreTypePropertyDefinitionGeneric `json:"Properties"`
 	EntryParameters     *[]EntryParameterGeneric              `json:"EntryParameters"`
 	PasswordOptions     *StoreTypePasswordOptions             `json:"PasswordOptions"`
-	StorePathType       string                                `json:"StorePathType"`
-	StorePathValue      string                                `json:"StorePathValue"`
-	PrivateKeyAllowed   string                                `json:"PrivateKeyAllowed"`
-	JobProperties       *[]string                             `json:"JobProperties"`
-	ServerRequired      bool                                  `json:"ServerRequired"`
-	PowerShell          bool                                  `json:"PowerShell"`
-	BlueprintAllowed    bool                                  `json:"BlueprintAllowed"`
-	CustomAliasAllowed  string                                `json:"CustomAliasAllowed"`
+	//StorePathType       string                                `json:"StorePathType"` # This is not returned in the API and computed after POST
+	StorePathValue    string `json:"StorePathValue"`
+	PrivateKeyAllowed string `json:"PrivateKeyAllowed"`
+	//JobProperties       *[]string                             `json:"JobProperties"` # This is not returned in the API and computed after POST
+	ServerRequired     bool   `json:"ServerRequired"`
+	PowerShell         bool   `json:"PowerShell"`
+	BlueprintAllowed   bool   `json:"BlueprintAllowed"`
+	CustomAliasAllowed string `json:"CustomAliasAllowed"`
 }
 
 type CertificateStoreType struct {
