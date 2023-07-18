@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // EnrollPFX takes arguments for EnrollPFXFctArgs to facilitate a call to Keyfactor
@@ -318,8 +319,8 @@ func (c *Client) DeployPFXCertificate(args *DeployPFXArgs) (*DeployPFXResp, erro
 // and include locations add additional data, but can be set to false if they are unneeded. A pointer to a
 // GetCertificateResponse structure is returned, containing the certificate context.
 func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCertificateResponse, error) {
-	if gca.Id == 0 && gca.Thumbprint == "" {
-		return nil, errors.New("keyfactor certificate id or thumbprint are required to get certificate")
+	if gca.Id <= 0 && gca.Thumbprint == "" && gca.CommonName == "" {
+		return nil, errors.New("keyfactor certificate id, common name, or thumbprint are required to get certificate")
 	}
 
 	// Set Keyfactor-specific headers
@@ -358,6 +359,11 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 			"pq.queryString", fmt.Sprintf(`Thumbprint -eq "%s"`, gca.Thumbprint),
 		})
 		endpoint = "Certificates"
+	} else if gca.Id <= 0 && gca.CommonName != "" {
+		query.Query = append(query.Query, StringTuple{
+			"pq.queryString", fmt.Sprintf(`IssuedCN -eq "%s"`, gca.CommonName),
+		})
+		endpoint = "Certificates"
 	} else {
 		endpoint = "Certificates/" + fmt.Sprintf("%d", gca.Id)
 	}
@@ -384,7 +390,25 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 		if lErr != nil {
 			return nil, lErr
 		}
-		return &lCerts[0], nil
+
+		//Check if there are multiple certs returned if ther are iterate and return the one with the most recent ImportDate
+		if len(lCerts) > 1 {
+			var newestCert GetCertificateResponse
+			for _, cert := range lCerts {
+				importDate, _ := time.Parse(time.RFC3339, cert.ImportDate)
+				// Check if newestCert is empty, if it is set it to the first cert in the list
+				if newestCert.ImportDate == "" {
+					newestCert = cert
+					continue
+				}
+				currentNewestImportDate, _ := time.Parse(time.RFC3339, newestCert.ImportDate)
+				if importDate.After(currentNewestImportDate) {
+					newestCert = cert
+				}
+			}
+			return &newestCert, nil
+		}
+		return &lCerts[0], nil // Return first cert in list
 	}
 	return &jsonResp, err
 }

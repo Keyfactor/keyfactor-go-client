@@ -57,6 +57,7 @@ type GetCertificateContextArgs struct {
 	IncludeLocations *bool  // Query
 	CollectionId     *int   // Query
 	Thumbprint       string // Query
+	CommonName       string // Query
 	Id               int    // Query
 }
 

@@ -266,26 +266,24 @@ type GetCertStoreInventoryResp struct {
 }
 
 type CertStoreInventory struct {
-	CertStoreInventoryItemId int                      `json:"CertStoreInventoryItemId"`
-	Name                     string                   `json:"Name,omitempty"`
-	Certificates             []InventoriedCertificate `json:"Certificates,omitempty"`
-	Thumbprints              map[string]bool          `json:"-"`
-	Serials                  map[string]bool          `json:"-"`
-	Ids                      map[int]bool             `json:"-"`
-	Properties               map[string]interface{}   `json:"-"`
-	Parameters               map[string]interface{}   `json:"-"`
+	Name         string                   `json:"Name,omitempty"`
+	Certificates []InventoriedCertificate `json:"Certificates,omitempty"`
+	Thumbprints  []string                 `json:"-"`
+	Serials      []string                 `json:"-"`
+	Ids          []int                    `json:"-"`
 }
 
 type InventoriedCertificate struct {
-	Id                       int    `json:"Id"`
-	IssuedDN                 string `json:"IssuedDN"`
-	SerialNumber             string `json:"SerialNumber"`
-	NotBefore                string `json:"NotBefore"`
-	NotAfter                 string `json:"NotAfter"`
-	SigningAlgorithm         string `json:"SigningAlgorithm"`
-	IssuerDN                 string `json:"IssuerDN"`
-	Thumbprint               string `json:"Thumbprint"`
-	CertStoreInventoryItemId int    `json:"CertStoreInventoryItemId"`
+	Id                       int                    `json:"Id"`
+	IssuedDN                 string                 `json:"IssuedDN"`
+	SerialNumber             string                 `json:"SerialNumber"`
+	NotBefore                string                 `json:"NotBefore"`
+	NotAfter                 string                 `json:"NotAfter"`
+	SigningAlgorithm         string                 `json:"SigningAlgorithm"`
+	IssuerDN                 string                 `json:"IssuerDN"`
+	Thumbprint               string                 `json:"Thumbprint"`
+	CertStoreInventoryItemId int                    `json:"CertStoreInventoryItemId"`
+	Metadata                 map[string]interface{} `json:"Metadata"`
 }
 
 type EntryPassword struct {

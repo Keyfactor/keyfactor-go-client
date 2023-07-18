@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 // CreateStore takes arguments for CreateStoreFctArgs to facilitate the creation
@@ -376,81 +377,66 @@ func (c *Client) GetCertStoreInventory(storeId string) (*[]CertStoreInventory, e
 		},
 	}
 
-	endpoint := fmt.Sprintf("CertificateStores/%s/Inventory", storeId)
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: endpoint,
-		Headers:  headers,
-		Payload:  nil,
-	}
+	var fullInventory []CertStoreInventory
+	hasMore := true
+	page := 1
+	for hasMore {
+		endpoint := fmt.Sprintf("CertificateStores/%s/Inventory", storeId)
+		keyfactorAPIStruct := &request{
+			Method:   "GET",
+			Endpoint: endpoint,
+			Headers:  headers,
+			Payload:  nil,
+			Query: &apiQuery{
+				Query: []StringTuple{
+					{"query.pageReturned", strconv.Itoa(page)},
+				},
+			},
+		}
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return nil, err
-	}
-	var inv []interface{}
-	jsonResp := inv
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	//err = json.Unmarshal(resp.Body, &jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	var invResp []CertStoreInventory
-	if len(jsonResp) == 0 {
-		invResp = []CertStoreInventory{}
-	} else {
-		//invResp = jsonResp[0]
-
-		for _, storedCert := range jsonResp {
-			params, ok := storedCert.(map[string]interface{})["Parameters"].(map[string]interface{})
-			if !ok {
-				params = map[string]interface{}{}
+		resp, err := c.sendRequest(keyfactorAPIStruct)
+		if err != nil {
+			return nil, err
+		}
+		var inv []interface{}
+		jsonResp := inv
+		err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+		//err = json.Unmarshal(resp.Body, &jsonResp)
+		if err != nil {
+			return nil, err
+		}
+		var invResp []CertStoreInventory
+		if len(jsonResp) == 0 {
+			invResp = []CertStoreInventory{}
+			hasMore = false
+			continue
+		} else {
+			// Convert jsonResp to json string
+			jsonString, convErr := json.Marshal(jsonResp)
+			if convErr != nil {
+				return nil, convErr
 			}
-
-			certMetadata := storedCert.(map[string]interface{})
-			// certMetadata["Certificates"] is an array of interface{}s
-			invItemId := 0
-			if certMetadata["Certificates"] != nil {
-				certsList := certMetadata["Certificates"].([]interface{})
-				certInstances := certsList[0].(map[string]interface{}) // todo: will this ever contain > 1?
-				invItemId = int(certInstances["Id"].(float64))
-				//certInstances := certsList["Certificates"].(map[string]interface{})
-				//invItemId = int(certInstances["Id"].(float64))
-				//invItemId = int(certObjs.([]interface{})[0].(map[string]interface{})["Id"].(float64))
-			}
-
-			invC := CertStoreInventory{
-				Name:                     storedCert.(map[string]interface{})["Name"].(string),
-				CertStoreInventoryItemId: invItemId,
-				Certificates:             []InventoriedCertificate{},
-				Parameters:               params,
-				Thumbprints:              map[string]bool{},
-				Serials:                  map[string]bool{},
-				Ids:                      map[int]bool{},
-			}
-			for _, cert := range storedCert.(map[string]interface{})["Certificates"].([]interface{}) {
-				iCert := InventoriedCertificate{
-					Id:                       int(cert.(map[string]interface{})["Id"].(float64)),
-					IssuedDN:                 cert.(map[string]interface{})["IssuedDN"].(string),
-					SerialNumber:             cert.(map[string]interface{})["SerialNumber"].(string),
-					NotBefore:                cert.(map[string]interface{})["NotBefore"].(string),
-					NotAfter:                 cert.(map[string]interface{})["NotAfter"].(string),
-					SigningAlgorithm:         cert.(map[string]interface{})["SigningAlgorithm"].(string),
-					IssuerDN:                 cert.(map[string]interface{})["IssuerDN"].(string),
-					Thumbprint:               cert.(map[string]interface{})["Thumbprint"].(string),
-					CertStoreInventoryItemId: int(cert.(map[string]interface{})["CertStoreInventoryItemId"].(float64)),
-				}
-				invC.Certificates = append(invC.Certificates, iCert)
-				invC.Thumbprints[cert.(map[string]interface{})["Thumbprint"].(string)] = true
-				invC.Serials[cert.(map[string]interface{})["SerialNumber"].(string)] = true
-				invC.Ids[int(cert.(map[string]interface{})["Id"].(float64))] = true
-				invResp = append(invResp, invC)
+			// Unmarshal json string into CertStoreInventory struct
+			convErr = json.Unmarshal(jsonString, &invResp)
+			if convErr != nil {
+				return nil, convErr
 			}
 		}
+
+		// iterate invResp and populate lookups Thumbprints, Serials and Ids
+		for i, storeInv := range invResp {
+			for _, cert := range storeInv.Certificates {
+				invResp[i].Thumbprints = append(invResp[i].Thumbprints, cert.Thumbprint)
+				invResp[i].Serials = append(invResp[i].Serials, cert.SerialNumber)
+				invResp[i].Ids = append(invResp[i].Ids, cert.Id)
+			}
+		}
+		fullInventory = append(fullInventory, invResp...)
+		page++
 	}
 
 	//jsonResp.Properties = unmarshalPropertiesString(jsonResp.PropertiesString)
-	return &invResp, nil
+	return &fullInventory, nil
 }
 
 // unmarshalPropertiesString unmarshalls a JSON string and serializes it into an array of StringTuple.
