@@ -302,6 +302,97 @@ func (c *Client) GetCertificateStoreByContainerID(containerID interface{}) (*[]G
 	return jsonResp, nil
 }
 
+func (c *Client) GetCertificateStoreByClientAndStorePath(clientMachine string, storePath, containerID interface{}) (*[]GetCertificateStoreResponse, error) {
+
+	query := apiQuery{
+		Query: []StringTuple{},
+	}
+
+	fullQueryString := ""
+	switch containerID.(type) {
+	case int, int64:
+		contIdInt := int(containerID.(int64))
+		if contIdInt > 0 {
+			//query.Query = append(query.Query, StringTuple{
+			//	"certificateStoreQuery.queryString", fmt.Sprintf(`ContainerId -eq "%d"`, containerID),
+			//})
+			//append to fullQueryString
+			fullQueryString = fmt.Sprintf(`ContainerId -eq "%d"`, contIdInt)
+		}
+	case string:
+		//ct, ctErr := c.GetStoreContainer(containerID.(string))
+		//if ctErr != nil {
+		//	return nil, ctErr
+		//}
+		//query.Query = append(query.Query, StringTuple{
+		//	"certificateStoreQuery.queryString", fmt.Sprintf(`ContainerId -eq %d`, *ct.Id),
+		//})
+		//append to fullQueryString
+		fullQueryString = fmt.Sprintf(`ContainerId -eq "%s"`, containerID)
+	}
+
+	if storePath != nil {
+		if fullQueryString != "" {
+			fullQueryString = fmt.Sprintf(`%s AND StorePath -eq "%s"`, fullQueryString, storePath)
+		} else {
+			fullQueryString = fmt.Sprintf(`StorePath -eq "%s"`, storePath)
+		}
+	}
+
+	if clientMachine != "" {
+		if fullQueryString != "" {
+			fullQueryString = fmt.Sprintf(`%s AND ClientMachine -eq "%s"`, fullQueryString, clientMachine)
+		} else {
+			fullQueryString = fmt.Sprintf(`ClientMachine -eq "%s"`, clientMachine)
+		}
+	}
+
+	if fullQueryString != "" {
+		query.Query = append(query.Query, StringTuple{
+			"certificateStoreQuery.queryString", fullQueryString,
+		})
+	}
+
+	// Set Keyfactor-specific headers
+	headers := &apiHeaders{
+		Headers: []StringTuple{
+			{"x-keyfactor-api-version", "1"},
+			{"x-keyfactor-requested-with", "APIClient"},
+		},
+	}
+
+	endpoint := "CertificateStores"
+
+	var keyfactorAPIStruct *request
+	if query.Query != nil {
+		keyfactorAPIStruct = &request{
+			Method:   "GET",
+			Endpoint: endpoint,
+			Headers:  headers,
+			Query:    &query,
+		}
+	} else {
+		keyfactorAPIStruct = &request{
+			Method:   "GET",
+			Endpoint: endpoint,
+			Headers:  headers,
+		}
+	}
+
+	resp, err := c.sendRequest(keyfactorAPIStruct)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonResp := &[]GetCertificateStoreResponse{}
+	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	if err != nil {
+		return nil, err
+	}
+	//jsonResp.Properties = unmarshalPropertiesString(jsonResp.PropertiesString)
+	return jsonResp, nil
+}
+
 // AddCertificateToStores takes argument for a AddCertificateToStore structure and is used to remove a configured certificate
 // from one or more certificate stores.
 func (c *Client) AddCertificateToStores(config *AddCertificateToStore) ([]string, error) {

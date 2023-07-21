@@ -163,6 +163,7 @@ type GetCertificateStoreResponse struct {
 	ReenrollmentStatus      ReEnrollmnentConfig    `json:"ReenrollmentStatus,omitempty"`
 	SetNewPasswordAllowed   bool                   `json:"SetNewPasswordAllowed,omitempty"`
 	Password                StorePasswordConfig    `json:"Password,omitempty"`
+	DisplayName             string                 `json:"DisplayName,omitempty"`
 }
 
 // PropertyDefinition defines property fields associated with a certificate store type, and is returned by the
@@ -184,7 +185,7 @@ type CreateStoreResponse struct {
 	ClientMachine           string              `json:"ClientMachine"`
 	Storepath               string              `json:"Storepath"`
 	CertStoreInventoryJobId string              `json:"CertStoreInventoryJobId"`
-	CertStoreType           int                 `json:"cert_store_type"`
+	CertStoreType           int                 `json:"CertStoreType"`
 	Approved                bool                `json:"Approved"`
 	CreateIfMissing         bool                `json:"CreateIfMissing"`
 	PropertiesString        string              `json:"Properties"`
@@ -295,4 +296,16 @@ type EntryPassword struct {
 
 	// An integer that identifies the PAM provider used to store the password.
 	Provider int `json:"Provider,omitempty"`
+}
+
+type SpecialPropertiesSecretValue struct {
+	Value SecretParamValue `json:"value"`
+}
+
+type SpecialPropertiesValue struct {
+	Value interface{} `json:"value"`
+}
+
+type SecretParamValue struct {
+	SecretValue string `json:"SecretValue"`
 }

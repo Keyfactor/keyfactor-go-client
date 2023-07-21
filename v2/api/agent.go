@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"regexp"
 )
 
 // GetAgentList returns a list of orchestrators registered in the Keyfactor instance
@@ -51,9 +52,16 @@ func (c *Client) GetAgent(id string) ([]Agent, error) {
 	query := apiQuery{
 		Query: []StringTuple{},
 	}
-	query.Query = append(query.Query, StringTuple{
-		"pq.queryString", fmt.Sprintf(`ClientMachine -eq "%s"`, id),
-	})
+
+	if isGUID(id) {
+		query.Query = append(query.Query, StringTuple{
+			"pq.queryString", fmt.Sprintf("AgentId -eq \"%s\"", id),
+		})
+	} else {
+		query.Query = append(query.Query, StringTuple{
+			"pq.queryString", fmt.Sprintf("ClientMachine -eq \"%s\"", id),
+		})
+	}
 
 	keyfactorAPIStruct := &request{
 		Method:   "GET",
@@ -215,4 +223,10 @@ func (c *Client) FetchAgentLogs(id string) (string, error) {
 		return "", err
 	}
 	return jsonResp, nil
+}
+
+func isGUID(input string) bool {
+	guidPattern := `^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$`
+	match, _ := regexp.MatchString(guidPattern, input)
+	return match
 }
