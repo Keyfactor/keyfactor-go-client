@@ -168,13 +168,15 @@ func (c *Client) DownloadCertificate(certId int, thumbprint string, serialNumber
 	}
 
 	//todo: review this as it seems to be returning the wrong cert
-	leaf := certs.Certificates[1]
 
+	var leaf *x509.Certificate
 	if len(certs.Certificates) > 1 {
+		//leaf is last cert in chain
+		leaf = certs.Certificates[len(certs.Certificates)-1]
 		return leaf, certs.Certificates, nil
 	}
 
-	return leaf, nil, nil
+	return certs.Certificates[0], nil, nil
 }
 
 // EnrollCSR takes arguments for EnrollCSRFctArgs to enroll a passed Certificate Signing
