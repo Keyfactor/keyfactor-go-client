@@ -168,13 +168,15 @@ func (c *Client) DownloadCertificate(certId int, thumbprint string, serialNumber
 	}
 
 	//todo: review this as it seems to be returning the wrong cert
-	leaf := certs.Certificates[1]
 
+	var leaf *x509.Certificate
 	if len(certs.Certificates) > 1 {
+		//leaf is last cert in chain
+		leaf = certs.Certificates[len(certs.Certificates)-1]
 		return leaf, certs.Certificates, nil
 	}
 
-	return leaf, nil, nil
+	return certs.Certificates[0], nil, nil
 }
 
 // EnrollCSR takes arguments for EnrollCSRFctArgs to enroll a passed Certificate Signing
@@ -335,7 +337,7 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 	query := apiQuery{
 		Query: []StringTuple{},
 	}
-	if gca.IncludeLocations != nil || gca.CollectionId != nil || gca.IncludeMetadata != nil {
+	if gca.IncludeLocations != nil || gca.CollectionId != nil || gca.IncludeMetadata != nil || gca.IncludeHasPrivateKey != nil {
 		if gca.IncludeLocations != nil {
 			query.Query = append(query.Query, StringTuple{
 				"includeLocations", strconv.FormatBool(*gca.IncludeLocations),
@@ -349,6 +351,11 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 		if gca.CollectionId != nil {
 			query.Query = append(query.Query, StringTuple{
 				"collectionId", fmt.Sprintf("%d", *gca.CollectionId),
+			})
+		}
+		if gca.IncludeHasPrivateKey != nil {
+			query.Query = append(query.Query, StringTuple{
+				"includeHasPrivateKey", strconv.FormatBool(*gca.IncludeHasPrivateKey),
 			})
 		}
 	}

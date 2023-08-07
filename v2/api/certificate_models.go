@@ -53,12 +53,13 @@ type RevokeCertArgs struct {
 
 // GetCertificateContextArgs holds the function arguments used for calling the GetCertificateContext method.
 type GetCertificateContextArgs struct {
-	IncludeMetadata  *bool  // Query
-	IncludeLocations *bool  // Query
-	CollectionId     *int   // Query
-	Thumbprint       string // Query
-	CommonName       string // Query
-	Id               int    // Query
+	IncludeMetadata      *bool  // Query
+	IncludeLocations     *bool  // Query
+	CollectionId         *int   // Query
+	Thumbprint           string // Query
+	CommonName           string // Query
+	Id                   int    // Query
+	IncludeHasPrivateKey *bool
 }
 
 // DeployPFXArgs holds the function arguments used for calling the DeployPFXCertificate method.
