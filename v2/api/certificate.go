@@ -337,7 +337,7 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 	query := apiQuery{
 		Query: []StringTuple{},
 	}
-	if gca.IncludeLocations != nil || gca.CollectionId != nil || gca.IncludeMetadata != nil {
+	if gca.IncludeLocations != nil || gca.CollectionId != nil || gca.IncludeMetadata != nil || gca.IncludeHasPrivateKey != nil {
 		if gca.IncludeLocations != nil {
 			query.Query = append(query.Query, StringTuple{
 				"includeLocations", strconv.FormatBool(*gca.IncludeLocations),
@@ -351,6 +351,11 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 		if gca.CollectionId != nil {
 			query.Query = append(query.Query, StringTuple{
 				"collectionId", fmt.Sprintf("%d", *gca.CollectionId),
+			})
+		}
+		if gca.IncludeHasPrivateKey != nil {
+			query.Query = append(query.Query, StringTuple{
+				"includeHasPrivateKey", strconv.FormatBool(*gca.IncludeHasPrivateKey),
 			})
 		}
 	}
