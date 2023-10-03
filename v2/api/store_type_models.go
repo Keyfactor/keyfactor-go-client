@@ -58,17 +58,17 @@ type StoreTypePropertyDefinitionGeneric struct {
 	Name         string      `json:"Name"`
 	DisplayName  string      `json:"DisplayName"`
 	Type         string      `json:"Type"`
-	DependsOn    string      `json:"DependsOn"`
+	DependsOn    interface{} `json:"DependsOn"`
 	DefaultValue interface{} `json:"DefaultValue"`
 	Required     bool        `json:"Required"`
 }
 
 type StoreTypePropertyDefinition struct {
-	StoreTypeID  int         `json:"StoreTypeId;omitempty"`
+	StoreTypeID  int         `json:"StoreTypeId"`
 	Name         string      `json:"Name"`
 	DisplayName  string      `json:"DisplayName"`
 	Type         string      `json:"Type"`
-	DependsOn    string      `json:"DependsOn"`
+	DependsOn    interface{} `json:"DependsOn"`
 	DefaultValue interface{} `json:"DefaultValue"`
 	Required     bool        `json:"Required"`
 }

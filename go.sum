@@ -1,5 +1,5 @@
-github.com/Keyfactor/keyfactor-go-client-sdk v1.0.1 h1:cs8hhvsY3MJ2o1K11HLTRCjRT8SbsKhhi73Y4By2CI0=
-github.com/Keyfactor/keyfactor-go-client-sdk v1.0.1/go.mod h1:Z5pSk8YFGXHbKeQ1wTzVN8A4P/fZmtAwqu3NgBHbDOs=
+github.com/Keyfactor/keyfactor-go-client-sdk v1.0.2 h1:caLlzFCz2L4Dth/9wh+VlypFATmOMmCSQkCPKOKMxw8=
+github.com/Keyfactor/keyfactor-go-client-sdk v1.0.2/go.mod h1:Z5pSk8YFGXHbKeQ1wTzVN8A4P/fZmtAwqu3NgBHbDOs=
 github.com/spbsoluble/go-pkcs12 v0.3.3 h1:3nh7IKn16RDpmrSMtOu1JvbB0XHYq1j+IsICdU1c7J4=
 github.com/spbsoluble/go-pkcs12 v0.3.3/go.mod h1:MAxKIUEIl/QVcua/I1L4Otyxl9UvLCCIktce2Tjz6Nw=
 go.mozilla.org/pkcs7 v0.0.0-20210826202110-33d05740a352 h1:CCriYyAfq1Br1aIYettdHZTy8mBTIPo7We18TuO/bak=
