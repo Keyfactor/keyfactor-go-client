@@ -1,9 +1,11 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"log"
 	"net/http"
 	"strconv"
@@ -457,6 +459,65 @@ func (c *Client) RemoveCertificateFromStores(config *RemoveCertificateFromStore)
 		return nil, err
 	}
 	return jsonResp, nil
+}
+
+func (c *Client) GetCertStoreInventoryV1(storeId string) (*[]CertStoreInventoryV1, error) {
+
+	xKeyfactorRequestedWith := "APIClient"
+	xKeyfactorApiVersion := "1"
+
+	configuration := keyfactor.NewConfiguration(make(map[string]string))
+	apiClient := keyfactor.NewAPIClient(configuration)
+
+	resp, _, err := apiClient.CertificateStoreApi.CertificateStoreGetCertificateStoreInventory(context.Background(), storeId).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var newResp []CertStoreInventoryV1
+
+	if len(resp) == 0 {
+		newResp = []CertStoreInventoryV1{}
+	} else {
+		for _, certInv := range resp {
+			var newInvCertList []InventoriedCertificate
+			var newParams = make(map[string]interface{})
+			for _, param := range certInv.Parameters {
+				for key, value := range param {
+					newParams[key] = value
+				}
+			}
+			for _, storedCert := range certInv.Certificates {
+				var newInvCert = InventoriedCertificate{
+					Id:                       int(*storedCert.Id),
+					IssuedDN:                 *storedCert.IssuedDN.Get(),
+					SerialNumber:             *storedCert.SerialNumber,
+					NotBefore:                storedCert.NotBefore.String(),
+					NotAfter:                 storedCert.NotAfter.String(),
+					SigningAlgorithm:         *storedCert.SigningAlgorithm,
+					IssuerDN:                 *storedCert.IssuerDN.Get(),
+					Thumbprint:               *storedCert.Thumbprint,
+					CertStoreInventoryItemId: int(*storedCert.CertStoreInventoryItemId),
+				}
+				newInvCertList = append(newInvCertList, newInvCert)
+			}
+			var newInv = CertStoreInventoryV1{
+				CertStoreInventoryItemId: 0,
+				Name:                     *certInv.Name,
+				Certificates:             newInvCertList,
+				Thumbprints:              nil,
+				Serials:                  nil,
+				Ids:                      nil,
+				Properties:               nil,
+				Parameters:               newParams,
+			}
+			newResp = append(newResp, newInv)
+		}
+	}
+
+	//jsonResp.Properties = unmarshalPropertiesString(jsonResp.PropertiesString)
+	return &newResp, nil
 }
 
 func (c *Client) GetCertStoreInventory(storeId string) (*[]CertStoreInventory, error) {

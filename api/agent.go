@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"fmt"
-
 	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 

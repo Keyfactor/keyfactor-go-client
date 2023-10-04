@@ -266,6 +266,17 @@ type GetCertStoreInventoryResp struct {
 	Inventory []CertStoreInventory
 }
 
+type CertStoreInventoryV1 struct {
+	CertStoreInventoryItemId int                      `json:"CertStoreInventoryItemId"`
+	Name                     string                   `json:"Name,omitempty"`
+	Certificates             []InventoriedCertificate `json:"Certificates,omitempty"`
+	Thumbprints              map[string]bool          `json:"-"`
+	Serials                  map[string]bool          `json:"-"`
+	Ids                      map[int]bool             `json:"-"`
+	Properties               map[string]interface{}   `json:"-"`
+	Parameters               map[string]interface{}   `json:"-"`
+}
+
 type CertStoreInventory struct {
 	Name         string                   `json:"Name,omitempty"`
 	Certificates []InventoriedCertificate `json:"Certificates,omitempty"`
