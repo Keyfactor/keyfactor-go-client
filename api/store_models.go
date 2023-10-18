@@ -253,6 +253,9 @@ type CertificateStore struct {
 
 	// A Boolean that sets whether to include the private key of the certificate in the certificate store if private keys are optional for the given certificate store (true) or not (false). The default is false.
 	IncludePrivateKey bool `json:"IncludePrivateKey,omitempty"`
+
+	// Job Parameters
+	JobParameters map[string]string `json:"JobFields,omitempty"`
 }
 
 type ListCertificateStoresResponse struct {
