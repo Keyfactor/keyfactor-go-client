@@ -90,6 +90,79 @@ func (c *Client) EnrollPFX(ea *EnrollPFXFctArgs) (*EnrollResponse, error) {
 	return jsonResp, nil
 }
 
+func (c *Client) EnrollPFXV2(ea *EnrollPFXFctArgsV2) (*EnrollResponseV2, error) {
+	log.Println("[INFO] Enrolling PFX certificate with Keyfactor")
+
+	/* Ensure required inputs exist */
+	var missingFields []string
+
+	// TODO: Probably a better way to express these if blocks
+	if ea.Template == "" {
+		missingFields = append(missingFields, "Template")
+	}
+	if ea.CertificateAuthority == "" {
+		missingFields = append(missingFields, "CertificateAuthority")
+	}
+	if ea.CertFormat == "" {
+		missingFields = append(missingFields, "CertFormat")
+	}
+	//if ea.Password == "" {
+	//	missingFields = append(missingFields, "Password")
+	//}
+
+	if len(missingFields) > 0 {
+		return nil, errors.New("Required field(s) missing: " + strings.Join(missingFields, ", "))
+	}
+
+	// Set Keyfactor-specific headers
+	headers := &apiHeaders{
+		Headers: []StringTuple{
+			{"x-keyfactor-api-version", "2"},
+			{"x-keyfactor-requested-with", "APIClient"},
+			{"x-certificateformat", ea.CertFormat},
+		},
+	}
+
+	if ea.Timestamp == "" {
+		ea.Timestamp = getTimestamp()
+	}
+
+	if ea.SubjectString == "" {
+		if ea.Subject != nil {
+			subject, err := createSubject(*ea.Subject)
+			if err != nil {
+				return nil, err
+			}
+			ea.SubjectString = subject
+		} else {
+			return nil, fmt.Errorf("subject is required to use enrollpfx(). Please configure either SubjectString or Subject")
+		}
+	}
+
+	keyfactorAPIStruct := &request{
+		Method:   "POST",
+		Endpoint: "Enrollment/PFX",
+		Headers:  headers,
+		Payload:  &ea,
+	}
+
+	resp, err := c.sendRequest(keyfactorAPIStruct)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonResp := &EnrollResponseV2{}
+	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	if err != nil {
+		return nil, err
+	}
+	//err = decodePKCS12Blob(jsonResp)
+	//if err != nil {
+	//	return nil, err
+	//}
+	return jsonResp, nil
+}
+
 // DownloadCertificate takes arguments for DownloadCertArgs to facilitate a call to Keyfactor
 // that downloads a certificate from Keyfactor.
 // The download certificate endpoint requires one of the following to retrieve a cert:
@@ -321,7 +394,7 @@ func (c *Client) DeployPFXCertificate(args *DeployPFXArgs) (*DeployPFXResp, erro
 // and include locations add additional data, but can be set to false if they are unneeded. A pointer to a
 // GetCertificateResponse structure is returned, containing the certificate context.
 func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCertificateResponse, error) {
-	if gca.Id <= 0 && gca.Thumbprint == "" && gca.CommonName == "" {
+	if gca.Id <= 0 && gca.Thumbprint == "" && gca.CommonName == "" && gca.RequestId <= 0 {
 		return nil, errors.New("keyfactor certificate id, common name, or thumbprint are required to get certificate")
 	}
 
@@ -371,6 +444,11 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 			"pq.queryString", fmt.Sprintf(`IssuedCN -eq "%s"`, gca.CommonName),
 		})
 		endpoint = "Certificates"
+	} else if (gca.Id <= 0 && gca.CommonName == "" && gca.Thumbprint == "") && gca.RequestId > 0 {
+		query.Query = append(query.Query, StringTuple{
+			"pq.queryString", fmt.Sprintf(`CertRequestId -eq %d`, gca.RequestId),
+		})
+		endpoint = "Certificates"
 	} else {
 		endpoint = "Certificates/" + fmt.Sprintf("%d", gca.Id)
 	}
@@ -402,6 +480,13 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 		if len(lCerts) > 1 {
 			var newestCert GetCertificateResponse
 			for _, cert := range lCerts {
+
+				if gca.RequestId > 0 && cert.CertRequestId == gca.RequestId {
+					return &cert, nil
+				} else if gca.Thumbprint == cert.Thumbprint {
+					return &cert, nil
+				}
+
 				importDate, _ := time.Parse(time.RFC3339, cert.ImportDate)
 				// Check if newestCert is empty, if it is set it to the first cert in the list
 				if newestCert.ImportDate == "" {

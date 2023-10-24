@@ -30,6 +30,30 @@ type EnrollPFXFctArgs struct {
 	CertFormat           string                 `json:"-"`
 }
 
+type EnrollPFXFctArgsV2 struct {
+	Stores                      []CertificateStore `json:"Stores,omitempty"`
+	CustomFriendlyName          string             `json:"CustomFriendlyName,omitempty"`
+	Password                    string             `json:"Password"`
+	PopulateMissingValuesFromAD bool               `json:"PopulateMissingValuesFromAD"`
+	// Configure the SubjectString field as the full string subject for the certificate. For example, if you don't have
+	// subject fields individually separated, and the subject is already in the format required by RFC5280, use the SubjectString field.
+	SubjectString string `json:"Subject"`
+
+	// If the certificate subject is not already in the format required by RFC5280, configure the subject fields using a CertificateSubject
+	// struct, and EnrollPFX will automatically compile this information into a proper subject.
+	Subject                              *CertificateSubject    `json:"-"`
+	IncludeChain                         bool                   `json:"IncludeChain"`
+	RenewalCertificateId                 int                    `json:"RenewalCertificateId,omitempty"`
+	CertificateAuthority                 string                 `json:"CertificateAuthority"`
+	Timestamp                            string                 `json:"Timestamp"`
+	Template                             string                 `json:"Template"`
+	SANs                                 *SANs                  `json:"SANs,omitempty"`
+	Metadata                             map[string]interface{} `json:"Metadata,omitempty"`
+	CertFormat                           string                 `json:"-"`
+	InstallIntoExistingCertificateStores bool                   `json:"InstallIntoExistingCertificateStores,omitempty"`
+	ChainOrder                           string                 `json:"ChainOrder,omitempty"`
+}
+
 // EnrollCSRFctArgs holds the function arguments used for calling the EnrollCSR method.
 type EnrollCSRFctArgs struct {
 	CSR                  string
@@ -60,6 +84,7 @@ type GetCertificateContextArgs struct {
 	CommonName           string // Query
 	Id                   int    // Query
 	IncludeHasPrivateKey *bool
+	RequestId            int
 }
 
 // DeployPFXArgs holds the function arguments used for calling the DeployPFXCertificate method.
@@ -122,6 +147,12 @@ type EnrollResponse struct {
 	CertificateInformation CertificateInformation `json:"CertificateInformation"`
 }
 
+type EnrollResponseV2 struct {
+	SuccessfulStores       []string               `json:"SuccessfulStores"`
+	CertificateInformation CertificateInformation `json:"CertificateInformation"`
+	Metadata               interface{}            `json:"Metadata,omitempty"`
+}
+
 // CertificateInformation contains response data from the Enroll methods.
 type CertificateInformation struct {
 	SerialNumber       string      `json:"SerialNumber"`
@@ -134,6 +165,22 @@ type CertificateInformation struct {
 	RequestDisposition string      `json:"RequestDisposition"`
 	DispositionMessage string      `json:"DispositionMessage"`
 	EnrollmentContext  interface{} `json:"EnrollmentContext"`
+}
+
+type CertificateInformationV2 struct {
+	SerialNumber              string        `json:"SerialNumber"`
+	IssuerDN                  string        `json:"IssuerDN"`
+	Thumbprint                string        `json:"Thumbprint"`
+	KeyfactorId               int           `json:"KeyfactorId"`
+	Pkcs12Blob                string        `json:"Pkcs12Blob"`
+	Password                  interface{}   `json:"Password"`
+	WorkflowInstanceId        string        `json:"WorkflowInstanceId"`
+	WorkflowReferenceId       int           `json:"WorkflowReferenceId"`
+	StoreIdsInvalidForRenewal []interface{} `json:"StoreIdsInvalidForRenewal"`
+	KeyfactorRequestId        int           `json:"KeyfactorRequestId"`
+	RequestDisposition        string        `json:"RequestDisposition"`
+	DispositionMessage        string        `json:"DispositionMessage"`
+	EnrollmentContext         interface{}   `json:"EnrollmentContext"`
 }
 
 // GetCertificateResponse contains the response elements returned from the GetCertificateContext method.
