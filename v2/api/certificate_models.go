@@ -52,6 +52,8 @@ type EnrollPFXFctArgsV2 struct {
 	CertFormat                           string                 `json:"-"`
 	InstallIntoExistingCertificateStores bool                   `json:"InstallIntoExistingCertificateStores,omitempty"`
 	ChainOrder                           string                 `json:"ChainOrder,omitempty"`
+	KeyType                              string                 `json:"KeyType,omitempty"`
+	KeyLength                            int                    `json:"KeyLength,omitempty"`
 }
 
 // EnrollCSRFctArgs holds the function arguments used for calling the EnrollCSR method.
