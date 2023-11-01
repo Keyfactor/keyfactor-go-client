@@ -74,7 +74,7 @@ func (c *Client) GetCertificateStoreTypeByName(name string) (*CertificateStoreTy
 	}
 
 	var newResp []CertificateStoreType
-	for i, _ := range resp {
+	for i := range resp {
 		var newCertType CertificateStoreType
 		mapResp, _ := resp[i].ToMap()
 		jsonData, _ := json.Marshal(mapResp)
@@ -128,7 +128,7 @@ func (c *Client) ListCertificateStoreTypes() (*[]CertificateStoreType, error) {
 	}
 
 	var newResp []CertificateStoreType
-	for i, _ := range resp {
+	for i := range resp {
 		var newCertType CertificateStoreType
 		mapResp, _ := resp[i].ToMap()
 		jsonData, _ := json.Marshal(mapResp)

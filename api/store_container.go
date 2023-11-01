@@ -27,7 +27,7 @@ func (c *Client) GetStoreContainers() (*[]CertStoreContainer, error) {
 	}
 
 	var newResp []CertStoreContainer
-	for i, _ := range resp {
+	for i := range resp {
 		var newCont CertStoreContainer
 		mapResp, _ := resp[i].ToMap()
 		jsonData, _ := json.Marshal(mapResp)
