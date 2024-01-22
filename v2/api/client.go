@@ -179,7 +179,34 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	}
 
 	resp, respErr := c.httpClient.Do(req)
-	if respErr != nil {
+
+	// check if context deadline exceeded
+	if respErr != nil && strings.Contains(respErr.Error(), "context deadline exceeded") || http.StatusRequestTimeout == resp.StatusCode {
+		// retry until max retries reached
+		sleepDuration := time.Duration(1) * time.Second
+		for i := 0; i < MAX_CONTEXT_DEADLINE_RETRIES; i++ {
+			// sleep for exponential backoff
+			if i > 0 {
+				sleepDuration = sleepDuration * 2
+				if sleepDuration > time.Duration(MAX_WAIT_SECONDS)*time.Second {
+					sleepDuration = time.Duration(MAX_WAIT_SECONDS) * time.Second
+				}
+				log.Printf("[DEBUG] %s request to %s failed with error %s, retrying in %s seconds...", request.Method, keyfactorPath, respErr.Error(), sleepDuration)
+				time.Sleep(sleepDuration)
+			}
+
+			log.Printf("[DEBUG] %s request to %s failed with error %s, retrying...", request.Method, keyfactorPath, respErr.Error())
+			req, reqErr = http.NewRequest(request.Method, keyfactorPath, bytes.NewBuffer(jsonByes))
+			if reqErr != nil {
+				return nil, reqErr
+			}
+			resp2, respErr2 := c.httpClient.Do(req)
+			if respErr2 == nil {
+				resp = resp2
+				break
+			}
+		}
+	} else if respErr != nil {
 		return nil, respErr
 	}
 	var stringMessage string
