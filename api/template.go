@@ -55,7 +55,7 @@ func (c *Client) GetTemplates() ([]GetTemplateResponse, error) {
 	}
 
 	var newResp []GetTemplateResponse
-	for i, _ := range resp {
+	for i := range resp {
 		var newTemp GetTemplateResponse
 		mapResp, _ := resp[i].ToMap()
 		jsonData, _ := json.Marshal(mapResp)
