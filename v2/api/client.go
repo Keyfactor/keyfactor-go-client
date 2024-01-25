@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -22,6 +23,7 @@ var (
 	EnvCommandPassword = "KEYFACTOR_PASSWORD"
 	EnvCommandDomain   = "KEYFACTOR_DOMAIN"
 	EnvCommandAPI      = "KEYFACTOR_API_PATH"
+	EnvCommandTimeout  = "KEYFACTOR_TIMEOUT"
 	DefaultAPIPath     = "KeyfactorAPI"
 )
 
@@ -41,6 +43,7 @@ type AuthConfig struct {
 	Password string
 	Domain   string
 	APIPath  string
+	Timeout  int
 }
 
 // NewKeyfactorClient creates a new Keyfactor client instance. A configured Client is returned with methods used to
@@ -49,6 +52,12 @@ func NewKeyfactorClient(auth *AuthConfig) (*Client, error) {
 	c, err := loginToKeyfactor(auth)
 	if err != nil {
 		return nil, err
+	}
+
+	if auth.Timeout > 0 {
+		c.httpClient = &http.Client{Timeout: time.Duration(auth.Timeout) * time.Second}
+	} else {
+		c.httpClient = &http.Client{Timeout: MAX_WAIT_SECONDS * time.Second}
 	}
 
 	return c, nil
@@ -111,9 +120,21 @@ func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
 		Headers:  headers,
 	}
 
+	timeoutStr := os.Getenv(EnvCommandTimeout)
+	timeout := MAX_WAIT_SECONDS
+	if timeoutStr != "" {
+		//convert to int and check if greater than 0
+		timeoutInt, err := strconv.Atoi(timeoutStr)
+		if err == nil && timeoutInt > 0 {
+			timeout = timeoutInt
+		}
+	} else if auth.Timeout > 0 {
+		timeout = auth.Timeout
+	}
+
 	c := &Client{
 		Hostname:        auth.Hostname,
-		httpClient:      &http.Client{Timeout: 10 * time.Second},
+		httpClient:      &http.Client{Timeout: time.Duration(timeout) * time.Second},
 		basicAuthString: buildBasicAuthString(auth),
 		ApiPath:         auth.APIPath,
 	}
