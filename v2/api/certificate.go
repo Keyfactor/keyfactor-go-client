@@ -499,6 +499,8 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 				}
 			}
 			return &newestCert, nil
+		} else if len(lCerts) == 0 {
+			return nil, fmt.Errorf("no certificate found")
 		}
 		return &lCerts[0], nil // Return first cert in list
 	}
