@@ -20,30 +20,30 @@ type CertificateStoreTypeGeneric struct {
 }
 
 type CertificateStoreType struct {
-	Name                string                         `json:"Name"`
-	ShortName           string                         `json:"ShortName"`
-	Capability          string                         `json:"Capability"`
-	StoreType           int                            `json:"StoreType"`
-	ImportType          int                            `json:"ImportType"`
-	LocalStore          bool                           `json:"LocalStore"`
-	SupportedOperations *StoreTypeSupportedOperations  `json:"SupportedOperations"`
-	Properties          *[]StoreTypePropertyDefinition `json:"Properties"`
-	EntryParameters     *[]EntryParameter              `json:"EntryParameters"`
-	PasswordOptions     *StoreTypePasswordOptions      `json:"PasswordOptions"`
-	StorePathType       string                         `json:"StorePathType"`
-	StorePathValue      string                         `json:"StorePathValue"`
-	PrivateKeyAllowed   string                         `json:"PrivateKeyAllowed"`
-	JobProperties       *[]string                      `json:"JobProperties"`
-	ServerRequired      bool                           `json:"ServerRequired"`
-	PowerShell          bool                           `json:"PowerShell"`
-	BlueprintAllowed    bool                           `json:"BlueprintAllowed"`
-	CustomAliasAllowed  string                         `json:"CustomAliasAllowed"`
-	ServerRegistration  int                            `json:"ServerRegistration"`
-	InventoryEndpoint   string                         `json:"InventoryEndpoint"`
-	InventoryJobType    string                         `json:"InventoryJobType"`
-	ManagementJobType   string                         `json:"ManagementJobType"`
-	DiscoveryJobType    string                         `json:"DiscoveryJobType"`
-	EnrollmentJobType   string                         `json:"EnrollmentJobType"`
+	Name                string                         `json:"Name,omitempty"`
+	ShortName           string                         `json:"ShortName,omitempty"`
+	Capability          string                         `json:"Capability,omitempty"`
+	StoreType           int                            `json:"StoreType,omitempty"`
+	ImportType          int                            `json:"ImportType,omitempty"`
+	LocalStore          bool                           `json:"LocalStore,omitempty"`
+	SupportedOperations *StoreTypeSupportedOperations  `json:"SupportedOperations,omitempty"`
+	Properties          *[]StoreTypePropertyDefinition `json:"Properties,omitempty"`
+	EntryParameters     *[]EntryParameter              `json:"EntryParameters,omitempty"`
+	PasswordOptions     *StoreTypePasswordOptions      `json:"PasswordOptions,omitempty"`
+	StorePathType       string                         `json:"StorePathType,omitempty"`
+	StorePathValue      string                         `json:"StorePathValue,omitempty"`
+	PrivateKeyAllowed   string                         `json:"PrivateKeyAllowed,omitempty"`
+	JobProperties       *[]string                      `json:"JobProperties,omitempty"`
+	ServerRequired      bool                           `json:"ServerRequired,omitempty"`
+	PowerShell          bool                           `json:"PowerShell,omitempty"`
+	BlueprintAllowed    bool                           `json:"BlueprintAllowed,omitempty"`
+	CustomAliasAllowed  string                         `json:"CustomAliasAllowed,omitempty"`
+	ServerRegistration  int                            `json:"ServerRegistration,omitempty"`
+	InventoryEndpoint   string                         `json:"InventoryEndpoint,omitempty"`
+	InventoryJobType    string                         `json:"InventoryJobType,omitempty"`
+	ManagementJobType   string                         `json:"ManagementJobType,omitempty"`
+	DiscoveryJobType    string                         `json:"DiscoveryJobType,omitempty"`
+	EnrollmentJobType   string                         `json:"EnrollmentJobType,omitempty"`
 }
 
 type CertStoreTypeResponseList []struct {
