@@ -20,10 +20,10 @@ type CertificateStoreTypeGeneric struct {
 }
 
 type CertificateStoreType struct {
-	Name                string                         `json:"Name,omitempty"`
-	ShortName           string                         `json:"ShortName,omitempty"`
+	Name                string                         `json:"Name"`
+	ShortName           string                         `json:"ShortName"`
 	Capability          string                         `json:"Capability,omitempty"`
-	StoreType           int                            `json:"StoreType,omitempty"`
+	StoreType           int                            `json:"StoreType"`
 	ImportType          int                            `json:"ImportType,omitempty"`
 	LocalStore          bool                           `json:"LocalStore,omitempty"`
 	SupportedOperations *StoreTypeSupportedOperations  `json:"SupportedOperations,omitempty"`
