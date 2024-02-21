@@ -202,7 +202,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	resp, respErr := c.httpClient.Do(req)
 
 	// check if context deadline exceeded
-	if respErr != nil && strings.Contains(respErr.Error(), "context deadline exceeded") || http.StatusRequestTimeout == resp.StatusCode {
+	if respErr != nil && strings.Contains(respErr.Error(), "context deadline exceeded") || (resp != nil && http.StatusRequestTimeout == resp.StatusCode) {
 		// retry until max retries reached
 		sleepDuration := time.Duration(1) * time.Second
 		for i := 0; i < MAX_CONTEXT_DEADLINE_RETRIES; i++ {
@@ -226,6 +226,10 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 				resp = resp2
 				break
 			}
+			respErr = respErr2
+		}
+		if resp == nil {
+			return nil, fmt.Errorf("no response from Keyfactor Command after %d retries", MAX_CONTEXT_DEADLINE_RETRIES)
 		}
 	} else if respErr != nil {
 		return nil, respErr
