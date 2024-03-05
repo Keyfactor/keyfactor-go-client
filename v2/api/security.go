@@ -134,20 +134,11 @@ func (c *Client) GetSecurityRoles() ([]GetSecurityRolesResponse, error) {
 		return nil, err
 	}
 
-	//var jsonRespDebug []GetSecurityRolesResponseDebug
-	//var rawInterface interface{}
-	//err = json.NewDecoder(resp.Body).Decode(&rawInterface)
-	//get first element of the array and cast it to a
 	var jsonResp []GetSecurityRolesResponse
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-
 	if err != nil {
 		return nil, err
 	}
-
-	// Convert interface into a slice of GetSecurityRolesResponse
-	//jsonResp = rawInterface.([]GetSecurityRolesResponse)
-
 	return jsonResp, nil
 }
 
