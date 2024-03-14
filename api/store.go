@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
+	kfc "github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
 // CreateStore takes arguments for CreateStoreFctArgs to facilitate the creation
@@ -134,8 +134,8 @@ func (c *Client) DeleteCertificateStore(storeId string) error {
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration(make(map[string]string))
-	apiClient := keyfactor.NewAPIClient(configuration)
+	configuration := kfc.NewConfiguration(make(map[string]string))
+	apiClient := kfc.NewAPIClient(configuration)
 
 	resp, err := apiClient.CertificateStoreApi.CertificateStoreDeleteCertificateStore(context.Background(), storeId).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
@@ -311,22 +311,22 @@ func (c *Client) AddCertificateToStores(config *AddCertificateToStore) ([]string
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration(make(map[string]string))
-	apiClient := keyfactor.NewAPIClient(configuration)
+	configuration := kfc.NewConfiguration(make(map[string]string))
+	apiClient := kfc.NewAPIClient(configuration)
 
 	newCollectionId := int32(config.CollectionId)
-	var newCertStoresList []keyfactor.ModelsCertificateStoreEntry
+	var newCertStoresList []kfc.ModelsCertificateStoreEntry
 	for _, cert := range *config.CertificateStores {
 		newProvider := int32(cert.EntryPassword.Provider)
 		var newParams map[string]string
 		data, _ := json.Marshal(cert.EntryPassword.Parameters)
 		json.Unmarshal(data, &newParams)
-		var newEntryPassword = keyfactor.ModelsKeyfactorAPISecret{
+		var newEntryPassword = kfc.ModelsKeyfactorAPISecret{
 			SecretValue: &cert.EntryPassword.SecretValue,
 			Parameters:  &newParams,
 			Provider:    &newProvider,
 		}
-		var newCert = keyfactor.ModelsCertificateStoreEntry{
+		var newCert = kfc.ModelsCertificateStoreEntry{
 			CertificateStoreId: cert.CertificateStoreId,
 			Alias:              &cert.Alias,
 			JobFields:          nil,
@@ -339,9 +339,9 @@ func (c *Client) AddCertificateToStores(config *AddCertificateToStore) ([]string
 	}
 
 	jsonInvSched, _ := json.Marshal(config.InventorySchedule)
-	var newSchedule keyfactor.KeyfactorCommonSchedulingKeyfactorSchedule
+	var newSchedule kfc.KeyfactorCommonSchedulingKeyfactorSchedule
 	json.Unmarshal(jsonInvSched, newSchedule)
-	var newReq = keyfactor.KeyfactorApiModelsCertificateStoresAddCertificateRequest{
+	var newReq = kfc.KeyfactorApiModelsCertificateStoresAddCertificateRequest{
 		CertificateId:     int32(config.CertificateId),
 		CertificateStores: newCertStoresList,
 		Schedule:          newSchedule,
@@ -365,13 +365,13 @@ func (c *Client) RemoveCertificateFromStores(config *RemoveCertificateFromStore)
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration(make(map[string]string))
-	apiClient := keyfactor.NewAPIClient(configuration)
+	configuration := kfc.NewConfiguration(make(map[string]string))
+	apiClient := kfc.NewAPIClient(configuration)
 
 	newCollectionId := int32(config.CollectionId)
-	var newCertStoresList []keyfactor.ModelsCertificateLocationSpecifier
+	var newCertStoresList []kfc.ModelsCertificateLocationSpecifier
 	for _, cert := range *config.CertificateStores {
-		var newCert = keyfactor.ModelsCertificateLocationSpecifier{
+		var newCert = kfc.ModelsCertificateLocationSpecifier{
 			Alias:              &cert.Alias,
 			CertificateStoreId: &cert.CertificateStoreId,
 			JobFields:          nil,
@@ -380,9 +380,9 @@ func (c *Client) RemoveCertificateFromStores(config *RemoveCertificateFromStore)
 	}
 
 	jsonInvSched, _ := json.Marshal(config.InventorySchedule)
-	var newSchedule keyfactor.KeyfactorCommonSchedulingKeyfactorSchedule
+	var newSchedule kfc.KeyfactorCommonSchedulingKeyfactorSchedule
 	json.Unmarshal(jsonInvSched, newSchedule)
-	var newReq = keyfactor.KeyfactorApiModelsCertificateStoresRemoveCertificateRequest{
+	var newReq = kfc.KeyfactorApiModelsCertificateStoresRemoveCertificateRequest{
 		CertificateStores: newCertStoresList,
 		Schedule:          newSchedule,
 		CollectionId:      &newCollectionId,
@@ -402,8 +402,8 @@ func (c *Client) GetCertStoreInventory(storeId string) (*[]CertStoreInventory, e
 	xKeyfactorRequestedWith := "APIClient"
 	xKeyfactorApiVersion := "1"
 
-	configuration := keyfactor.NewConfiguration(make(map[string]string))
-	apiClient := keyfactor.NewAPIClient(configuration)
+	configuration := kfc.NewConfiguration(make(map[string]string))
+	apiClient := kfc.NewAPIClient(configuration)
 
 	resp, _, err := apiClient.CertificateStoreApi.CertificateStoreGetCertificateStoreInventory(context.Background(), storeId).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 

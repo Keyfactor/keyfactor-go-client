@@ -196,13 +196,16 @@ func (c *Client) GetSecurityRole(id interface{}) (*GetSecurityRoleResponse, erro
 			return nil, err
 		}
 
-		jsonResp := &GetSecurityRolesResponse{}
+		jsonResp := &[]GetSecurityRolesResponse{}
 		err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 
 		for i, jResp := range *jsonResp {
 			log.Printf("[INFO] Getting Keyfactor security role with %v ID %v", i, jResp)
+			//convert ID from int to float64
+			formattedID := float64(jResp.ID)
+
 			return &GetSecurityRoleResponse{
-				Id:          jResp.ID,
+				Id:          formattedID,
 				Name:        jResp.Name,
 				Description: jResp.Description,
 				Identities:  jResp.Identities,

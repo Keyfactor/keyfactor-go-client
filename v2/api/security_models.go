@@ -31,20 +31,20 @@ type CreateSecurityIdentityResponse struct {
 }
 
 // GetSecurityRolesResponse holds the response data returned by /Security/Roles
-type GetSecurityRolesResponse []struct {
-	ID          int                `json:"Id,omitempty"`
+type GetSecurityRolesResponse struct {
+	ID          float64            `json:"Id"`
 	Description string             `json:"Description,omitempty"`
 	Enabled     bool               `json:"Enabled"`
 	Immutable   bool               `json:"Immutable"`
 	Valid       bool               `json:"Valid"`
 	Private     bool               `json:"Private"`
-	Identities  []SecurityIdentity `json:"Identities,omitempty"`
+	Identities  []SecurityIdentity `json:"Identities"`
 	Name        string             `json:"Name,omitempty"`
-	Permissions []string           `json:"Permissions,omitempty"`
+	Permissions []string           `json:"Permissions"`
 }
 
 type GetSecurityRoleResponse struct {
-	Id          int                `json:"Id,omitempty"`
+	Id          float64            `json:"Id,omitempty"`
 	Name        string             `json:"Name,omitempty"`
 	Description string             `json:"Description,omitempty"`
 	Identities  []SecurityIdentity `json:"Identities,omitempty"`
@@ -53,10 +53,10 @@ type GetSecurityRoleResponse struct {
 
 // SecurityIdentity contains the contains required elements to attach an identity to a role
 type SecurityIdentity struct {
-	Id           int    `json:"Id,omitempty"`
-	AccountName  string `json:"AccountName,omitempty"`
-	IdentityType string `json:"IdentityType,omitempty"`
-	Sid          string `json:"Sid,omitempty"`
+	Id           float64 `json:"Id"`
+	AccountName  string  `json:"AccountName"`
+	IdentityType string  `json:"IdentityType"`
+	Sid          string  `json:"SID"`
 }
 
 // CreateSecurityRoleArg holds the function arguments required for CreateSecurityRole
