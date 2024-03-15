@@ -249,11 +249,18 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		log.Printf("[ERROR] Call to %s returned status %d. %s", keyfactorPath, resp.StatusCode, stringMessage)
 		return nil, errors.New(stringMessage)
 	} else if resp.StatusCode == http.StatusUnauthorized {
-		_, derr := httputil.DumpResponse(resp, true)
+		dmp, derr := httputil.DumpResponse(resp, true)
 		if derr != nil {
 			return nil, derr
 		}
-		err = errors.New("401 - Unauthorized: Access is denied due to invalid credentials")
+		//convert response to string
+		if dmp != nil {
+			respStr := string(dmp)
+			errMsg := fmt.Sprintf("http %d: %s", resp.StatusCode, respStr)
+			return nil, errors.New(errMsg)
+		}
+		errMsg := fmt.Sprintf("http %d: %s", resp.StatusCode, "Unauthorized: Access is denied due to invalid credentials")
+		err = errors.New(errMsg)
 		return nil, err
 	} else {
 		var errorMessage map[string]interface{} // Decode JSON body to handle issue
