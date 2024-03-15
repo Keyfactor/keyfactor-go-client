@@ -461,6 +461,8 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 		Payload:  nil,
 	}
 
+	//create string of request in cURL format
+
 	resp, err := c.sendRequest(keyfactorAPIStruct)
 	if err != nil {
 		return nil, err
