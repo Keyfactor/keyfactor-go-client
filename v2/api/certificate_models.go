@@ -79,14 +79,14 @@ type RevokeCertArgs struct {
 
 // GetCertificateContextArgs holds the function arguments used for calling the GetCertificateContext method.
 type GetCertificateContextArgs struct {
-	IncludeMetadata      *bool  // Query
-	IncludeLocations     *bool  // Query
-	CollectionId         *int   // Query
-	Thumbprint           string // Query
-	CommonName           string // Query
-	Id                   int    // Query
-	IncludeHasPrivateKey *bool
-	RequestId            int
+	IncludeMetadata      *bool  `json:"include_metadata,omitempty"`        // Query
+	IncludeLocations     *bool  `json:"include_locations,omitempty"`       // Query
+	CollectionId         *int   `json:"collection_id,omitempty"`           // Query
+	Thumbprint           string `json:"thumbprint,omitempty"`              // Query
+	CommonName           string `json:"common_name,omitempty"`             // Query
+	Id                   int    `json:"id"`                                // Query
+	IncludeHasPrivateKey *bool  `json:"include_has_private_key,omitempty"` // Query
+	RequestId            int    `json:"request_id,omitempty"`              // Query
 }
 
 // DeployPFXArgs holds the function arguments used for calling the DeployPFXCertificate method.
@@ -125,21 +125,21 @@ type DeployPFXResp struct {
 
 // CertificateSubject contains string elements for X.509V3 certificate distinguished name (subject)
 type CertificateSubject struct {
-	SubjectCommonName         string
-	SubjectLocality           string
-	SubjectOrganization       string
-	SubjectCountry            string
-	SubjectOrganizationalUnit string
-	SubjectState              string
+	SubjectCommonName         string `json:"common_name,omitempty"`
+	SubjectLocality           string `json:"locality,omitempty"`
+	SubjectOrganization       string `json:"organization,omitempty"`
+	SubjectCountry            string `json:"country,omitempty"`
+	SubjectOrganizationalUnit string `json:"organizational_unit,omitempty"`
+	SubjectState              string `json:"state,omitempty"`
 }
 
 // downloadCertificateBody is the API POST request body for PFX enrollment (DownloadCertificate).
 type downloadCertificateBody struct {
-	CertID       int
-	SerialNumber string
-	IssuerDN     string
-	Thumbprint   string
-	IncludeChain bool
+	CertID       int    `json:"id,omitempty"`
+	SerialNumber string `json:"serial_number,omitempty"`
+	IssuerDN     string `json:"issuer_dn,omitempty"`
+	Thumbprint   string `json:"thumbprint,omitempty"`
+	IncludeChain bool   `json:"include_chain,omitempty"`
 }
 
 // EnrollResponse is the outer certificate enrollment response. When Enroll functions are called, the certificates are
