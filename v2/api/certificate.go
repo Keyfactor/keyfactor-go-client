@@ -583,7 +583,8 @@ func (c *Client) ListCertificates(q map[string]string) ([]GetCertificateResponse
 //   - Private key (*rsa.PrivateKey or *ecdsa.PrivateKey)
 //   - Leaf certificate (*x509.Certificate)
 //   - Certificate chain ([]*x509.Certificate)
-func (c *Client) RecoverCertificate(certId int, thumbprint string, serialNumber string, issuerDn string, password string) (interface{}, *x509.Certificate, []*x509.Certificate, error) {
+func (c *Client) RecoverCertificate(certId int, thumbprint string, serialNumber string, issuerDn string, password string, collectionId int) (interface{}, *x509.Certificate, []*x509.Certificate, error) {
+	log.Println("[DEBUG] Enter RecoverCertificate")
 	log.Println("[INFO] Recovering certificate ID:", certId)
 	/* The download certificate endpoint requires one of the following to retrieve a cert:
 		- CertID
@@ -602,8 +603,10 @@ func (c *Client) RecoverCertificate(certId int, thumbprint string, serialNumber 
 	}
 
 	if !validInput {
-		return nil, nil, nil, fmt.Errorf("certID, thumbprint, or serial number AND issuer DN required to dowload certificate")
+		log.Println("[ERROR] RecoverCertificate: certID, thumbprint, or serial number AND issuer DN required to download certificate")
+		return nil, nil, nil, fmt.Errorf("certID, thumbprint, or serial number AND issuer DN required to download certificate")
 	}
+	log.Println("[DEBUG] RecoverCertificate: Valid input")
 
 	if password == "" {
 		return nil, nil, nil, fmt.Errorf("password required to recover private key with certificate")
@@ -618,6 +621,7 @@ func (c *Client) RecoverCertificate(certId int, thumbprint string, serialNumber 
 		IncludeChain: true,
 	}
 
+	log.Println("[DEBUG] RecoverCertificate: Recovering certificate with args:", rca)
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -627,31 +631,58 @@ func (c *Client) RecoverCertificate(certId int, thumbprint string, serialNumber 
 		},
 	}
 
+	//if collectionId is > 0 then add to query params
+	query := apiQuery{
+		Query: []StringTuple{},
+	}
+	if collectionId > 0 {
+		log.Println("[DEBUG] RecoverCertificate: Collection ID:", collectionId)
+		query.Query = append(query.Query, StringTuple{
+			"collectionId", fmt.Sprintf("%d", collectionId),
+		})
+		log.Println("[DEBUG] RecoverCertificate: Query:", query)
+	}
+
+	log.Println("[DEBUG] RecoverCertificate: Creating recover certificate request")
 	keyfactorAPIStruct := &request{
 		Method:   "POST",
 		Endpoint: "Certificates/Recover",
 		Headers:  headers,
 		Payload:  &rca,
+		Query:    &query,
 	}
 
+	log.Println("[INFO] Attempting to recover certificate from Keyfactor Command")
 	resp, err := c.sendRequest(keyfactorAPIStruct)
 	if err != nil {
+		log.Println("[ERROR] RecoverCertificate: Error recovering certificate from Keyfactor Command", err.Error())
 		return nil, nil, nil, err
 	}
 
 	jsonResp := &recoverCertResponse{}
+	log.Println("[DEBUG] RecoverCertificate: Decoding response")
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
+		log.Println("[ERROR] RecoverCertificate: Error decoding response from Keyfactor Command", err.Error())
 		return nil, nil, nil, err
 	}
 
+	log.Println("[DEBUG] RecoverCertificate: Decoding PFX")
 	pfxDer, err := base64.StdEncoding.DecodeString(jsonResp.PFX)
+	if err != nil {
+		log.Println("[ERROR] RecoverCertificate: Error decoding PFX", err.Error())
+		return nil, nil, nil, err
+	}
 
+	log.Println("[DEBUG] RecoverCertificate: Decoding PFX chain")
 	priv, leaf, chain, err := pkcs12.DecodeChain(pfxDer, rca.Password)
 	if err != nil {
+		log.Println("[ERROR] RecoverCertificate: Error decoding PFX chain", err.Error())
 		return nil, nil, nil, err
 	}
 
+	log.Println("[INFO] Recovered certificate successfully")
+	log.Println("[DEBUG] RecoverCertificate: ", leaf, chain)
 	return priv, leaf, chain, nil
 }
 

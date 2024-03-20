@@ -107,6 +107,7 @@ type recoverCertArgs struct {
 	IssuerDN     string `json:"IssuerDN,omitempty"`
 	Thumbprint   string `json:"Thumbprint,omitempty"`
 	IncludeChain bool   `json:"IncludeChain,omitempty"`
+	ChainOrder   string `json:"ChainOrder,omitempty"`
 }
 
 // StoreTypes holds necessary store type metadata for creating and deploying certificates.
