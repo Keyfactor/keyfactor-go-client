@@ -141,6 +141,7 @@ type downloadCertificateBody struct {
 	IssuerDN     string `json:"issuer_dn,omitempty"`
 	Thumbprint   string `json:"thumbprint,omitempty"`
 	IncludeChain bool   `json:"include_chain,omitempty"`
+	ChainOrder   string `json:"chain_order,omitempty"`
 }
 
 // EnrollResponse is the outer certificate enrollment response. When Enroll functions are called, the certificates are

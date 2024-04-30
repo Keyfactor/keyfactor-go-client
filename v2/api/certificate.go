@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/spbsoluble/go-pkcs12"
-	"go.mozilla.org/pkcs7"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/spbsoluble/go-pkcs12"
+	"go.mozilla.org/pkcs7"
 )
 
 // EnrollPFX takes arguments for EnrollPFXFctArgs to facilitate a call to Keyfactor
@@ -173,7 +174,12 @@ func (c *Client) EnrollPFXV2(ea *EnrollPFXFctArgsV2) (*EnrollResponseV2, error) 
 // Returns:
 //   - Leaf certificate
 //   - Certificate chain
-func (c *Client) DownloadCertificate(certId int, thumbprint string, serialNumber string, issuerDn string) (*x509.Certificate, []*x509.Certificate, error) {
+func (c *Client) DownloadCertificate(
+	certId int,
+	thumbprint string,
+	serialNumber string,
+	issuerDn string,
+) (*x509.Certificate, []*x509.Certificate, error) {
 	log.Println("[INFO] Downloading certificate")
 
 	/* The download certificate endpoint requires one of the following to retrieve a cert:
@@ -202,6 +208,7 @@ func (c *Client) DownloadCertificate(certId int, thumbprint string, serialNumber
 		IssuerDN:     issuerDn,
 		Thumbprint:   thumbprint,
 		IncludeChain: true,
+		ChainOrder:   "EndEntityFirst",
 	}
 
 	// Set Keyfactor-specific headers
@@ -342,7 +349,12 @@ func (c *Client) RevokeCert(rvargs *RevokeCertArgs) error {
 	}
 
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
+		return fmt.Errorf(
+			"[ERROR] Something unexpected happened, %s call to %s returned status %d",
+			keyfactorAPIStruct.Method,
+			keyfactorAPIStruct.Endpoint,
+			resp.StatusCode,
+		)
 	}
 	return nil
 }
@@ -412,42 +424,56 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 	}
 	if gca.IncludeLocations != nil || gca.CollectionId != nil || gca.IncludeMetadata != nil || gca.IncludeHasPrivateKey != nil {
 		if gca.IncludeLocations != nil {
-			query.Query = append(query.Query, StringTuple{
-				"includeLocations", strconv.FormatBool(*gca.IncludeLocations),
-			})
+			query.Query = append(
+				query.Query, StringTuple{
+					"includeLocations", strconv.FormatBool(*gca.IncludeLocations),
+				},
+			)
 		}
 		if gca.IncludeMetadata != nil {
-			query.Query = append(query.Query, StringTuple{
-				"includeMetadata", strconv.FormatBool(*gca.IncludeMetadata),
-			})
+			query.Query = append(
+				query.Query, StringTuple{
+					"includeMetadata", strconv.FormatBool(*gca.IncludeMetadata),
+				},
+			)
 		}
 		if gca.CollectionId != nil {
-			query.Query = append(query.Query, StringTuple{
-				"collectionId", fmt.Sprintf("%d", *gca.CollectionId),
-			})
+			query.Query = append(
+				query.Query, StringTuple{
+					"collectionId", fmt.Sprintf("%d", *gca.CollectionId),
+				},
+			)
 		}
 		if gca.IncludeHasPrivateKey != nil {
-			query.Query = append(query.Query, StringTuple{
-				"includeHasPrivateKey", strconv.FormatBool(*gca.IncludeHasPrivateKey),
-			})
+			query.Query = append(
+				query.Query, StringTuple{
+					"includeHasPrivateKey", strconv.FormatBool(*gca.IncludeHasPrivateKey),
+				},
+			)
 		}
 	}
 
 	var endpoint string
 	if gca.Id <= 0 && gca.Thumbprint != "" {
-		query.Query = append(query.Query, StringTuple{
-			"pq.queryString", fmt.Sprintf(`Thumbprint -eq "%s"`, gca.Thumbprint),
-		})
+		query.Query = append(
+			query.Query, StringTuple{
+				"pq.queryString", fmt.Sprintf(`Thumbprint -eq "%s"`, gca.Thumbprint),
+			},
+		)
 		endpoint = "Certificates"
 	} else if gca.Id <= 0 && gca.CommonName != "" {
-		query.Query = append(query.Query, StringTuple{
-			"pq.queryString", fmt.Sprintf(`IssuedCN -eq "%s"`, gca.CommonName),
-		})
+		query.Query = append(
+			query.Query, StringTuple{
+				"pq.queryString", fmt.Sprintf(`IssuedCN -eq "%s"`, gca.CommonName),
+			},
+		)
 		endpoint = "Certificates"
 	} else if (gca.Id <= 0 && gca.CommonName == "" && gca.Thumbprint == "") && gca.RequestId > 0 {
-		query.Query = append(query.Query, StringTuple{
-			"pq.queryString", fmt.Sprintf(`CertRequestId -eq %d`, gca.RequestId),
-		})
+		query.Query = append(
+			query.Query, StringTuple{
+				"pq.queryString", fmt.Sprintf(`CertRequestId -eq %d`, gca.RequestId),
+			},
+		)
 		endpoint = "Certificates"
 	} else {
 		endpoint = "Certificates/" + fmt.Sprintf("%d", gca.Id)
@@ -522,26 +548,34 @@ func (c *Client) ListCertificates(q map[string]string) ([]GetCertificateResponse
 	query := apiQuery{
 		Query: []StringTuple{},
 	}
-	query.Query = append(query.Query, StringTuple{
-		"includeLocations", "true",
-	})
+	query.Query = append(
+		query.Query, StringTuple{
+			"includeLocations", "true",
+		},
+	)
 	searchCollection, cOk := q["collection"]
 	if cOk {
-		query.Query = append(query.Query, StringTuple{
-			"collectionId", searchCollection,
-		})
+		query.Query = append(
+			query.Query, StringTuple{
+				"collectionId", searchCollection,
+			},
+		)
 	}
 	subjectName, sOk := q["subject"]
 	if sOk {
-		query.Query = append(query.Query, StringTuple{
-			"pq.queryString", fmt.Sprintf(`IssuedCN -eq "%s"`, subjectName),
-		})
+		query.Query = append(
+			query.Query, StringTuple{
+				"pq.queryString", fmt.Sprintf(`IssuedCN -eq "%s"`, subjectName),
+			},
+		)
 	}
 	tp, tpOk := q["thumbprint"]
 	if tpOk {
-		query.Query = append(query.Query, StringTuple{
-			"pq.queryString", fmt.Sprintf(`Thumbprint -eq "%s"`, tp),
-		})
+		query.Query = append(
+			query.Query, StringTuple{
+				"pq.queryString", fmt.Sprintf(`Thumbprint -eq "%s"`, tp),
+			},
+		)
 	}
 
 	keyfactorAPIStruct := &request{
@@ -583,7 +617,14 @@ func (c *Client) ListCertificates(q map[string]string) ([]GetCertificateResponse
 //   - Private key (*rsa.PrivateKey or *ecdsa.PrivateKey)
 //   - Leaf certificate (*x509.Certificate)
 //   - Certificate chain ([]*x509.Certificate)
-func (c *Client) RecoverCertificate(certId int, thumbprint string, serialNumber string, issuerDn string, password string, collectionId int) (interface{}, *x509.Certificate, []*x509.Certificate, error) {
+func (c *Client) RecoverCertificate(
+	certId int,
+	thumbprint string,
+	serialNumber string,
+	issuerDn string,
+	password string,
+	collectionId int,
+) (interface{}, *x509.Certificate, []*x509.Certificate, error) {
 	log.Println("[DEBUG] Enter RecoverCertificate")
 	log.Println("[INFO] Recovering certificate ID:", certId)
 	/* The download certificate endpoint requires one of the following to retrieve a cert:
@@ -637,9 +678,11 @@ func (c *Client) RecoverCertificate(certId int, thumbprint string, serialNumber 
 	}
 	if collectionId > 0 {
 		log.Println("[DEBUG] RecoverCertificate: Collection ID:", collectionId)
-		query.Query = append(query.Query, StringTuple{
-			"collectionId", fmt.Sprintf("%d", collectionId),
-		})
+		query.Query = append(
+			query.Query, StringTuple{
+				"collectionId", fmt.Sprintf("%d", collectionId),
+			},
+		)
 		log.Println("[DEBUG] RecoverCertificate: Query:", query)
 	}
 
