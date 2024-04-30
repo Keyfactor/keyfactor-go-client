@@ -224,7 +224,7 @@ func (c *Client) DownloadCertificate(
 		Method:   "POST",
 		Endpoint: "Certificates/Download",
 		Headers:  headers,
-		Payload:  &payload,
+		Payload:  payload,
 	}
 
 	resp, err := c.sendRequest(keyfactorAPIStruct)
