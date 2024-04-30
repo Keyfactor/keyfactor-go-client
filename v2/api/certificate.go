@@ -4,6 +4,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"log"
@@ -237,26 +238,29 @@ func (c *Client) DownloadCertificate(
 	if err != nil {
 		return nil, nil, err
 	}
-	buf, err := base64.StdEncoding.DecodeString(jsonResp.Content)
-	if err != nil {
-		return nil, nil, err
-	}
+	//buf, err := base64.StdEncoding.DecodeString(jsonResp.Content)
+	//if err != nil {
+	//	return nil, nil, err
+	//}
+	//
+	//certs, err := pkcs7.Parse(buf)
+	//if err != nil {
+	//	return nil, nil, err
+	//}
 
-	certs, err := pkcs7.Parse(buf)
-	if err != nil {
-		return nil, nil, err
+	certs, p7bErr := ConvertBase64P7BtoCertificates(jsonResp.Content)
+	if p7bErr != nil {
+		return nil, nil, p7bErr
 	}
-
-	//todo: review this as it seems to be returning the wrong cert
 
 	var leaf *x509.Certificate
-	if len(certs.Certificates) > 1 {
+	if len(certs) > 1 {
 		//leaf is last cert in chain
-		leaf = certs.Certificates[len(certs.Certificates)-1]
-		return leaf, certs.Certificates, nil
+		leaf = certs[0] // First cert in chain is the leaf
+		return leaf, certs, nil
 	}
 
-	return certs.Certificates[0], nil, nil
+	return certs[0], nil, nil
 }
 
 // EnrollCSR takes arguments for EnrollCSRFctArgs to enroll a passed Certificate Signing
@@ -805,4 +809,53 @@ func mapTupleArrayToInterface(i []StringTuple) map[string]interface{} {
 		temp[field.Elem1] = field.Elem2
 	}
 	return temp
+}
+
+// ConvertBase64P7BtoPEM takes a base64 encoded P7B certificate string and converts it to PEM format.
+func ConvertBase64P7BtoPEM(base64P7B string) ([]string, error) {
+	// Decode the base64 string to a byte slice.
+	decodedBytes, err := base64.StdEncoding.DecodeString(base64P7B)
+	if err != nil {
+		return []string{}, fmt.Errorf("error decoding base64 string: %w", err)
+	}
+
+	// Parse the PKCS#7 structure.
+	p7, err := pkcs7.Parse(decodedBytes)
+
+	if err != nil {
+		return []string{}, fmt.Errorf("error parsing PKCS#7 data: %w", err)
+	}
+
+	// Initialize an empty string to append the PEM encoded certificates.
+	var pemEncodedCerts []string
+
+	// Encode each certificate found in the PKCS#7 structure into PEM format.
+	for _, cert := range p7.Certificates {
+		pemBlock := &pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: cert.Raw,
+		}
+		pemEncoded := pem.EncodeToMemory(pemBlock)
+		pemEncodedCerts = append(pemEncodedCerts, string(pemEncoded))
+	}
+
+	return pemEncodedCerts, nil
+}
+
+// ConvertBase64P7BtoCertificates takes a base64 encoded P7B certificate string and returns a slice of *x509.Certificate.
+func ConvertBase64P7BtoCertificates(base64P7B string) ([]*x509.Certificate, error) {
+	// Decode the base64 string to a byte slice.
+	decodedBytes, err := base64.StdEncoding.DecodeString(base64P7B)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding base64 string: %w", err)
+	}
+
+	// Parse the PKCS#7 structure.
+	p7, err := pkcs7.Parse(decodedBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing PKCS#7 data: %w", err)
+	}
+
+	// Return the certificates.
+	return p7.Certificates, nil
 }
