@@ -729,7 +729,7 @@ func (c *Client) RecoverCertificate(
 	}
 
 	log.Println("[INFO] Recovered certificate successfully")
-	log.Println("[DEBUG] RecoverCertificate: ", leaf, chain)
+	//log.Println("[DEBUG] RecoverCertificate: ", leaf, chain)
 	return priv, leaf, chain, nil
 }
 
