@@ -1,4 +1,4 @@
-name: GoLang Test
+name: Tests
 on:
   push:
 
@@ -10,8 +10,8 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        environment: [KF9, KF10]
-        go-version: [ '1.18', '1.19']
+        environment: [KF9, KF10, KF11]
+        go-version: [ '1.18', '1.19', '1.20', '1.21', '1.22']
 
     steps:
       - uses: actions/checkout@v3
@@ -19,16 +19,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ${{ matrix.go-version }}
 
       - name: Build
         run: go build -v ./...
-
-#       - name: Test
-#         env:
-#           # GitHub sets the GITHUB_TOKEN secret automatically.
-#           ENV_FILE: ${{ secrets.ENV_FILE }}
-#         run: echo $ENV_FILE | base64 --decode > .env && source .env && go test -v ./api...
 
 
 

@@ -79,14 +79,14 @@ type RevokeCertArgs struct {
 
 // GetCertificateContextArgs holds the function arguments used for calling the GetCertificateContext method.
 type GetCertificateContextArgs struct {
-	IncludeMetadata      *bool  // Query
-	IncludeLocations     *bool  // Query
-	CollectionId         *int   // Query
-	Thumbprint           string // Query
-	CommonName           string // Query
-	Id                   int    // Query
-	IncludeHasPrivateKey *bool
-	RequestId            int
+	IncludeMetadata      *bool  `json:"IncludeMetadata,omitempty"`      // Query
+	IncludeLocations     *bool  `json:"IncludeLocations,omitempty"`     // Query
+	CollectionId         *int   `json:"CollectionId,omitempty"`         // Query
+	Thumbprint           string `json:"Thumbprint,omitempty"`           // Query
+	CommonName           string `json:"CommonName,omitempty"`           // Query
+	Id                   int    `json:"Id"`                             // Query
+	IncludeHasPrivateKey *bool  `json:"IncludeHasPrivateKey,omitempty"` // Query
+	RequestId            int    `json:"RequestId,omitempty"`            // Query
 }
 
 // DeployPFXArgs holds the function arguments used for calling the DeployPFXCertificate method.
@@ -107,6 +107,7 @@ type recoverCertArgs struct {
 	IssuerDN     string `json:"IssuerDN,omitempty"`
 	Thumbprint   string `json:"Thumbprint,omitempty"`
 	IncludeChain bool   `json:"IncludeChain,omitempty"`
+	ChainOrder   string `json:"ChainOrder,omitempty"`
 }
 
 // StoreTypes holds necessary store type metadata for creating and deploying certificates.
@@ -135,11 +136,12 @@ type CertificateSubject struct {
 
 // downloadCertificateBody is the API POST request body for PFX enrollment (DownloadCertificate).
 type downloadCertificateBody struct {
-	CertID       int
-	SerialNumber string
-	IssuerDN     string
-	Thumbprint   string
-	IncludeChain bool
+	CertID       int    `json:"CertID,omitempty"`
+	SerialNumber string `json:"SerialNumber,omitempty"`
+	IssuerDN     string `json:"IssuerDN,omitempty"`
+	Thumbprint   string `json:"Thumbprint,omitempty"`
+	IncludeChain bool   `json:"IncludeChain,omitempty"`
+	ChainOrder   string `json:"ChainOrder,omitempty"`
 }
 
 // EnrollResponse is the outer certificate enrollment response. When Enroll functions are called, the certificates are

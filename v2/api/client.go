@@ -2,10 +2,12 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -49,6 +51,12 @@ type AuthConfig struct {
 // NewKeyfactorClient creates a new Keyfactor client instance. A configured Client is returned with methods used to
 // interact with Keyfactor.
 func NewKeyfactorClient(auth *AuthConfig) (*Client, error) {
+	// set log to stdout
+	log.SetOutput(os.Stdout)
+	log.Printf("[INFO] Logging into Keyfactor at host %s", auth.Hostname)
+	ctx := context.Background()
+	tflog.SetField(ctx, "hostname", auth.Hostname)
+	tflog.Info(ctx, "Logging into Keyfactor Command")
 	c, err := loginToKeyfactor(auth)
 	if err != nil {
 		return nil, err
@@ -241,11 +249,18 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		log.Printf("[ERROR] Call to %s returned status %d. %s", keyfactorPath, resp.StatusCode, stringMessage)
 		return nil, errors.New(stringMessage)
 	} else if resp.StatusCode == http.StatusUnauthorized {
-		_, derr := httputil.DumpResponse(resp, true)
+		dmp, derr := httputil.DumpResponse(resp, true)
 		if derr != nil {
 			return nil, derr
 		}
-		err = errors.New("401 - Unauthorized: Access is denied due to invalid credentials")
+		//convert response to string
+		if dmp != nil {
+			respStr := string(dmp)
+			errMsg := fmt.Sprintf("http %d: %s", resp.StatusCode, respStr)
+			return nil, errors.New(errMsg)
+		}
+		errMsg := fmt.Sprintf("http %d: %s", resp.StatusCode, "Unauthorized: Access is denied due to invalid credentials")
+		err = errors.New(errMsg)
 		return nil, err
 	} else {
 		var errorMessage map[string]interface{} // Decode JSON body to handle issue
