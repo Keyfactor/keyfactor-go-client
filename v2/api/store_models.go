@@ -281,7 +281,7 @@ type CertStoreInventoryV1 struct {
 }
 
 type CertStoreInventory struct {
-	Name         string                   `json:"Name,omitempty"`
+	Name         string                   `json:"Name,omitempty"` // This is the cert `alias` in the store
 	Certificates []InventoriedCertificate `json:"Certificates,omitempty"`
 	Thumbprints  []string                 `json:"-"`
 	Serials      []string                 `json:"-"`
