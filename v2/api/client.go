@@ -2,12 +2,10 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -20,13 +18,15 @@ import (
 )
 
 var (
-	EnvCommandHostname = "KEYFACTOR_HOSTNAME"
-	EnvCommandUsername = "KEYFACTOR_USERNAME"
-	EnvCommandPassword = "KEYFACTOR_PASSWORD"
-	EnvCommandDomain   = "KEYFACTOR_DOMAIN"
-	EnvCommandAPI      = "KEYFACTOR_API_PATH"
-	EnvCommandTimeout  = "KEYFACTOR_TIMEOUT"
-	DefaultAPIPath     = "KeyfactorAPI"
+	EnvCommandHostname     = "KEYFACTOR_HOSTNAME"
+	EnvCommandUsername     = "KEYFACTOR_USERNAME"
+	EnvCommandPassword     = "KEYFACTOR_PASSWORD"
+	EnvCommandDomain       = "KEYFACTOR_DOMAIN"
+	EnvCommandAPI          = "KEYFACTOR_API_PATH"
+	EnvCommandTimeout      = "KEYFACTOR_TIMEOUT"
+	DefaultAPIPath         = "KeyfactorAPI"
+	EnvCommandClientId     = "KEYFACTOR_CLIENT_ID"
+	EnvCommandClientSecret = "KEYFACTOR_CLIENT_SECRET"
 )
 
 type Client struct {
@@ -54,9 +54,6 @@ func NewKeyfactorClient(auth *AuthConfig) (*Client, error) {
 	// set log to stdout
 	log.SetOutput(os.Stdout)
 	log.Printf("[INFO] Logging into Keyfactor at host %s", auth.Hostname)
-	ctx := context.Background()
-	tflog.SetField(ctx, "hostname", auth.Hostname)
-	tflog.Info(ctx, "Logging into Keyfactor Command")
 	c, err := loginToKeyfactor(auth)
 	if err != nil {
 		return nil, err
@@ -220,11 +217,22 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 				if sleepDuration > time.Duration(MAX_WAIT_SECONDS)*time.Second {
 					sleepDuration = time.Duration(MAX_WAIT_SECONDS) * time.Second
 				}
-				log.Printf("[DEBUG] %s request to %s failed with error %s, retrying in %s seconds...", request.Method, keyfactorPath, respErr.Error(), sleepDuration)
+				log.Printf(
+					"[DEBUG] %s request to %s failed with error %s, retrying in %s seconds...",
+					request.Method,
+					keyfactorPath,
+					respErr.Error(),
+					sleepDuration,
+				)
 				time.Sleep(sleepDuration)
 			}
 
-			log.Printf("[DEBUG] %s request to %s failed with error %s, retrying...", request.Method, keyfactorPath, respErr.Error())
+			log.Printf(
+				"[DEBUG] %s request to %s failed with error %s, retrying...",
+				request.Method,
+				keyfactorPath,
+				respErr.Error(),
+			)
 			req, reqErr = http.NewRequest(request.Method, keyfactorPath, bytes.NewBuffer(jsonByes))
 			if reqErr != nil {
 				return nil, reqErr
@@ -245,7 +253,10 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		log.Printf("[DEBUG] %s succeeded with response code %d", request.Method, resp.StatusCode)
 		return resp, nil
 	} else if resp.StatusCode == http.StatusNotFound {
-		stringMessage = fmt.Sprintf("Error %d - the requested resource was not found. Please check the request and try again.", resp.StatusCode)
+		stringMessage = fmt.Sprintf(
+			"Error %d - the requested resource was not found. Please check the request and try again.",
+			resp.StatusCode,
+		)
 		log.Printf("[ERROR] Call to %s returned status %d. %s", keyfactorPath, resp.StatusCode, stringMessage)
 		return nil, errors.New(stringMessage)
 	} else if resp.StatusCode == http.StatusUnauthorized {
@@ -259,7 +270,11 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 			errMsg := fmt.Sprintf("http %d: %s", resp.StatusCode, respStr)
 			return nil, errors.New(errMsg)
 		}
-		errMsg := fmt.Sprintf("http %d: %s", resp.StatusCode, "Unauthorized: Access is denied due to invalid credentials")
+		errMsg := fmt.Sprintf(
+			"http %d: %s",
+			resp.StatusCode,
+			"Unauthorized: Access is denied due to invalid credentials",
+		)
 		err = errors.New(errMsg)
 		return nil, err
 	} else {
@@ -271,7 +286,13 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 			if derr != nil {
 				return nil, derr
 			}
-			uerr := errors.New(fmt.Sprintf("%d - Unknown error connecting to Keyfactor %s, please check your connection.", resp.StatusCode, endpoint))
+			uerr := errors.New(
+				fmt.Sprintf(
+					"%d - Unknown error connecting to Keyfactor %s, please check your connection.",
+					resp.StatusCode,
+					endpoint,
+				),
+			)
 			return nil, uerr
 		}
 
