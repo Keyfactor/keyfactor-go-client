@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 )
 
 // CreateStore takes arguments for CreateStoreFctArgs to facilitate the creation
@@ -148,7 +149,12 @@ func (c *Client) DeleteCertificateStore(storeId string) error {
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
+		return fmt.Errorf(
+			"[ERROR] Something unexpected happened, %s call to %s returned status %d",
+			keyfactorAPIStruct.Method,
+			keyfactorAPIStruct.Endpoint,
+			resp.StatusCode,
+		)
 	}
 
 	return nil
@@ -182,29 +188,55 @@ func (c *Client) ListCertificateStores(params *map[string]interface{}) (*[]GetCe
 		query, _ = buildQuery(*params, "certificateStoreQuery.queryString")
 	}
 
-	endpoint := "CertificateStores/"
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: endpoint,
-		Headers:  headers,
-		Payload:  nil,
-		Query:    &query,
+	currentPage := 1
+	var output []GetCertificateStoreResponse
+	var errs []error
+	// Loop through pages until no more results are returned
+	for {
+		query.Query = append(query.Query, StringTuple{"certificateStoreQuery.pageReturned", strconv.Itoa(currentPage)})
+		endpoint := "CertificateStores/"
+		keyfactorAPIStruct := &request{
+			Method:   "GET",
+			Endpoint: endpoint,
+			Headers:  headers,
+			Payload:  nil,
+			Query:    &query,
+		}
+
+		resp, err := c.sendRequest(keyfactorAPIStruct)
+		if err != nil {
+			return nil, err
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf(
+				"[ERROR] Something unexpected happened, %s call to %s returned status %d",
+				keyfactorAPIStruct.Method,
+				keyfactorAPIStruct.Endpoint,
+				resp.StatusCode,
+			)
+		}
+		var jsonResp []GetCertificateStoreResponse
+		err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		if len(jsonResp) == 0 {
+			break
+		}
+		output = append(output, jsonResp...)
+		currentPage++
 	}
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return &[]GetCertificateStoreResponse{}, err
+	// combine all errors into one
+	if len(errs) > 0 {
+		errStr := ""
+		for _, e := range errs {
+			errStr += e.Error() + "\n"
+		}
+		return nil, errors.New(errStr)
 	}
-
-	if resp.StatusCode != http.StatusOK {
-		return &[]GetCertificateStoreResponse{}, fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
-	}
-	var jsonResp []GetCertificateStoreResponse
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	return &jsonResp, nil
+	return &output, nil
 }
 
 // GetCertificateStoreByID takes arguments for a certificate store ID to facilitate a call to Keyfactor
@@ -251,17 +283,21 @@ func (c *Client) GetCertificateStoreByContainerID(containerID interface{}) (*[]G
 	}
 	switch containerID.(type) {
 	case int:
-		query.Query = append(query.Query, StringTuple{
-			"certificateStoreQuery.queryString", fmt.Sprintf(`ContainerId -eq "%d"`, containerID),
-		})
+		query.Query = append(
+			query.Query, StringTuple{
+				"certificateStoreQuery.queryString", fmt.Sprintf(`ContainerId -eq "%d"`, containerID),
+			},
+		)
 	case string:
 		ct, ctErr := c.GetStoreContainer(containerID.(string))
 		if ctErr != nil {
 			return nil, ctErr
 		}
-		query.Query = append(query.Query, StringTuple{
-			"certificateStoreQuery.queryString", fmt.Sprintf(`ContainerId -eq %d`, *ct.Id),
-		})
+		query.Query = append(
+			query.Query, StringTuple{
+				"certificateStoreQuery.queryString", fmt.Sprintf(`ContainerId -eq %d`, *ct.Id),
+			},
+		)
 	}
 
 	// Set Keyfactor-specific headers
@@ -304,7 +340,10 @@ func (c *Client) GetCertificateStoreByContainerID(containerID interface{}) (*[]G
 	return jsonResp, nil
 }
 
-func (c *Client) GetCertificateStoreByClientAndStorePath(clientMachine string, storePath, containerID interface{}) (*[]GetCertificateStoreResponse, error) {
+func (c *Client) GetCertificateStoreByClientAndStorePath(
+	clientMachine string,
+	storePath, containerID interface{},
+) (*[]GetCertificateStoreResponse, error) {
 
 	query := apiQuery{
 		Query: []StringTuple{},
@@ -350,9 +389,11 @@ func (c *Client) GetCertificateStoreByClientAndStorePath(clientMachine string, s
 	}
 
 	if fullQueryString != "" {
-		query.Query = append(query.Query, StringTuple{
-			"certificateStoreQuery.queryString", fullQueryString,
-		})
+		query.Query = append(
+			query.Query, StringTuple{
+				"certificateStoreQuery.queryString", fullQueryString,
+			},
+		)
 	}
 
 	// Set Keyfactor-specific headers
@@ -469,7 +510,10 @@ func (c *Client) GetCertStoreInventoryV1(storeId string) (*[]CertStoreInventoryV
 	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
-	resp, _, err := apiClient.CertificateStoreApi.CertificateStoreGetCertificateStoreInventory(context.Background(), storeId).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+	resp, _, err := apiClient.CertificateStoreApi.CertificateStoreGetCertificateStoreInventory(
+		context.Background(),
+		storeId,
+	).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
 	if err != nil {
 		return nil, err
