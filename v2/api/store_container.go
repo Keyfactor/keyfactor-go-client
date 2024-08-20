@@ -3,13 +3,12 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 )
 
 // GetStoreContainers returns a list of store containers
 func (c *Client) GetStoreContainers() (*[]CertStoreContainer, error) {
-	log.Println("[INFO] Listing certificate store containers.")
+	//log.println("[INFO] Listing certificate store containers.")
 
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -40,7 +39,7 @@ func (c *Client) GetStoreContainers() (*[]CertStoreContainer, error) {
 
 // GetStoreContainer takes an ID and returns a single store container
 func (c *Client) GetStoreContainer(id interface{}) (*CertStoreContainer, error) {
-	log.Printf("[INFO] Fetching certificat store containers %s.\n", id)
+	//log.printf("[INFO] Fetching certificat store containers %s.\n", id)
 
 	var endpoint string
 	var query apiQuery
@@ -71,9 +70,11 @@ func (c *Client) GetStoreContainer(id interface{}) (*CertStoreContainer, error) 
 		query = apiQuery{
 			Query: []StringTuple{},
 		}
-		query.Query = append(query.Query, StringTuple{
-			"pq.queryString", fmt.Sprintf(`Name -eq "%s"`, id),
-		})
+		query.Query = append(
+			query.Query, StringTuple{
+				"pq.queryString", fmt.Sprintf(`Name -eq "%s"`, id),
+			},
+		)
 		jsonResp = &[]CertStoreContainer{}
 	}
 	var keyfactorAPIStruct *request

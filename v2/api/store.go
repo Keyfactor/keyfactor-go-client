@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -21,7 +20,7 @@ import (
 //   - Properties    : []StringTuple *Note - Method converts this array of StringTuples to a JSON string if provided
 //   - AgentId       : string
 func (c *Client) CreateStore(ca *CreateStoreFctArgs) (*CreateStoreResponse, error) {
-	log.Println("[INFO] Creating new certificate store with Keyfactor")
+	//log.println("[INFO] Creating new certificate store with Keyfactor")
 
 	// Validate that the required fields are present
 	err := validateCreateStoreArgs(ca)
@@ -77,7 +76,7 @@ func (c *Client) CreateStore(ca *CreateStoreFctArgs) (*CreateStoreResponse, erro
 //   - Properties    : []StringTuple *Note - Method converts this slice of StringTuples to a JSON string if provided
 //   - AgentId       : string
 func (c *Client) UpdateStore(ua *UpdateStoreFctArgs) (*UpdateStoreResponse, error) {
-	log.Println("[INFO] Creating new certificate store with Keyfactor")
+	//log.println("[INFO] Creating new certificate store with Keyfactor")
 
 	// Validate that the required fields are present
 	err := validateUpdateStoreArgs(ua)
@@ -439,7 +438,7 @@ func (c *Client) GetCertificateStoreByClientAndStorePath(
 // AddCertificateToStores takes argument for a AddCertificateToStore structure and is used to remove a configured certificate
 // from one or more certificate stores.
 func (c *Client) AddCertificateToStores(config *AddCertificateToStore) ([]string, error) {
-	log.Printf("[INFO] Adding certificate with ID %d to one or more certificate stores", config.CertificateId)
+	//log.printf("[INFO] Adding certificate with ID %d to one or more certificate stores", config.CertificateId)
 
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
@@ -472,7 +471,7 @@ func (c *Client) AddCertificateToStores(config *AddCertificateToStore) ([]string
 // RemoveCertificateFromStores takes argument for a RemoveCertificateFromStore structure, and is used to remove a certificate
 // from one or more certificate stores.
 func (c *Client) RemoveCertificateFromStores(config *RemoveCertificateFromStore) ([]string, error) {
-	log.Println("[INFO] Removing certificate from one or more certificate stores")
+	//log.println("[INFO] Removing certificate from one or more certificate stores")
 
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{

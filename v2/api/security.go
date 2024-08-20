@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 )
 
 // GetSecurityIdentities hits the /Security/Identities endpoint with a GET request and returns a list of
 // GetSecurityIdentityResponse structs. The function takes no arguments.
 func (c *Client) GetSecurityIdentities() ([]GetSecurityIdentityResponse, error) {
-	log.Println("[INFO] Getting Keyfactor security identity list")
+	//log.println("[INFO] Getting Keyfactor security identity list")
 
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
@@ -44,7 +43,7 @@ func (c *Client) GetSecurityIdentities() ([]GetSecurityIdentityResponse, error) 
 // CreateSecurityIdentity hits the /Security/Identities endpoint with a POST request to create a new Keyfactor security
 // and returns a CreateSecurityIdentityResponse struct. The function takes argument for a CreateSecurityIdentityArg struct
 func (c *Client) CreateSecurityIdentity(csia *CreateSecurityIdentityArg) (*CreateSecurityIdentityResponse, error) {
-	log.Println("[INFO] Creating new Keyfactor security identity")
+	//log.println("[INFO] Creating new Keyfactor security identity")
 
 	// Verify argument
 	if csia == nil || csia.AccountName == "" {
@@ -82,7 +81,7 @@ func (c *Client) CreateSecurityIdentity(csia *CreateSecurityIdentityArg) (*Creat
 // DeleteSecurityIdentity takes arguments for a security identity ID, and makes an associated call to Keyfactor to
 // delete the identity.
 func (c *Client) DeleteSecurityIdentity(id int) error {
-	log.Printf("[INFO] Deleting Keyfactor security identity with ID %d", id)
+	//log.printf("[INFO] Deleting Keyfactor security identity with ID %d", id)
 
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
@@ -106,13 +105,18 @@ func (c *Client) DeleteSecurityIdentity(id int) error {
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
+		return fmt.Errorf(
+			"[ERROR] Something unexpected happened, %s call to %s returned status %d",
+			keyfactorAPIStruct.Method,
+			keyfactorAPIStruct.Endpoint,
+			resp.StatusCode,
+		)
 	}
 	return nil
 }
 
 func (c *Client) GetSecurityRoles() ([]GetSecurityRolesResponse, error) {
-	log.Println("[INFO] Getting list of Keyfactor security roles")
+	//log.println("[INFO] Getting list of Keyfactor security roles")
 
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
@@ -143,7 +147,7 @@ func (c *Client) GetSecurityRoles() ([]GetSecurityRolesResponse, error) {
 }
 
 func (c *Client) GetSecurityRole(id interface{}) (*GetSecurityRoleResponse, error) {
-	log.Printf("[INFO] Getting Keyfactor security role with ID %v", id)
+	//log.printf("[INFO] Getting Keyfactor security role with ID %v", id)
 
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
@@ -199,8 +203,8 @@ func (c *Client) GetSecurityRole(id interface{}) (*GetSecurityRoleResponse, erro
 		jsonResp := &[]GetSecurityRolesResponse{}
 		err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 
-		for i, jResp := range *jsonResp {
-			log.Printf("[INFO] Getting Keyfactor security role with %v ID %v", i, jResp)
+		for _, jResp := range *jsonResp {
+			//log.printf("[INFO] Getting Keyfactor security role with %v ID %v", i, jResp)
 			//convert ID from int to float64
 			formattedID := float64(jResp.ID)
 
@@ -221,7 +225,7 @@ func (c *Client) GetSecurityRole(id interface{}) (*GetSecurityRoleResponse, erro
 // DeleteSecurityRole takes arguments for a security role ID, and makes an associated call to Keyfactor to
 // delete the role.
 func (c *Client) DeleteSecurityRole(id int) error {
-	log.Printf("[INFO] Deleting Keyfactor security role with ID %d", id)
+	//log.printf("[INFO] Deleting Keyfactor security role with ID %d", id)
 
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
@@ -245,7 +249,12 @@ func (c *Client) DeleteSecurityRole(id int) error {
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
+		return fmt.Errorf(
+			"[ERROR] Something unexpected happened, %s call to %s returned status %d",
+			keyfactorAPIStruct.Method,
+			keyfactorAPIStruct.Endpoint,
+			resp.StatusCode,
+		)
 	}
 	return nil
 }
@@ -253,7 +262,7 @@ func (c *Client) DeleteSecurityRole(id int) error {
 // CreateSecurityRole creates a new Keyfacor security role. This function takes argument for a CreateSecurityRoleArg
 // struct and returns a CreateSecurityRoleResponse struct.
 func (c *Client) CreateSecurityRole(input *CreateSecurityRoleArg) (*CreateSecurityRoleResponse, error) {
-	log.Println("[INFO] Creating new Keyfactor security role")
+	//log.println("[INFO] Creating new Keyfactor security role")
 
 	// Verify argument
 	if input == nil || input.Name == "" || input.Description == "" {
@@ -291,7 +300,7 @@ func (c *Client) CreateSecurityRole(input *CreateSecurityRoleArg) (*CreateSecuri
 // UpdateSecurityRole updates the Keyfacor security role. This function takes argument for a CreateSecurityRoleArg
 // struct and returns a CreateSecurityRoleResponse struct.
 func (c *Client) UpdateSecurityRole(input *UpdateSecurityRoleArg) (*UpdateSecurityRoleResponse, error) {
-	log.Printf("[INFO] Updating Keyfactor security role with ID %d", input.Id)
+	//log.printf("[INFO] Updating Keyfactor security role with ID %d", input.Id)
 
 	// Verify argument
 	if input == nil {
