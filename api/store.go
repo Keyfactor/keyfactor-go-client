@@ -1,3 +1,17 @@
+// Copyright 2024 Keyfactor
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package api
 
 import (
@@ -137,14 +151,20 @@ func (c *Client) DeleteCertificateStore(storeId string) error {
 	configuration := kfc.NewConfiguration(make(map[string]string))
 	apiClient := kfc.NewAPIClient(configuration)
 
-	resp, err := apiClient.CertificateStoreApi.CertificateStoreDeleteCertificateStore(context.Background(), storeId).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+	resp, err := apiClient.CertificateStoreApi.CertificateStoreDeleteCertificateStore(
+		context.Background(),
+		storeId,
+	).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
 	if err != nil {
 		return err
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("[ERROR] Something unexpected happened, DELETE call to /Certificate/Store/{id} returned status %d", resp.StatusCode)
+		return fmt.Errorf(
+			"[ERROR] Something unexpected happened, DELETE call to /Certificate/Store/{id} returned status %d",
+			resp.StatusCode,
+		)
 	}
 
 	return nil
@@ -194,7 +214,12 @@ func (c *Client) ListCertificateStores(params *map[string]interface{}) (*[]GetCe
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return &[]GetCertificateStoreResponse{}, fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
+		return &[]GetCertificateStoreResponse{}, fmt.Errorf(
+			"[ERROR] Something unexpected happened, %s call to %s returned status %d",
+			keyfactorAPIStruct.Method,
+			keyfactorAPIStruct.Endpoint,
+			resp.StatusCode,
+		)
 	}
 	var jsonResp []GetCertificateStoreResponse
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
@@ -250,17 +275,21 @@ func (c *Client) GetCertificateStoreByContainerID(containerID interface{}) (*[]G
 	}
 	switch containerID.(type) {
 	case int:
-		query.Query = append(query.Query, StringTuple{
-			"certificateStoreQuery.queryString", fmt.Sprintf(`ContainerId -eq "%d"`, containerID),
-		})
+		query.Query = append(
+			query.Query, StringTuple{
+				"certificateStoreQuery.queryString", fmt.Sprintf(`ContainerId -eq "%d"`, containerID),
+			},
+		)
 	case string:
 		ct, ctErr := c.GetStoreContainer(containerID.(string))
 		if ctErr != nil {
 			return nil, ctErr
 		}
-		query.Query = append(query.Query, StringTuple{
-			"certificateStoreQuery.queryString", fmt.Sprintf(`ContainerId -eq %d`, *ct.Id),
-		})
+		query.Query = append(
+			query.Query, StringTuple{
+				"certificateStoreQuery.queryString", fmt.Sprintf(`ContainerId -eq %d`, *ct.Id),
+			},
+		)
 	}
 
 	// Set Keyfactor-specific headers
@@ -405,7 +434,10 @@ func (c *Client) GetCertStoreInventory(storeId string) (*[]CertStoreInventory, e
 	configuration := kfc.NewConfiguration(make(map[string]string))
 	apiClient := kfc.NewAPIClient(configuration)
 
-	resp, _, err := apiClient.CertificateStoreApi.CertificateStoreGetCertificateStoreInventory(context.Background(), storeId).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+	resp, _, err := apiClient.CertificateStoreApi.CertificateStoreGetCertificateStoreInventory(
+		context.Background(),
+		storeId,
+	).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
 	if err != nil {
 		return nil, err

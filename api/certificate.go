@@ -1,3 +1,17 @@
+// Copyright 2024 Keyfactor
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package api
 
 import (
@@ -7,14 +21,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
-	"github.com/spbsoluble/go-pkcs12"
-	"go.mozilla.org/pkcs7"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
+	"github.com/spbsoluble/go-pkcs12"
+	"go.mozilla.org/pkcs7"
 )
 
 // EnrollPFX takes arguments for EnrollPFXFctArgs to facilitate a call to Keyfactor
@@ -127,7 +142,12 @@ func (c *Client) EnrollPFX(ea *EnrollPFXFctArgs) (*EnrollResponse, error) {
 // Returns:
 //   - Leaf certificate
 //   - Certificate chain
-func (c *Client) DownloadCertificate(certId int, thumbprint string, serialNumber string, issuerDn string) (*x509.Certificate, []*x509.Certificate, error) {
+func (c *Client) DownloadCertificate(
+	certId int,
+	thumbprint string,
+	serialNumber string,
+	issuerDn string,
+) (*x509.Certificate, []*x509.Certificate, error) {
 	log.Println("[INFO] Downloading certificate")
 
 	/* The download certificate endpoint requires one of the following to retrieve a cert:
@@ -285,7 +305,10 @@ func (c *Client) RevokeCert(rvargs *RevokeCertArgs) error {
 	}
 
 	if httpResp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("[ERROR] Something unexpected happened, POST call to /Certificates/Revoke returned status %d", httpResp.StatusCode)
+		return fmt.Errorf(
+			"[ERROR] Something unexpected happened, POST call to /Certificates/Revoke returned status %d",
+			httpResp.StatusCode,
+		)
 	}
 	return nil
 }
@@ -346,7 +369,10 @@ func (c *Client) GetCertificateContext(gca *GetCertificateContextArgs) (*GetCert
 	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
-	resp, _, err := apiClient.CertificateApi.CertificateGetCertificate(context.Background(), int32(gca.Id)).IncludeLocations(*gca.IncludeLocations).IncludeMetadata(*gca.IncludeMetadata).CollectionId(int32(*gca.CollectionId)).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+	resp, _, err := apiClient.CertificateApi.CertificateGetCertificate(
+		context.Background(),
+		int32(gca.Id),
+	).IncludeLocations(*gca.IncludeLocations).IncludeMetadata(*gca.IncludeMetadata).CollectionId(int32(*gca.CollectionId)).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
 	if err != nil {
 		return nil, err
@@ -442,7 +468,13 @@ func (c *Client) ListCertificates(q map[string]string) ([]GetCertificateResponse
 //   - Private key (*rsa.PrivateKey or *ecdsa.PrivateKey)
 //   - Leaf certificate (*x509.Certificate)
 //   - Certificate chain ([]*x509.Certificate)
-func (c *Client) RecoverCertificate(certId int, thumbprint string, serialNumber string, issuerDn string, password string) (interface{}, *x509.Certificate, []*x509.Certificate, error) {
+func (c *Client) RecoverCertificate(
+	certId int,
+	thumbprint string,
+	serialNumber string,
+	issuerDn string,
+	password string,
+) (interface{}, *x509.Certificate, []*x509.Certificate, error) {
 	log.Println("[INFO] Recovering certificate ID:", certId)
 	/* The download certificate endpoint requires one of the following to retrieve a cert:
 		- CertID

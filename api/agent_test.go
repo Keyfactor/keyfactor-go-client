@@ -1,3 +1,17 @@
+// Copyright 2024 Keyfactor
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package api
 
 import (
@@ -74,21 +88,23 @@ func TestClient_ApproveAgent(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.args.status == ApprovedAgentStatus {
-				_, err := c.DisApproveAgent(tt.args.id)
-				if (err != nil) != tt.wantErr {
-					t.Errorf("DisApproveAgent() error = %v, wantErr %v", err, tt.wantErr)
-					return
+		t.Run(
+			tt.name, func(t *testing.T) {
+				if tt.args.status == ApprovedAgentStatus {
+					_, err := c.DisApproveAgent(tt.args.id)
+					if (err != nil) != tt.wantErr {
+						t.Errorf("DisApproveAgent() error = %v, wantErr %v", err, tt.wantErr)
+						return
+					}
+				} else {
+					_, err := c.ApproveAgent(tt.args.id)
+					if (err != nil) != tt.wantErr {
+						t.Errorf("ApproveAgent() error = %v, wantErr %v", err, tt.wantErr)
+						return
+					}
 				}
-			} else {
-				_, err := c.ApproveAgent(tt.args.id)
-				if (err != nil) != tt.wantErr {
-					t.Errorf("ApproveAgent() error = %v, wantErr %v", err, tt.wantErr)
-					return
-				}
-			}
-		})
+			},
+		)
 	}
 }
 
@@ -134,41 +150,43 @@ func TestClient_FetchAgentLogs(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.args.id == "" && tt.args.clientName == "" && !tt.wantErr {
-				t.Errorf("unable to find agent with id %s or client name %s", tt.args.id, agentClientName)
-				return
-			} else if tt.args.id == "" {
-				agents, lErr := c.GetAgentList()
-				if lErr != nil && !tt.wantErr {
-					t.Errorf("unable to list agents. %s", lErr)
+		t.Run(
+			tt.name, func(t *testing.T) {
+				if tt.args.id == "" && tt.args.clientName == "" && !tt.wantErr {
+					t.Errorf("unable to find agent with id %s or client name %s", tt.args.id, agentClientName)
 					return
-				}
-				foundAgent := false
-				for _, agent := range agents {
-					if agent.ClientMachine == tt.args.clientName {
-						tt.args.id = agent.AgentId
-						foundAgent = true
-						break
+				} else if tt.args.id == "" {
+					agents, lErr := c.GetAgentList()
+					if lErr != nil && !tt.wantErr {
+						t.Errorf("unable to list agents. %s", lErr)
+						return
+					}
+					foundAgent := false
+					for _, agent := range agents {
+						if agent.ClientMachine == tt.args.clientName {
+							tt.args.id = agent.AgentId
+							foundAgent = true
+							break
+						}
+					}
+					if !foundAgent && !tt.wantErr {
+						t.Errorf("unable to find agent with id %s or client name %s", tt.args.id, tt.args.clientName)
+						return
 					}
 				}
-				if !foundAgent && !tt.wantErr {
-					t.Errorf("unable to find agent with id %s or client name %s", tt.args.id, tt.args.clientName)
+				got, err := c.FetchAgentLogs(tt.args.id)
+				if (err != nil) != tt.wantErr {
+					t.Errorf("FetchAgentLogs() error = %v, wantErr %v", err, tt.wantErr)
 					return
 				}
-			}
-			got, err := c.FetchAgentLogs(tt.args.id)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("FetchAgentLogs() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr {
-				// Check returned message
-				if got != tt.want {
-					t.Errorf("FetchAgentLogs() got = %v, want %v", got, tt.want)
+				if !tt.wantErr {
+					// Check returned message
+					if got != tt.want {
+						t.Errorf("FetchAgentLogs() got = %v, want %v", got, tt.want)
+					}
 				}
-			}
-		})
+			},
+		)
 	}
 }
 
@@ -218,21 +236,23 @@ func TestClient_GetAgent(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(
+			tt.name, func(t *testing.T) {
 
-			got, err := c.GetAgent(tt.args.id)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetAgent() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			// Check that length of the array is greater than 0
-			if !tt.wantErr {
-				if len(got) == 0 {
-					t.Errorf("GetAgent() got %d records, want %d record(s).\n", len(got), 1)
+				got, err := c.GetAgent(tt.args.id)
+				if (err != nil) != tt.wantErr {
+					t.Errorf("GetAgent() error = %v, wantErr %v", err, tt.wantErr)
 					return
 				}
-			}
-		})
+				// Check that length of the array is greater than 0
+				if !tt.wantErr {
+					if len(got) == 0 {
+						t.Errorf("GetAgent() got %d records, want %d record(s).\n", len(got), 1)
+						return
+					}
+				}
+			},
+		)
 	}
 }
 
@@ -260,26 +280,28 @@ func TestClient_GetAgentList(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(
+			tt.name, func(t *testing.T) {
 
-			got, err := c.GetAgentList()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetAgentList() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr {
-				// Check that length of the array is greater than 0
-				if len(got) == 0 {
-					t.Errorf("GetAgentList() got %d records, want at least %d record(s).\n", len(got), 1)
+				got, err := c.GetAgentList()
+				if (err != nil) != tt.wantErr {
+					t.Errorf("GetAgentList() error = %v, wantErr %v", err, tt.wantErr)
 					return
 				}
-				// Check returned agent name
-				if got[0].ClientMachine == "" {
-					t.Errorf("GetAgentList() got empty agent name, want non-empty agent name.\n")
-					return
+				if !tt.wantErr {
+					// Check that length of the array is greater than 0
+					if len(got) == 0 {
+						t.Errorf("GetAgentList() got %d records, want at least %d record(s).\n", len(got), 1)
+						return
+					}
+					// Check returned agent name
+					if got[0].ClientMachine == "" {
+						t.Errorf("GetAgentList() got empty agent name, want non-empty agent name.\n")
+						return
+					}
 				}
-			}
-		})
+			},
+		)
 	}
 }
 
@@ -349,31 +371,33 @@ func TestClient_ResetAgent(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var got string
-			var err error
-			if tt.args.action == AgentActionReset {
-				got, err = c.ResetAgent(tt.args.id)
-			} else if tt.args.action == AgentActionApprove {
-				got, err = c.ApproveAgent(tt.args.id)
-			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ResetAgent() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr {
-				// Check that length of the array is greater than 0
-				if got != tt.want {
-					t.Errorf("ResetAgent() got %s, want %s.\n", got, tt.want)
+		t.Run(
+			tt.name, func(t *testing.T) {
+				var got string
+				var err error
+				if tt.args.action == AgentActionReset {
+					got, err = c.ResetAgent(tt.args.id)
+				} else if tt.args.action == AgentActionApprove {
+					got, err = c.ApproveAgent(tt.args.id)
+				}
+				if (err != nil) != tt.wantErr {
+					t.Errorf("ResetAgent() error = %v, wantErr %v", err, tt.wantErr)
 					return
 				}
-			} else {
-				errStr := fmt.Sprintf("%s", err)
-				if errStr != tt.want {
-					t.Errorf("ResetAgent() got %s, want %s.\n", err, tt.want)
-					return
+				if !tt.wantErr {
+					// Check that length of the array is greater than 0
+					if got != tt.want {
+						t.Errorf("ResetAgent() got %s, want %s.\n", got, tt.want)
+						return
+					}
+				} else {
+					errStr := fmt.Sprintf("%s", err)
+					if errStr != tt.want {
+						t.Errorf("ResetAgent() got %s, want %s.\n", err, tt.want)
+						return
+					}
 				}
-			}
-		})
+			},
+		)
 	}
 }

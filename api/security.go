@@ -1,3 +1,17 @@
+// Copyright 2024 Keyfactor
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package api
 
 import (
@@ -95,14 +109,20 @@ func (c *Client) DeleteSecurityIdentity(id int) error {
 	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
-	_, httpResp, err := apiClient.SecurityApi.SecurityIdentityPermissions(context.Background(), int32(id)).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+	_, httpResp, err := apiClient.SecurityApi.SecurityIdentityPermissions(
+		context.Background(),
+		int32(id),
+	).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
 	if err != nil {
 		return err
 	}
 
 	if httpResp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("[ERROR] Something unexpected happened, DELETE call to Security/Identities/{id} returned status %d", httpResp.StatusCode)
+		return fmt.Errorf(
+			"[ERROR] Something unexpected happened, DELETE call to Security/Identities/{id} returned status %d",
+			httpResp.StatusCode,
+		)
 	}
 	return nil
 }
@@ -224,14 +244,20 @@ func (c *Client) DeleteSecurityRole(id int) error {
 	configuration := keyfactor.NewConfiguration(make(map[string]string))
 	apiClient := keyfactor.NewAPIClient(configuration)
 
-	resp, err := apiClient.SecurityRolesApi.SecurityRolesDeleteSecurityRole(context.Background(), int32(id)).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+	resp, err := apiClient.SecurityRolesApi.SecurityRolesDeleteSecurityRole(
+		context.Background(),
+		int32(id),
+	).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 
 	if err != nil {
 		return err
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("[ERROR] Something unexpected happened, DELETE call to /Security/Roles/{id} returned status %d", resp.StatusCode)
+		return fmt.Errorf(
+			"[ERROR] Something unexpected happened, DELETE call to /Security/Roles/{id} returned status %d",
+			resp.StatusCode,
+		)
 	}
 	return nil
 }
