@@ -30,6 +30,14 @@ func (c *Client) UpdateMetadata(um *UpdateMetadataArgs) error {
 		metadata = um.Metadata
 	}
 
+	query := apiQuery{
+		Query: []StringTuple{},
+	}
+
+	if um.CollectionId > 0 {
+		query.Query = append(query.Query, StringTuple{"collectionId", fmt.Sprintf("%d", um.CollectionId)})
+	}
+
 	fields, err := c.GetAllMetadataFields()
 	if err != nil {
 		return err
@@ -61,6 +69,7 @@ func (c *Client) UpdateMetadata(um *UpdateMetadataArgs) error {
 		Endpoint: "Certificates/Metadata",
 		Headers:  headers,
 		Payload:  um,
+		Query:    &query,
 	}
 
 	resp, err := c.sendRequest(keyfactorAPIStruct)
@@ -69,7 +78,12 @@ func (c *Client) UpdateMetadata(um *UpdateMetadataArgs) error {
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("[ERROR] Something unexpected happened, %s call to %s returned status %d", keyfactorAPIStruct.Method, keyfactorAPIStruct.Endpoint, resp.StatusCode)
+		return fmt.Errorf(
+			"[ERROR] Something unexpected happened, %s call to %s returned status %d",
+			keyfactorAPIStruct.Method,
+			keyfactorAPIStruct.Endpoint,
+			resp.StatusCode,
+		)
 	}
 	return nil
 }

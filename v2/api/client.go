@@ -53,7 +53,7 @@ type AuthConfig struct {
 func NewKeyfactorClient(auth *AuthConfig) (*Client, error) {
 	// set log to stdout
 	log.SetOutput(os.Stdout)
-	log.Printf("[INFO] Logging into Keyfactor at host %s", auth.Hostname)
+	////log.printf("[DEBUG] Logging into Keyfactor at host %s", auth.Hostname)
 	c, err := loginToKeyfactor(auth)
 	if err != nil {
 		return nil, err
@@ -149,7 +149,7 @@ func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
 		return nil, err
 	}
 
-	log.Printf("[INFO] Successfully logged into Keyfactor at host %s", c.Hostname)
+	////log.printf("[INFO] Successfully logged into Keyfactor at host %s", c.Hostname)
 
 	return c, nil
 }
@@ -183,12 +183,12 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 
 	keyfactorPath := u.String() // Convert absolute path to string
 
-	log.Printf("[INFO] Preparing a %s request to path '%s'", request.Method, keyfactorPath)
+	////log.printf("[INFO] Preparing a %s request to path '%s'", request.Method, keyfactorPath)
 	jsonByes, mErr := json.Marshal(request.Payload)
 	if mErr != nil {
 		return nil, mErr
 	}
-	//log.Printf("[TRACE] Request body: %s", jsonByes)
+	////log.printf("[TRACE] Request body: %s", jsonByes)
 
 	req, reqErr := http.NewRequest(request.Method, keyfactorPath, bytes.NewBuffer(jsonByes))
 	if reqErr != nil {
@@ -217,22 +217,22 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 				if sleepDuration > time.Duration(MAX_WAIT_SECONDS)*time.Second {
 					sleepDuration = time.Duration(MAX_WAIT_SECONDS) * time.Second
 				}
-				log.Printf(
-					"[DEBUG] %s request to %s failed with error %s, retrying in %s seconds...",
-					request.Method,
-					keyfactorPath,
-					respErr.Error(),
-					sleepDuration,
-				)
+				////log.printf(
+				//	"[DEBUG] %s request to %s failed with error %s, retrying in %s seconds...",
+				//	request.Method,
+				//	keyfactorPath,
+				//	respErr.Error(),
+				//	sleepDuration,
+				//)
 				time.Sleep(sleepDuration)
 			}
 
-			log.Printf(
-				"[DEBUG] %s request to %s failed with error %s, retrying...",
-				request.Method,
-				keyfactorPath,
-				respErr.Error(),
-			)
+			////log.printf(
+			//	"[DEBUG] %s request to %s failed with error %s, retrying...",
+			//	request.Method,
+			//	keyfactorPath,
+			//	respErr.Error(),
+			//)
 			req, reqErr = http.NewRequest(request.Method, keyfactorPath, bytes.NewBuffer(jsonByes))
 			if reqErr != nil {
 				return nil, reqErr
@@ -250,14 +250,14 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	}
 	var stringMessage string
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent {
-		log.Printf("[DEBUG] %s succeeded with response code %d", request.Method, resp.StatusCode)
+		////log.printf("[DEBUG] %s succeeded with response code %d", request.Method, resp.StatusCode)
 		return resp, nil
 	} else if resp.StatusCode == http.StatusNotFound {
 		stringMessage = fmt.Sprintf(
 			"Error %d - the requested resource was not found. Please check the request and try again.",
 			resp.StatusCode,
 		)
-		log.Printf("[ERROR] Call to %s returned status %d. %s", keyfactorPath, resp.StatusCode, stringMessage)
+		////log.printf("[ERROR] Call to %s returned status %d. %s", keyfactorPath, resp.StatusCode, stringMessage)
 		return nil, errors.New(stringMessage)
 	} else if resp.StatusCode == http.StatusUnauthorized {
 		dmp, derr := httputil.DumpResponse(resp, true)
@@ -296,7 +296,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 			return nil, uerr
 		}
 
-		log.Printf("[DEBUG] Request failed with code %d and message %v", resp.StatusCode, errorMessage)
+		////log.printf("[DEBUG] Request failed with code %d and message %v", resp.StatusCode, errorMessage)
 		_, hasFailedOps := errorMessage["FailedOperations"]
 		if hasFailedOps {
 			var fOps []string
@@ -318,7 +318,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 // returns a base-64 encoded auth string including the 'Basic ' prefix.
 func buildBasicAuthString(auth *AuthConfig) string {
 	var authString string
-	//log.Println("[TRACE] Building Authorization field")
+	////log.println("[TRACE] Building Authorization field")
 	if auth.Domain != "" && !strings.Contains(auth.Username, auth.Domain) {
 		authString = strings.Join([]string{auth.Domain, "\\", auth.Username, ":", auth.Password}, "")
 	} else {

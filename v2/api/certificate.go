@@ -7,7 +7,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,7 +19,7 @@ import (
 // EnrollPFX takes arguments for EnrollPFXFctArgs to facilitate a call to Keyfactor
 // that enrolls a PFX certificate with the supplied arguments.
 func (c *Client) EnrollPFX(ea *EnrollPFXFctArgs) (*EnrollResponse, error) {
-	log.Println("[INFO] Enrolling PFX certificate with Keyfactor")
+	//log.println("[INFO] Enrolling PFX certificate with Keyfactor")
 
 	/* Ensure required inputs exist */
 	var missingFields []string
@@ -93,7 +92,7 @@ func (c *Client) EnrollPFX(ea *EnrollPFXFctArgs) (*EnrollResponse, error) {
 }
 
 func (c *Client) EnrollPFXV2(ea *EnrollPFXFctArgsV2) (*EnrollResponseV2, error) {
-	log.Println("[INFO] Enrolling PFX certificate with Keyfactor")
+	//log.println("[INFO] Enrolling PFX certificate with Keyfactor")
 
 	/* Ensure required inputs exist */
 	var missingFields []string
@@ -181,7 +180,7 @@ func (c *Client) DownloadCertificate(
 	serialNumber string,
 	issuerDn string,
 ) (*x509.Certificate, []*x509.Certificate, error) {
-	log.Println("[INFO] Downloading certificate")
+	//log.println("[INFO] Downloading certificate")
 
 	/* The download certificate endpoint requires one of the following to retrieve a cert:
 		- CertID
@@ -270,7 +269,7 @@ func (c *Client) DownloadCertificate(
 //   - Template             : string
 //   - CertificateAuthority : string
 func (c *Client) EnrollCSR(ea *EnrollCSRFctArgs) (*EnrollResponse, error) {
-	log.Println("[INFO] Signing CSR with Keyfactor")
+	//log.println("[INFO] Signing CSR with Keyfactor")
 
 	/* Ensure required inputs exist */
 	if (ea.Template == "") || (ea.CertificateAuthority == "") {
@@ -317,10 +316,10 @@ func (c *Client) EnrollCSR(ea *EnrollCSRFctArgs) (*EnrollResponse, error) {
 //   - CertificateIds : []int
 //   - Comment        : string
 func (c *Client) RevokeCert(rvargs *RevokeCertArgs) error {
-	log.Println("[INFO] Revoking certificates")
-	for _, certs := range rvargs.CertificateIds {
-		log.Printf("[TRACE] Revoking ID %d", certs)
-	}
+	//log.println("[INFO] Revoking certificates")
+	//for _, certs := range rvargs.CertificateIds {
+	//	//log.printf("[TRACE] Revoking ID %d", certs)
+	//}
 
 	// Fields required by revoke cert API request are cert ID & comment
 	// Go initializes integers to 0, check for zero input
@@ -629,8 +628,8 @@ func (c *Client) RecoverCertificate(
 	password string,
 	collectionId int,
 ) (interface{}, *x509.Certificate, []*x509.Certificate, error) {
-	log.Println("[DEBUG] Enter RecoverCertificate")
-	log.Println("[INFO] Recovering certificate ID:", certId)
+	//log.println("[DEBUG] Enter RecoverCertificate")
+	//log.println("[INFO] Recovering certificate ID:", certId)
 	/* The download certificate endpoint requires one of the following to retrieve a cert:
 		- CertID
 		- Thumbprint
@@ -648,10 +647,10 @@ func (c *Client) RecoverCertificate(
 	}
 
 	if !validInput {
-		log.Println("[ERROR] RecoverCertificate: certID, thumbprint, or serial number AND issuer DN required to download certificate")
+		//log.println("[ERROR] RecoverCertificate: certID, thumbprint, or serial number AND issuer DN required to download certificate")
 		return nil, nil, nil, fmt.Errorf("certID, thumbprint, or serial number AND issuer DN required to download certificate")
 	}
-	log.Println("[DEBUG] RecoverCertificate: Valid input")
+	//log.println("[DEBUG] RecoverCertificate: Valid input")
 
 	if password == "" {
 		return nil, nil, nil, fmt.Errorf("password required to recover private key with certificate")
@@ -666,7 +665,7 @@ func (c *Client) RecoverCertificate(
 		IncludeChain: true,
 	}
 
-	log.Println("[DEBUG] RecoverCertificate: Recovering certificate with args:", rca)
+	//log.println("[DEBUG] RecoverCertificate: Recovering certificate with args:", rca)
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -681,16 +680,16 @@ func (c *Client) RecoverCertificate(
 		Query: []StringTuple{},
 	}
 	if collectionId > 0 {
-		log.Println("[DEBUG] RecoverCertificate: Collection ID:", collectionId)
+		//log.println("[DEBUG] RecoverCertificate: Collection ID:", collectionId)
 		query.Query = append(
 			query.Query, StringTuple{
 				"collectionId", fmt.Sprintf("%d", collectionId),
 			},
 		)
-		log.Println("[DEBUG] RecoverCertificate: Query:", query)
+		//log.println("[DEBUG] RecoverCertificate: Query:", query)
 	}
 
-	log.Println("[DEBUG] RecoverCertificate: Creating recover certificate request")
+	//log.println("[DEBUG] RecoverCertificate: Creating recover certificate request")
 	keyfactorAPIStruct := &request{
 		Method:   "POST",
 		Endpoint: "Certificates/Recover",
@@ -699,37 +698,37 @@ func (c *Client) RecoverCertificate(
 		Query:    &query,
 	}
 
-	log.Println("[INFO] Attempting to recover certificate from Keyfactor Command")
+	//log.println("[INFO] Attempting to recover certificate from Keyfactor Command")
 	resp, err := c.sendRequest(keyfactorAPIStruct)
 	if err != nil {
-		log.Println("[ERROR] RecoverCertificate: Error recovering certificate from Keyfactor Command", err.Error())
+		//log.println("[ERROR] RecoverCertificate: Error recovering certificate from Keyfactor Command", err.Error())
 		return nil, nil, nil, err
 	}
 
 	jsonResp := &recoverCertResponse{}
-	log.Println("[DEBUG] RecoverCertificate: Decoding response")
+	//log.println("[DEBUG] RecoverCertificate: Decoding response")
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
-		log.Println("[ERROR] RecoverCertificate: Error decoding response from Keyfactor Command", err.Error())
+		//log.println("[ERROR] RecoverCertificate: Error decoding response from Keyfactor Command", err.Error())
 		return nil, nil, nil, err
 	}
 
-	log.Println("[DEBUG] RecoverCertificate: Decoding PFX")
+	//log.println("[DEBUG] RecoverCertificate: Decoding PFX")
 	pfxDer, err := base64.StdEncoding.DecodeString(jsonResp.PFX)
 	if err != nil {
-		log.Println("[ERROR] RecoverCertificate: Error decoding PFX", err.Error())
+		//log.println("[ERROR] RecoverCertificate: Error decoding PFX", err.Error())
 		return nil, nil, nil, err
 	}
 
-	log.Println("[DEBUG] RecoverCertificate: Decoding PFX chain")
+	//log.println("[DEBUG] RecoverCertificate: Decoding PFX chain")
 	priv, leaf, chain, err := pkcs12.DecodeChain(pfxDer, rca.Password)
 	if err != nil {
-		log.Println("[ERROR] RecoverCertificate: Error decoding PFX chain", err.Error())
+		//log.println("[ERROR] RecoverCertificate: Error decoding PFX chain", err.Error())
 		return nil, nil, nil, err
 	}
 
-	log.Println("[INFO] Recovered certificate successfully")
-	//log.Println("[DEBUG] RecoverCertificate: ", leaf, chain)
+	//log.println("[INFO] Recovered certificate successfully")
+	////log.println("[DEBUG] RecoverCertificate: ", leaf, chain)
 	return priv, leaf, chain, nil
 }
 
@@ -758,7 +757,7 @@ func createSubject(cs CertificateSubject) (string, error) {
 		subject += "C=" + cs.SubjectCountry + ","
 	}
 	subject = strings.TrimRight(subject, ",") // remove trailing comma
-	log.Printf("[DEBUG] createSubject(): Certificate subject created: %s\n", subject)
+	//log.printf("[DEBUG] createSubject(): Certificate subject created: %s\n", subject)
 	return subject, nil
 }
 
@@ -784,7 +783,7 @@ func validateDeployPFXArgs(dpfxa *DeployPFXArgs) error {
 
 // decodePKCS12Blob decodes a PKCS12 blob.
 func decodePKCS12Blob(resp *EnrollResponse) error {
-	log.Println("[TRACE] Decoding certificate")
+	//log.println("[TRACE] Decoding certificate")
 	// Keyfactor returns base-64 PFX (PKCS#12) or zipped certificate. Decode here.
 	if resp.CertificateInformation.PKCS12Blob != "" {
 		cert, err := base64.StdEncoding.DecodeString(resp.CertificateInformation.PKCS12Blob)
