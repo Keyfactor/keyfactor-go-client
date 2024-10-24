@@ -31,7 +31,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Keyfactor/keyfactor-auth-client-go/auth_config"
 	"github.com/Keyfactor/keyfactor-auth-client-go/auth_providers"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -125,12 +124,12 @@ func initLogger(ctx *context.Context) {
 type AuthConfig interface {
 	Authenticate() error
 	GetHttpClient() (*http.Client, error)
-	GetServerConfig() *auth_config.Server
+	GetServerConfig() *auth_providers.Server
 }
 
 // NewKeyfactorClient creates a new Keyfactor client instance. A configured Client is returned with methods used to
 // interact with Keyfactor.
-func NewKeyfactorClient(cfg *auth_config.Server, ctx *context.Context) (*Client, error) {
+func NewKeyfactorClient(cfg *auth_providers.Server, ctx *context.Context) (*Client, error) {
 	initLogger(ctx)
 	client := Client{}
 	clientAuthType := cfg.GetAuthType()
@@ -269,7 +268,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	if apiPath == "" {
 		apiPath = DefaultAPIPath
 	}
-	endpoint := fmt.Sprintf("%s", strings.Trim(apiPath, "/")) + request.Endpoint
+	endpoint := fmt.Sprintf("%s/", strings.Trim(apiPath, "/")) + request.Endpoint
 	log.Printf("[DEBUG] Endpoint: %s", endpoint)
 	u.Path = path.Join(u.Path, endpoint) // Attach enroll endpoint
 	log.Printf("[DEBUG] URL: %s", u.String())
