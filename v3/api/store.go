@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -32,8 +31,7 @@ import (
 //   - Properties    : []StringTuple *Note - Method converts this array of StringTuples to a JSON string if provided
 //   - AgentId       : string
 func (c *Client) CreateStore(ca *CreateStoreFctArgs) (*CreateStoreResponse, error) {
-	log.Println("[INFO] Creating new certificate store with Keyfactor")
-
+	// 0
 	// Validate that the required fields are present
 	err := validateCreateStoreArgs(ca)
 	if err != nil {
@@ -88,8 +86,7 @@ func (c *Client) CreateStore(ca *CreateStoreFctArgs) (*CreateStoreResponse, erro
 //   - Properties    : []StringTuple *Note - Method converts this slice of StringTuples to a JSON string if provided
 //   - AgentId       : string
 func (c *Client) UpdateStore(ua *UpdateStoreFctArgs) (*UpdateStoreResponse, error) {
-	log.Println("[INFO] Creating new certificate store with Keyfactor")
-
+	// 0
 	// Validate that the required fields are present
 	err := validateUpdateStoreArgs(ua)
 	if err != nil {
@@ -482,8 +479,7 @@ func (c *Client) AddCertificateToStores(config *AddCertificateToStore) ([]string
 // RemoveCertificateFromStores takes argument for a RemoveCertificateFromStore structure, and is used to remove a certificate
 // from one or more certificate stores.
 func (c *Client) RemoveCertificateFromStores(config *RemoveCertificateFromStore) ([]string, error) {
-	log.Println("[INFO] Removing certificate from one or more certificate stores")
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{

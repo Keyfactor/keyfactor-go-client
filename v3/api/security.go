@@ -18,15 +18,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 )
 
 // GetSecurityIdentities hits the /Security/Identities endpoint with a GET request and returns a list of
 // GetSecurityIdentityResponse structs. The function takes no arguments.
 func (c *Client) GetSecurityIdentities() ([]GetSecurityIdentityResponse, error) {
-	log.Println("[INFO] Getting Keyfactor security identity list")
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -58,8 +56,7 @@ func (c *Client) GetSecurityIdentities() ([]GetSecurityIdentityResponse, error) 
 // CreateSecurityIdentity hits the /Security/Identities endpoint with a POST request to create a new Keyfactor security
 // and returns a CreateSecurityIdentityResponse struct. The function takes argument for a CreateSecurityIdentityArg struct
 func (c *Client) CreateSecurityIdentity(csia *CreateSecurityIdentityArg) (*CreateSecurityIdentityResponse, error) {
-	log.Println("[INFO] Creating new Keyfactor security identity")
-
+	// 0
 	// Verify argument
 	if csia == nil || csia.AccountName == "" {
 		return nil, errors.New("invalid input received for security identity creation")
@@ -130,8 +127,7 @@ func (c *Client) DeleteSecurityIdentity(id int) error {
 }
 
 func (c *Client) GetSecurityRoles() ([]GetSecurityRolesResponse, error) {
-	log.Println("[INFO] Getting list of Keyfactor security roles")
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -274,8 +270,7 @@ func (c *Client) DeleteSecurityRole(id int) error {
 // CreateSecurityRole creates a new Keyfacor security role. This function takes argument for a CreateSecurityRoleArg
 // struct and returns a CreateSecurityRoleResponse struct.
 func (c *Client) CreateSecurityRole(input *CreateSecurityRoleArg) (*CreateSecurityRoleResponse, error) {
-	log.Println("[INFO] Creating new Keyfactor security role")
-
+	// 0
 	// Verify argument
 	if input == nil || input.Name == "" || input.Description == "" {
 		return nil, errors.New("invalid input received for security role creation")

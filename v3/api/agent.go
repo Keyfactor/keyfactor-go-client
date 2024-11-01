@@ -17,14 +17,12 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"regexp"
 )
 
 // GetAgentList returns a list of orchestrators registered in the Keyfactor instance
 func (c *Client) GetAgentList() ([]Agent, error) {
-	log.Println("[INFO] Getting a list of agents registered in Keyfactor")
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -54,8 +52,7 @@ func (c *Client) GetAgentList() ([]Agent, error) {
 }
 
 func (c *Client) GetAgent(id string) ([]Agent, error) {
-	log.Println("[INFO] Getting agent by ID or name.")
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{

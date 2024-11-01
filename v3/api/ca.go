@@ -16,13 +16,11 @@ package api
 
 import (
 	"encoding/json"
-	"log"
 )
 
 // GetCAList returns a list of certificate authorities supported by the Keyfactor instance
 func (c *Client) GetCAList() ([]CA, error) {
-	log.Println("[INFO] Getting a list of CAs from Keyfactor instance")
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{

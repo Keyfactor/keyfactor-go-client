@@ -17,14 +17,12 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 )
 
 // GetStoreContainers returns a list of store containers
 func (c *Client) GetStoreContainers() (*[]CertStoreContainer, error) {
-	log.Println("[INFO] Listing certificate store containers.")
-
+	// 0
 	headers := &apiHeaders{
 		Headers: []StringTuple{
 			{"x-keyfactor-api-version", "1"},
