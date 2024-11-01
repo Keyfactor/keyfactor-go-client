@@ -96,8 +96,7 @@ func (c *Client) CreateSecurityIdentity(csia *CreateSecurityIdentityArg) (*Creat
 // DeleteSecurityIdentity takes arguments for a security identity ID, and makes an associated call to Keyfactor to
 // delete the identity.
 func (c *Client) DeleteSecurityIdentity(id int) error {
-	log.Printf("[INFO] Deleting Keyfactor security identity with ID %d", id)
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -162,8 +161,7 @@ func (c *Client) GetSecurityRoles() ([]GetSecurityRolesResponse, error) {
 }
 
 func (c *Client) GetSecurityRole(id interface{}) (*GetSecurityRoleResponse, error) {
-	log.Printf("[INFO] Getting Keyfactor security role with ID %v", id)
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -218,8 +216,8 @@ func (c *Client) GetSecurityRole(id interface{}) (*GetSecurityRoleResponse, erro
 		jsonResp := &[]GetSecurityRolesResponse{}
 		err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 
-		for i, jResp := range *jsonResp {
-			log.Printf("[INFO] Getting Keyfactor security role with %v ID %v", i, jResp)
+		for _, jResp := range *jsonResp {
+			// 0
 			//convert ID from int to float64
 			formattedID := float64(jResp.ID)
 
@@ -240,8 +238,7 @@ func (c *Client) GetSecurityRole(id interface{}) (*GetSecurityRoleResponse, erro
 // DeleteSecurityRole takes arguments for a security role ID, and makes an associated call to Keyfactor to
 // delete the role.
 func (c *Client) DeleteSecurityRole(id int) error {
-	log.Printf("[INFO] Deleting Keyfactor security role with ID %d", id)
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -315,8 +312,7 @@ func (c *Client) CreateSecurityRole(input *CreateSecurityRoleArg) (*CreateSecuri
 // UpdateSecurityRole updates the Keyfacor security role. This function takes argument for a CreateSecurityRoleArg
 // struct and returns a CreateSecurityRoleResponse struct.
 func (c *Client) UpdateSecurityRole(input *UpdateSecurityRoleArg) (*UpdateSecurityRoleResponse, error) {
-	log.Printf("[INFO] Updating Keyfactor security role with ID %d", input.Id)
-
+	// 0
 	// Verify argument
 	if input == nil {
 		return nil, errors.New("update security role - argument struct is nil")

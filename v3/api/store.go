@@ -450,8 +450,7 @@ func (c *Client) GetCertificateStoreByClientAndStorePath(
 // AddCertificateToStores takes argument for a AddCertificateToStore structure and is used to remove a configured certificate
 // from one or more certificate stores.
 func (c *Client) AddCertificateToStores(config *AddCertificateToStore) ([]string, error) {
-	log.Printf("[INFO] Adding certificate with ID %d to one or more certificate stores", config.CertificateId)
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{

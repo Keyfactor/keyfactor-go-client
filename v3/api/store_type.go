@@ -214,8 +214,7 @@ func (c *Client) UpdateStoreType(ca *CertificateStoreType) (*CertificateStoreTyp
 	return jsonResp, nil
 }
 func (c *Client) DeleteCertificateStoreType(id int) (*DeleteStoreType, error) {
-	log.Printf("[INFO] Attempting to delete certificate store type %d", id)
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{

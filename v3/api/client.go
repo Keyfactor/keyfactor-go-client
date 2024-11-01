@@ -184,7 +184,7 @@ func NewKeyfactorClient(cfg *auth_providers.Server, ctx *context.Context) (*Clie
 func logRequest(req *http.Request) error {
 	// Read the request body
 	if req == nil {
-		log.Printf("[WARN] HTTP Request is nil")
+		// 0
 		return nil
 	}
 	body, err := io.ReadAll(req.Body)
@@ -208,19 +208,19 @@ func logRequest(req *http.Request) error {
 	}
 
 	// Convert struct to JSON
-	jsonData, err := json.Marshal(requestData)
+	_, err = json.Marshal(requestData)
 	if err != nil {
 		return err
 	}
 
 	// Log the JSON data
-	log.Printf("[TRACE] HTTP Request: %s", jsonData)
+	// 0
 	curlStr, err := requestToCurl(req)
 	if err != nil {
-		log.Printf("[ERROR] Error converting request to cURL: %s", err)
+		// 0
 		return nil
 	}
-	log.Printf("[TRACE] cURL Request: %s", curlStr)
+	// 0
 	log.Printf("[TRACE] cURL Request b64encoded: %s", base64.StdEncoding.EncodeToString([]byte(curlStr)))
 	return nil
 }
@@ -272,7 +272,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		return nil, err
 	}
 	if u.Scheme != "https" {
-		log.Printf("[WARN] Forcing https scheme on '%s'", u.Scheme)
+		// 0
 		u.Scheme = "https"
 	}
 	apiPath := serverConfig.APIPath
@@ -280,42 +280,41 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		apiPath = DefaultAPIPath
 	}
 	endpoint := fmt.Sprintf("%s/", strings.Trim(apiPath, "/")) + request.Endpoint
-	log.Printf("[DEBUG] Endpoint: %s", endpoint)
+	// 0
 	u.Path = path.Join(u.Path, endpoint) // Attach enroll endpoint
 	log.Printf("[DEBUG] URL: %s", u.String())
 
 	// Set request query
 	if request.Query != nil {
-		log.Printf("[DEBUG] Setting query parameters")
+		// 0
 		queryString := u.Query()
 		for _, query := range request.Query.Query {
-			log.Printf("[TRACE] Setting query parameter %s=%s", query.Elem1, query.Elem2)
+			// 0
 			queryString.Set(query.Elem1, query.Elem2)
 		}
-		log.Printf("[DEBUG] Encoding query string")
+		// 0
 		u.RawQuery = queryString.Encode()
-		log.Printf("[TRACE] Query string: %s", u.RawQuery)
-		log.Printf("[DEBUG] Replacing '+' in query string")
+		// 0
+		// 0
 		u.RawQuery = strings.ReplaceAll(u.RawQuery, "+", "%20")
-		log.Printf("[DEBUG] Query string: %s", u.RawQuery)
+		// 0
 	}
 
 	keyfactorPath := u.String() // Convert absolute path to string
 
-	log.Printf("[INFO] Preparing a %s request to path '%s'", request.Method, keyfactorPath)
+	// 0
 	jsonByes, mErr := json.Marshal(request.Payload)
 	if mErr != nil {
 		return nil, mErr
 	}
-	log.Printf("[TRACE] Request body: %s", jsonByes)
-
+	// 0
 	req, reqErr := http.NewRequest(request.Method, keyfactorPath, bytes.NewBuffer(jsonByes))
 	if reqErr != nil {
-		log.Printf("[ERROR] Error creating request: %s", reqErr)
+		// 0
 		return nil, reqErr
 	}
 
-	log.Printf("[DEBUG] Setting request headers")
+	// 0
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
@@ -323,9 +322,9 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	for _, headers := range request.Headers.Headers {
 		//mask the Authorization header
 		if strings.ToLower(headers.Elem1) == "authorization" {
-			log.Printf("[TRACE] Setting header %s=********", headers.Elem1)
+			// 0
 		} else {
-			log.Printf("[TRACE] Setting header %s=%s", headers.Elem1, headers.Elem2)
+			// 0
 		}
 		req.Header.Set(headers.Elem1, headers.Elem2)
 	}
@@ -376,31 +375,23 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 			}
 		}
 	case respErr != nil:
-		log.Printf("[ERROR] Error sending '%s' request to '%s': %s", request.Method, request.Endpoint, respErr)
+		// 0
 		return nil, respErr
 	case resp == nil:
-		log.Printf(
-			"[ERROR] No response from Keyfactor Command for '%s' request to '%s'",
-			request.Method,
-			request.Endpoint,
-		)
+		// 0
 		return nil, errors.New("no response from Keyfactor Command")
 	}
 	var stringMessage string
-	log.Printf("[DEBUG] Response code from '%s' request to '%s': %d", request.Method, request.Endpoint, resp.StatusCode)
+	// 0
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent {
-		log.Printf("[DEBUG] '%s' request to '%s' succeeded", request.Method, request.Endpoint)
+		// 0
 		return resp, nil
 	} else if resp.StatusCode == http.StatusNotFound {
 		stringMessage = fmt.Sprintf(
 			"Error %d - the requested resource was not found. Please check the request and try again.",
 			resp.StatusCode,
 		)
-		log.Printf(
-			"[ERROR] '%s' request to '%s' returned status '%d': %s", request.Method, keyfactorPath,
-			resp.StatusCode,
-			stringMessage,
-		)
+		// 0
 		return nil, errors.New(stringMessage)
 	} else if resp.StatusCode == http.StatusUnauthorized {
 		dmp, derr := httputil.DumpResponse(resp, true)
@@ -418,27 +409,18 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 			resp.StatusCode,
 			"Unauthorized: Access is denied due to invalid credentials",
 		)
-		log.Printf("[ERROR] %s", errMsg)
+		// 0
 		err = errors.New(errMsg)
 		return nil, err
 	} else {
-		log.Printf(
-			"[DEBUG] Attempting to decode error response body for '%s' request to '%s'",
-			request.Method,
-			request.Endpoint,
-		)
+		// 0
 		var errorMessage map[string]interface{} // Decode JSON body to handle issue
 		err = json.NewDecoder(resp.Body).Decode(&errorMessage)
 
 		if err != nil {
 			_, derr := httputil.DumpResponse(resp, true)
 			if derr != nil {
-				log.Printf(
-					"[ERROR] Error dumping response body for '%s' request to '%s': %s",
-					request.Method,
-					request.Endpoint,
-					derr,
-				)
+				// 0
 				return nil, derr
 			}
 			uerr := errors.New(
@@ -448,39 +430,28 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 					endpoint,
 				),
 			)
-			log.Printf("[ERROR] %s", uerr)
+			// 0
 			return nil, uerr
 		}
 
-		log.Printf(
-			"[DEBUG] Error response body for '%s' request to '%s': %s",
-			request.Method,
-			request.Endpoint,
-			errorMessage,
-		)
+		// 0
 		_, hasFailedOps := errorMessage["FailedOperations"]
 		if hasFailedOps {
 			var fOps []string
-			log.Printf("[TRACE] Failed operations: %s", errorMessage["FailedOperations"])
+			// 0
 			for _, v := range errorMessage["FailedOperations"].([]interface{}) {
 				fOps = append(fOps, fmt.Sprintf("%s", v.(map[string]interface{})["Reason"]))
 			}
 			fOpsStr := strings.Join(fOps, ", ")
 			stringMessage += fmt.Sprintf("%s. %s", errorMessage["Message"], fOpsStr)
-			log.Printf("[TRACE] Failed ops string: %s", stringMessage)
+			// 0
 		}
 		_, hasMsg := errorMessage["Message"]
 		if hasMsg {
-			log.Printf("[TRACE] Error message: %s", errorMessage["Message"])
+			// 0
 			stringMessage += fmt.Sprintf("%s", errorMessage["Message"])
 		}
-		log.Printf(
-			"[ERROR] '%s' request to '%s' returned status '%d': %s",
-			request.Method,
-			keyfactorPath,
-			resp.StatusCode,
-			stringMessage,
-		)
+		// 0
 		return nil, errors.New(stringMessage)
 	}
 }

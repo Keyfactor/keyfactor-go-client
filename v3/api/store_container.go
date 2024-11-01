@@ -54,8 +54,7 @@ func (c *Client) GetStoreContainers() (*[]CertStoreContainer, error) {
 
 // GetStoreContainer takes an ID and returns a single store container
 func (c *Client) GetStoreContainer(id interface{}) (*CertStoreContainer, error) {
-	log.Printf("[INFO] Fetching certificat store containers %s.\n", id)
-
+	// 0
 	var endpoint string
 	var query apiQuery
 	var jsonResp interface{}

@@ -106,8 +106,7 @@ func (c *Client) GetAgent(id string) ([]Agent, error) {
 }
 
 func (c *Client) ApproveAgent(id string) (string, error) {
-	log.Printf("[INFO] Approving agent %s in Keyfactor.\n", id)
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -141,8 +140,7 @@ func (c *Client) ApproveAgent(id string) (string, error) {
 }
 
 func (c *Client) DisApproveAgent(id string) (string, error) {
-	log.Printf("[INFO] Disapproving agent %s in Keyfactor.\n", id)
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -176,8 +174,7 @@ func (c *Client) DisApproveAgent(id string) (string, error) {
 }
 
 func (c *Client) ResetAgent(id string) (string, error) {
-	log.Printf("[INFO] Resetting agent %s in Keyfactor.\n", id)
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -210,8 +207,7 @@ func (c *Client) ResetAgent(id string) (string, error) {
 }
 
 func (c *Client) FetchAgentLogs(id string) (string, error) {
-	log.Printf("[INFO] Fetching agent logs for %s.\n", id)
-
+	// 0
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{

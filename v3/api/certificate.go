@@ -335,7 +335,7 @@ func (c *Client) EnrollCSR(ea *EnrollCSRFctArgs) (*EnrollResponse, error) {
 func (c *Client) RevokeCert(rvargs *RevokeCertArgs) error {
 	log.Println("[INFO] Revoking certificates")
 	//for _, certs := range rvargs.CertificateIds {
-	//	log.Printf("[TRACE] Revoking ID %d", certs)
+	//	// 0
 	//}
 
 	// Fields required by revoke cert API request are cert ID & comment
