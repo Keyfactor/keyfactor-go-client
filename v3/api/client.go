@@ -17,7 +17,6 @@ package api
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -215,13 +214,13 @@ func logRequest(req *http.Request) error {
 
 	// Log the JSON data
 	// 0
-	curlStr, err := requestToCurl(req)
+	_, err = requestToCurl(req)
 	if err != nil {
 		// 0
 		return nil
 	}
 	// 0
-	log.Printf("[TRACE] cURL Request b64encoded: %s", base64.StdEncoding.EncodeToString([]byte(curlStr)))
+	//log.Printf("[TRACE] cURL Request b64encoded: %s", base64.StdEncoding.EncodeToString([]byte(curlStr)))
 	return nil
 }
 
