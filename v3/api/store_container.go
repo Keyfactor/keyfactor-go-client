@@ -17,12 +17,14 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 )
 
 // GetStoreContainers returns a list of store containers
 func (c *Client) GetStoreContainers() (*[]CertStoreContainer, error) {
-	// 0
+	log.Println("[INFO] Listing certificate store containers.")
+
 	headers := &apiHeaders{
 		Headers: []StringTuple{
 			{"x-keyfactor-api-version", "1"},
@@ -52,7 +54,8 @@ func (c *Client) GetStoreContainers() (*[]CertStoreContainer, error) {
 
 // GetStoreContainer takes an ID and returns a single store container
 func (c *Client) GetStoreContainer(id interface{}) (*CertStoreContainer, error) {
-	// 0
+	log.Printf("[INFO] Fetching certificat store containers %s.\n", id)
+
 	var endpoint string
 	var query apiQuery
 	var jsonResp interface{}

@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 )
 
 // GetCertificateStoreType takes arguments for a certificate store type ID or name and if found will return the certificate store type
@@ -140,7 +141,8 @@ func (c *Client) ListCertificateStoreTypes() (*[]CertificateStoreType, error) {
 //   - Properties    : []StringTuple *Note - Method converts this array of StringTuples to a JSON string if provided
 //   - AgentId       : string
 func (c *Client) CreateStoreType(ca *CertificateStoreType) (*CertificateStoreType, error) {
-	// 0
+	log.Println("[INFO] Creating new certificate store type with Keyfactor")
+
 	// Validate that the required fields are present
 	//err := validateCreateStoreTypeArgs(ca)
 	//if err != nil {
@@ -176,7 +178,8 @@ func (c *Client) CreateStoreType(ca *CertificateStoreType) (*CertificateStoreTyp
 }
 
 func (c *Client) UpdateStoreType(ca *CertificateStoreType) (*CertificateStoreType, error) {
-	// 0
+	log.Println("[INFO] Creating new certificate store type with Keyfactor")
+
 	// Validate that the required fields are present
 	//err := validateCreateStoreTypeArgs(ca)
 	//if err != nil {
@@ -211,7 +214,8 @@ func (c *Client) UpdateStoreType(ca *CertificateStoreType) (*CertificateStoreTyp
 	return jsonResp, nil
 }
 func (c *Client) DeleteCertificateStoreType(id int) (*DeleteStoreType, error) {
-	// 0
+	log.Printf("[INFO] Attempting to delete certificate store type %d", id)
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{

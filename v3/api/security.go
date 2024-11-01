@@ -18,13 +18,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 )
 
 // GetSecurityIdentities hits the /Security/Identities endpoint with a GET request and returns a list of
 // GetSecurityIdentityResponse structs. The function takes no arguments.
 func (c *Client) GetSecurityIdentities() ([]GetSecurityIdentityResponse, error) {
-	// 0
+	log.Println("[INFO] Getting Keyfactor security identity list")
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -56,7 +58,8 @@ func (c *Client) GetSecurityIdentities() ([]GetSecurityIdentityResponse, error) 
 // CreateSecurityIdentity hits the /Security/Identities endpoint with a POST request to create a new Keyfactor security
 // and returns a CreateSecurityIdentityResponse struct. The function takes argument for a CreateSecurityIdentityArg struct
 func (c *Client) CreateSecurityIdentity(csia *CreateSecurityIdentityArg) (*CreateSecurityIdentityResponse, error) {
-	// 0
+	log.Println("[INFO] Creating new Keyfactor security identity")
+
 	// Verify argument
 	if csia == nil || csia.AccountName == "" {
 		return nil, errors.New("invalid input received for security identity creation")
@@ -93,7 +96,8 @@ func (c *Client) CreateSecurityIdentity(csia *CreateSecurityIdentityArg) (*Creat
 // DeleteSecurityIdentity takes arguments for a security identity ID, and makes an associated call to Keyfactor to
 // delete the identity.
 func (c *Client) DeleteSecurityIdentity(id int) error {
-	// 0
+	log.Printf("[INFO] Deleting Keyfactor security identity with ID %d", id)
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -127,7 +131,8 @@ func (c *Client) DeleteSecurityIdentity(id int) error {
 }
 
 func (c *Client) GetSecurityRoles() ([]GetSecurityRolesResponse, error) {
-	// 0
+	log.Println("[INFO] Getting list of Keyfactor security roles")
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -157,7 +162,8 @@ func (c *Client) GetSecurityRoles() ([]GetSecurityRolesResponse, error) {
 }
 
 func (c *Client) GetSecurityRole(id interface{}) (*GetSecurityRoleResponse, error) {
-	// 0
+	log.Printf("[INFO] Getting Keyfactor security role with ID %v", id)
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -212,8 +218,8 @@ func (c *Client) GetSecurityRole(id interface{}) (*GetSecurityRoleResponse, erro
 		jsonResp := &[]GetSecurityRolesResponse{}
 		err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 
-		for _, jResp := range *jsonResp {
-			// 0
+		for i, jResp := range *jsonResp {
+			log.Printf("[INFO] Getting Keyfactor security role with %v ID %v", i, jResp)
 			//convert ID from int to float64
 			formattedID := float64(jResp.ID)
 
@@ -234,7 +240,8 @@ func (c *Client) GetSecurityRole(id interface{}) (*GetSecurityRoleResponse, erro
 // DeleteSecurityRole takes arguments for a security role ID, and makes an associated call to Keyfactor to
 // delete the role.
 func (c *Client) DeleteSecurityRole(id int) error {
-	// 0
+	log.Printf("[INFO] Deleting Keyfactor security role with ID %d", id)
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -270,7 +277,8 @@ func (c *Client) DeleteSecurityRole(id int) error {
 // CreateSecurityRole creates a new Keyfacor security role. This function takes argument for a CreateSecurityRoleArg
 // struct and returns a CreateSecurityRoleResponse struct.
 func (c *Client) CreateSecurityRole(input *CreateSecurityRoleArg) (*CreateSecurityRoleResponse, error) {
-	// 0
+	log.Println("[INFO] Creating new Keyfactor security role")
+
 	// Verify argument
 	if input == nil || input.Name == "" || input.Description == "" {
 		return nil, errors.New("invalid input received for security role creation")
@@ -307,7 +315,8 @@ func (c *Client) CreateSecurityRole(input *CreateSecurityRoleArg) (*CreateSecuri
 // UpdateSecurityRole updates the Keyfacor security role. This function takes argument for a CreateSecurityRoleArg
 // struct and returns a CreateSecurityRoleResponse struct.
 func (c *Client) UpdateSecurityRole(input *UpdateSecurityRoleArg) (*UpdateSecurityRoleResponse, error) {
-	// 0
+	log.Printf("[INFO] Updating Keyfactor security role with ID %d", input.Id)
+
 	// Verify argument
 	if input == nil {
 		return nil, errors.New("update security role - argument struct is nil")

@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -31,7 +32,8 @@ import (
 //   - Properties    : []StringTuple *Note - Method converts this array of StringTuples to a JSON string if provided
 //   - AgentId       : string
 func (c *Client) CreateStore(ca *CreateStoreFctArgs) (*CreateStoreResponse, error) {
-	// 0
+	log.Println("[INFO] Creating new certificate store with Keyfactor")
+
 	// Validate that the required fields are present
 	err := validateCreateStoreArgs(ca)
 	if err != nil {
@@ -86,7 +88,8 @@ func (c *Client) CreateStore(ca *CreateStoreFctArgs) (*CreateStoreResponse, erro
 //   - Properties    : []StringTuple *Note - Method converts this slice of StringTuples to a JSON string if provided
 //   - AgentId       : string
 func (c *Client) UpdateStore(ua *UpdateStoreFctArgs) (*UpdateStoreResponse, error) {
-	// 0
+	log.Println("[INFO] Creating new certificate store with Keyfactor")
+
 	// Validate that the required fields are present
 	err := validateUpdateStoreArgs(ua)
 	if err != nil {
@@ -447,7 +450,8 @@ func (c *Client) GetCertificateStoreByClientAndStorePath(
 // AddCertificateToStores takes argument for a AddCertificateToStore structure and is used to remove a configured certificate
 // from one or more certificate stores.
 func (c *Client) AddCertificateToStores(config *AddCertificateToStore) ([]string, error) {
-	// 0
+	log.Printf("[INFO] Adding certificate with ID %d to one or more certificate stores", config.CertificateId)
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -479,7 +483,8 @@ func (c *Client) AddCertificateToStores(config *AddCertificateToStore) ([]string
 // RemoveCertificateFromStores takes argument for a RemoveCertificateFromStore structure, and is used to remove a certificate
 // from one or more certificate stores.
 func (c *Client) RemoveCertificateFromStores(config *RemoveCertificateFromStore) ([]string, error) {
-	// 0
+	log.Println("[INFO] Removing certificate from one or more certificate stores")
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{

@@ -17,12 +17,14 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 )
 
 // GetAgentList returns a list of orchestrators registered in the Keyfactor instance
 func (c *Client) GetAgentList() ([]Agent, error) {
-	// 0
+	log.Println("[INFO] Getting a list of agents registered in Keyfactor")
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -52,7 +54,8 @@ func (c *Client) GetAgentList() ([]Agent, error) {
 }
 
 func (c *Client) GetAgent(id string) ([]Agent, error) {
-	// 0
+	log.Println("[INFO] Getting agent by ID or name.")
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -103,7 +106,8 @@ func (c *Client) GetAgent(id string) ([]Agent, error) {
 }
 
 func (c *Client) ApproveAgent(id string) (string, error) {
-	// 0
+	log.Printf("[INFO] Approving agent %s in Keyfactor.\n", id)
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -137,7 +141,8 @@ func (c *Client) ApproveAgent(id string) (string, error) {
 }
 
 func (c *Client) DisApproveAgent(id string) (string, error) {
-	// 0
+	log.Printf("[INFO] Disapproving agent %s in Keyfactor.\n", id)
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -171,7 +176,8 @@ func (c *Client) DisApproveAgent(id string) (string, error) {
 }
 
 func (c *Client) ResetAgent(id string) (string, error) {
-	// 0
+	log.Printf("[INFO] Resetting agent %s in Keyfactor.\n", id)
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -204,7 +210,8 @@ func (c *Client) ResetAgent(id string) (string, error) {
 }
 
 func (c *Client) FetchAgentLogs(id string) (string, error) {
-	// 0
+	log.Printf("[INFO] Fetching agent logs for %s.\n", id)
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
