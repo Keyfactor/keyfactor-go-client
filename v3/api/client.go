@@ -26,9 +26,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
 	"path"
-	"strconv"
 	"strings"
 	"time"
 
@@ -69,23 +67,8 @@ var (
 )
 
 type Client struct {
-	Hostname        string
-	httpClient      *http.Client
-	basicAuthString string
-	ApiPath         string
-	LoggerType      string
-}
-
-// AuthConfig is a struct holding all necessary client configuration data
-// for communicating with the Keyfactor API. This includes the Hostname,
-// username, password, and domain.
-type AuthConfig struct {
-	Hostname string
-	Username string
-	Password string
-	Domain   string
-	APIPath  string
-	Timeout  int
+	AuthClient AuthConfig
+	LoggerType string
 }
 
 // TerraformLogger wraps the tflog logging to handle Go's log messages with log level mapping.
@@ -132,128 +115,69 @@ func initLogger(ctx *context.Context) {
 			},
 		)
 	} else {
-		log.SetOutput(os.Stdout)
+		log.SetOutput(io.Discard)
 	}
+}
+
+// Define an interface that both CommandConfigOauth and CommandAuthConfigBasic implement
+type AuthConfig interface {
+	Authenticate() error
+	GetHttpClient() (*http.Client, error)
+	GetServerConfig() *auth_providers.Server
 }
 
 // NewKeyfactorClient creates a new Keyfactor client instance. A configured Client is returned with methods used to
 // interact with Keyfactor.
-func NewKeyfactorClient(auth *AuthConfig, ctx *context.Context) (*Client, error) {
+func NewKeyfactorClient(cfg *auth_providers.Server, ctx *context.Context) (*Client, error) {
 	initLogger(ctx)
-	// set log to stdout
-	//switch ctx.("loggerType") {
-	//case "tflog", "terraform", "tf":
-	//
-	//	log.SetOutput(
-	//		&TerraformLogger{
-	//			ctx: context.Background(),
-	//		},
-	//	)
-	//	log.Printf("[DEBUG] Logging to tflog")
-	//default:
-	//	// default to stdout
-	//	log.SetOutput(os.Stdout)
-	//	log.Printf("[WARN] Null or Invalid logger type %s, defaulting to stdout", loggerType)
-	//}
-	log.Printf("[DEBUG] Logging into Keyfactor at host %s", auth.Hostname)
-	c, err := loginToKeyfactor(auth)
-	if err != nil {
-		return nil, err
+	client := Client{}
+	clientAuthType := cfg.GetAuthType()
+
+	baseConfig := auth_providers.CommandAuthConfig{
+		CommandHostName: cfg.Host,
+		CommandPort:     cfg.Port,
+		CommandAPIPath:  cfg.APIPath,
+		CommandCACert:   cfg.CACertPath,
+		SkipVerify:      cfg.SkipTLSVerify,
 	}
 
-	if auth.Timeout > 0 {
-		c.httpClient = &http.Client{Timeout: time.Duration(auth.Timeout) * time.Second}
+	if clientAuthType == "basic" {
+		basicCfg := auth_providers.CommandAuthConfigBasic{
+			CommandAuthConfig: baseConfig,
+			Username:          cfg.Username,
+			Password:          cfg.Password,
+			Domain:            cfg.Domain,
+		}
+		aErr := basicCfg.Authenticate()
+		if aErr != nil {
+			return nil, aErr
+		}
+		_, cErr := basicCfg.GetHttpClient()
+		if cErr != nil {
+			return nil, cErr
+		}
+		client.AuthClient = &basicCfg
+		return &client, nil
+	} else if clientAuthType == "oauth" {
+		oauthCfg := auth_providers.CommandConfigOauth{
+			CommandAuthConfig: baseConfig,
+			ClientID:          cfg.ClientID,
+			ClientSecret:      cfg.ClientSecret,
+			TokenURL:          cfg.OAuthTokenUrl,
+		}
+		aErr := oauthCfg.Authenticate()
+		if aErr != nil {
+			return nil, aErr
+		}
+		_, cErr := oauthCfg.GetHttpClient()
+		if cErr != nil {
+			return nil, cErr
+		}
+		client.AuthClient = &oauthCfg
+		return &client, nil
 	} else {
-		c.httpClient = &http.Client{Timeout: MAX_WAIT_SECONDS * time.Second}
+		return nil, fmt.Errorf("unsupported auth type or authentication cfg: '%s'", clientAuthType)
 	}
-
-	return c, nil
-}
-
-// loginToKeyfactor is a helper function that creates a new Keyfactor client instance. A configured Client is returned
-// with methods used to interact with Keyfactor.
-func loginToKeyfactor(auth *AuthConfig) (*Client, error) {
-	if auth.Hostname == "" {
-		envHostname := os.Getenv(EnvCommandHostname)
-		if envHostname != "" {
-			auth.Hostname = envHostname
-		} else {
-			return nil, fmt.Errorf("%s is required", EnvCommandHostname)
-		}
-	}
-	if auth.APIPath == "" {
-		envAPIPath := os.Getenv(EnvCommandAPI)
-		if envAPIPath != "" {
-			auth.APIPath = envAPIPath
-		} else {
-			auth.APIPath = DefaultAPIPath
-		}
-	}
-	if auth.Username == "" {
-		envUsername := os.Getenv(EnvCommandUsername)
-		if envUsername != "" {
-			envDomain := os.Getenv(EnvCommandDomain)
-			if envDomain != "" && auth.Domain == "" && !strings.Contains(envUsername, envDomain) {
-				auth.Domain = envDomain
-			}
-			if auth.Domain != "" && !strings.Contains(envUsername, envDomain) {
-				auth.Username = auth.Domain + "\\" + envUsername
-			} else {
-				auth.Username = envUsername
-			}
-		} else {
-			return nil, fmt.Errorf("%s is required", EnvCommandUsername)
-		}
-	}
-	if auth.Password == "" {
-		envPassword := os.Getenv(EnvCommandPassword)
-		if envPassword != "" {
-			auth.Password = envPassword
-		} else {
-			return nil, fmt.Errorf("%s is required", EnvCommandPassword)
-		}
-	}
-
-	headers := &apiHeaders{
-		Headers: []StringTuple{
-			{"x-keyfactor-api-version", "1"},
-			{"x-keyfactor-requested-with", "APIClient"},
-		},
-	}
-
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: "Status/Endpoints",
-		Headers:  headers,
-	}
-
-	timeoutStr := os.Getenv(EnvCommandTimeout)
-	timeout := MAX_WAIT_SECONDS
-	if timeoutStr != "" {
-		//convert to int and check if greater than 0
-		timeoutInt, err := strconv.Atoi(timeoutStr)
-		if err == nil && timeoutInt > 0 {
-			timeout = timeoutInt
-		}
-	} else if auth.Timeout > 0 {
-		timeout = auth.Timeout
-	}
-
-	c := &Client{
-		Hostname:        auth.Hostname,
-		httpClient:      &http.Client{Timeout: time.Duration(timeout) * time.Second},
-		basicAuthString: buildBasicAuthString(auth),
-		ApiPath:         auth.APIPath,
-	}
-
-	_, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Printf("[INFO] Successfully logged into Keyfactor at host %s", c.Hostname)
-
-	return c, nil
 }
 
 func logRequest(req *http.Request) error {
@@ -337,7 +261,12 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	if c == nil {
 		return nil, errors.New("invalid Keyfactor client, please check your configuration")
 	}
-	u, err := url.Parse(c.Hostname) // Parse raw Hostname into URL structure
+	serverConfig := c.AuthClient.GetServerConfig()
+	if serverConfig == nil {
+		return nil, errors.New("invalid Keyfactor client, please check your configuration")
+	}
+
+	u, err := url.Parse(serverConfig.Host) // Parse raw Hostname into URL structure
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +274,11 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		log.Printf("[WARN] Forcing https scheme on '%s'", u.Scheme)
 		u.Scheme = "https"
 	}
-	endpoint := fmt.Sprintf("%s/", strings.Trim(c.ApiPath, "/")) + request.Endpoint
+	apiPath := serverConfig.APIPath
+	if apiPath == "" {
+		apiPath = DefaultAPIPath
+	}
+	endpoint := fmt.Sprintf("%s/", strings.Trim(apiPath, "/")) + request.Endpoint
 	log.Printf("[DEBUG] Endpoint: %s", endpoint)
 	u.Path = path.Join(u.Path, endpoint) // Attach enroll endpoint
 	log.Printf("[DEBUG] URL: %s", u.String())
@@ -384,7 +317,6 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	log.Printf("[DEBUG] Setting request headers")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", c.basicAuthString)
 
 	// Set custom Keyfactor headers
 	for _, headers := range request.Headers.Headers {
@@ -399,7 +331,11 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 
 	// Log the request
 	logRequest(req)
-	resp, respErr := c.httpClient.Do(req)
+	httpClient, cErr := c.AuthClient.GetHttpClient()
+	if cErr != nil {
+		return nil, cErr
+	}
+	resp, respErr := httpClient.Do(req)
 
 	// check if context deadline exceeded
 	switch {
@@ -432,7 +368,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 			if reqErr != nil {
 				return nil, reqErr
 			}
-			resp2, respErr2 := c.httpClient.Do(req)
+			resp2, respErr2 := httpClient.Do(req)
 			if respErr2 == nil && resp2 != nil {
 				resp = resp2
 				break
@@ -546,25 +482,6 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 		)
 		return nil, errors.New(stringMessage)
 	}
-}
-
-// buildBasicAuthString constructs a basic authorization string necessary for basic authorization to Keyfactor. It
-// returns a base-64 encoded auth string including the 'Basic ' prefix.
-func buildBasicAuthString(auth *AuthConfig) string {
-	var authString string
-	log.Println("[TRACE] Building Authorization header")
-	if auth.Domain != "" && !strings.Contains(auth.Username, auth.Domain) {
-		authString = strings.Join([]string{auth.Domain, "\\", auth.Username, ":", auth.Password}, "")
-	} else {
-		authString = strings.Join([]string{auth.Username, ":", auth.Password}, "")
-	}
-	log.Printf("[TRACE] Formatted Authorization header string %s", authString)
-	authBytes := []byte(authString)
-	log.Printf("[TRACE] Encoding Authorization header")
-	authDigest := base64.StdEncoding.EncodeToString(authBytes)
-	authField := strings.Join([]string{"Basic ", authDigest}, "")
-	log.Printf("[TRACE] Encoded Authorization field %s", authField)
-	return authField
 }
 
 func getTimestamp() string {

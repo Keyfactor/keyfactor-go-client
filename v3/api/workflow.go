@@ -16,13 +16,22 @@ package api
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 )
 
-// GetCAList returns a list of certificate authorities supported by the Keyfactor instance
-func (c *Client) GetCAList() ([]CA, error) {
-	log.Println("[INFO] Getting a list of CAs from Keyfactor instance")
+func (c *Client) ListPendingCertificates(q map[string]string) ([]WorkflowCertificate, error) {
+	return c.ListWorkflowCert("Pending")
+}
 
+func (c *Client) ListDeniedCertificates(q map[string]string) ([]WorkflowCertificate, error) {
+	return c.ListWorkflowCert("Denied")
+}
+
+func (c *Client) ListExternalValidationPendingCertificates(q map[string]string) ([]WorkflowCertificate, error) {
+	return c.ListWorkflowCert("ExternalValidation")
+}
+
+func (c *Client) ListWorkflowCert(endpoint string) ([]WorkflowCertificate, error) {
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -30,11 +39,20 @@ func (c *Client) GetCAList() ([]CA, error) {
 			{"x-keyfactor-requested-with", "APIClient"},
 		},
 	}
+	query := apiQuery{
+		Query: []StringTuple{},
+	}
+	query.Query = append(
+		query.Query, StringTuple{
+			"pagedQuery.returnLimit", "1000",
+		},
+	)
 
 	keyfactorAPIStruct := &request{
 		Method:   "GET",
-		Endpoint: "CertificateAuthority",
+		Endpoint: fmt.Sprintf("Workflow/Certificates/%s", endpoint),
 		Headers:  headers,
+		Query:    &query,
 		Payload:  nil,
 	}
 
@@ -43,10 +61,11 @@ func (c *Client) GetCAList() ([]CA, error) {
 		return nil, err
 	}
 
-	var jsonResp []CA
+	var jsonResp []WorkflowCertificate
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
 		return nil, err
 	}
-	return jsonResp, nil
+	return jsonResp, err
+
 }
