@@ -164,6 +164,9 @@ func NewKeyfactorClient(cfg *auth_providers.Server, ctx *context.Context) (*Clie
 			ClientID:          cfg.ClientID,
 			ClientSecret:      cfg.ClientSecret,
 			TokenURL:          cfg.OAuthTokenUrl,
+			Audience:          cfg.Audience,
+			Scopes:            cfg.Scopes,
+			AccessToken:       cfg.AccessToken,
 		}
 		aErr := oauthCfg.Authenticate()
 		if aErr != nil {
@@ -480,6 +483,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 			resp.StatusCode,
 			stringMessage,
 		)
+
 		return nil, errors.New(stringMessage)
 	}
 }
