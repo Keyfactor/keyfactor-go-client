@@ -14,8 +14,8 @@ github.com/AzureAD/microsoft-authentication-extensions-for-go/cache v0.1.1 h1:WJ
 github.com/AzureAD/microsoft-authentication-extensions-for-go/cache v0.1.1/go.mod h1:tCcJZ0uHAmvjsVYzEFivsRTN00oz5BEsRgQHu5JZ9WE=
 github.com/AzureAD/microsoft-authentication-library-for-go v1.3.2 h1:kYRSnvJju5gYVyhkij+RTJ/VR6QIUaCfWeaFm2ycsjQ=
 github.com/AzureAD/microsoft-authentication-library-for-go v1.3.2/go.mod h1:wP83P5OoQ5p6ip3ScPr0BAq0BvuPAvacpEuSzyouqAI=
-github.com/Keyfactor/keyfactor-auth-client-go v1.1.1-rc.0 h1:/N/7pBj/oTUM1cYga2NvKyA4q6nfE0acciJHZqKC9Ug=
-github.com/Keyfactor/keyfactor-auth-client-go v1.1.1-rc.0/go.mod h1:yw92P9gSYVEyWkiUAJFsb7hjhXa8slN1+yTQgjSgovM=
+github.com/Keyfactor/keyfactor-auth-client-go v1.1.2 h1:o/BCmICXUErZcodteat3/jrMjzkh8hlNI5kzXB+wsSw=
+github.com/Keyfactor/keyfactor-auth-client-go v1.1.2/go.mod h1:yw92P9gSYVEyWkiUAJFsb7hjhXa8slN1+yTQgjSgovM=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
