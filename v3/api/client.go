@@ -403,6 +403,33 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 			resp.StatusCode,
 			stringMessage,
 		)
+
+		var errorMessage map[string]interface{} // Decode JSON body to handle issue
+		err = json.NewDecoder(resp.Body).Decode(&errorMessage)
+
+		if err != nil {
+			_, derr := httputil.DumpResponse(resp, true)
+			if derr != nil {
+				log.Printf(
+					"[ERROR] Error dumping response body for '%s' request to '%s': %s",
+					request.Method,
+					request.Endpoint,
+					derr,
+				)
+				return nil, derr
+			}
+			uerr := errors.New(
+				fmt.Sprintf(
+					"%d - Unknown error connecting to Keyfactor %s, please check your connection.",
+					resp.StatusCode,
+					endpoint,
+				),
+			)
+			log.Printf("[ERROR] %s", uerr)
+			return nil, uerr
+		}
+
+		stringMessage = fmt.Sprintf("%v", errorMessage["Message"])
 		return nil, errors.New(stringMessage)
 	} else if resp.StatusCode == http.StatusUnauthorized {
 		dmp, derr := httputil.DumpResponse(resp, true)
