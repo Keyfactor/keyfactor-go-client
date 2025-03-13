@@ -151,7 +151,7 @@ func (c *Client) DeleteCertificateStore(storeId string) error {
 		Method:   "DELETE",
 		Endpoint: endpoint,
 		Headers:  headers,
-		Payload:  nil,
+		Payload:  "",
 	}
 
 	resp, err := c.sendRequest(keyfactorAPIStruct)
