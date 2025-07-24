@@ -64,7 +64,7 @@ type UpdateStoreFctArgs struct {
 type UpdateStorePasswordConfig struct {
 	SecretValue *string           `json:"SecretValue"` // used for setting kf-secret value or No Value (null)
 	Parameters  map[string]string `json:"Parameters"`
-	Provider    *string           `json:"Provider"`
+	Provider    int               `json:"Provider"`
 }
 
 // InventorySchedule holds configuration data for creating an inventory schedule for a certificate store in Keyfactor
