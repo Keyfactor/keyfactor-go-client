@@ -51,14 +51,20 @@ type UpdateStoreFctArgs struct {
 	// automatically populated by the CreateStore method. However, if configured, this field will be used.
 	PropertiesString string `json:"Properties,omitempty"`
 	// Mapped name-value pair field used to configure properties.
-	Properties            map[string]interface{} `json:"-"`
-	AgentId               string                 `json:"AgentId"`
-	AgentAssigned         *bool                  `json:"AgentAssigned,omitempty"`
-	ContainerName         *string                `json:"ContainerName,omitempty"`
-	InventorySchedule     *InventorySchedule     `json:"InventorySchedule,omitempty"`
-	ReEnrollmentStatus    *ReEnrollmnentConfig   `json:"ReEnrollmentStatus,omitempty"`
-	SetNewPasswordAllowed *bool                  `json:"SetNewPasswordAllowed,omitempty"`
-	Password              *StorePasswordConfig   `json:"Password"`
+	Properties            map[string]interface{}     `json:"-"`
+	AgentId               string                     `json:"AgentId"`
+	AgentAssigned         *bool                      `json:"AgentAssigned,omitempty"`
+	ContainerName         *string                    `json:"ContainerName,omitempty"`
+	InventorySchedule     *InventorySchedule         `json:"InventorySchedule,omitempty"`
+	ReEnrollmentStatus    *ReEnrollmnentConfig       `json:"ReEnrollmentStatus,omitempty"`
+	SetNewPasswordAllowed *bool                      `json:"SetNewPasswordAllowed,omitempty"`
+	Password              *UpdateStorePasswordConfig `json:"Password"`
+}
+
+type UpdateStorePasswordConfig struct {
+	SecretValue *string           `json:"SecretValue"` // used for setting kf-secret value or No Value (null)
+	Parameters  map[string]string `json:"Parameters"`
+	Provider    *string           `json:"Provider"`
 }
 
 // InventorySchedule holds configuration data for creating an inventory schedule for a certificate store in Keyfactor
@@ -94,34 +100,59 @@ type ReEnrollmnentConfig struct {
 }
 
 // StorePasswordConfig configures the password field for a new certificate store.
+// TODO: make re-usable struct for Secret type fields
 type StorePasswordConfig struct {
-	Value          *string `json:"SecretValue"`
-	SecretTypeGuid *string `json:"SecretTypeGuid,omitempty"`
-	InstanceId     *string `json:"InstanceId,omitempty"`
+	Value                         *string                       `json:"SecretValue"`
+	SecretTypeGuid                *string                       `json:"SecretTypeGuid,omitempty"`
+	InstanceId                    *string                       `json:"InstanceId,omitempty"`
+	InstanceGuid                  *string                       `json:"InstanceGuid,omitempty"`
+	ProvidererTypeParameterValues *[]ProviderTypeParameterValue `json:"ProviderTypeParameterValues"`
+	ProviderId                    int                           `json:"ProviderId"`
+	IsManaged                     bool                          `json:"IsManaged"`
+	HasValue                      bool                          `json:"HasValue"`
 } // ProviderTypeParameterValues - Not yet implemented
 // ProviderTypeParameterValues ProviderTypeParams - Not implemented
 
 /* Future non-critical functionality */
 
-type ProviderTypeParams struct {
-	Id           string
-	Value        string
-	InstanceId   string
-	InstanceGuid string
-	Provider     ProviderParams
+type ProviderTypeParameterValue struct {
+	Id                int               `json:"Id"`
+	Value             *string           `json:"Value"`
+	ParameterId       int               `json:"ParameterId"` // defaults always to 0, likely deprecated
+	InstanceId        *string           `json:"InstanceId"`  // defaults null, likely deprecated
+	InstanceGuid      *string           `json:"InstanceGuid"`
+	Provider          *string           `json:"Provider"` // defaults null, likely deprecated
+	ProviderTypeParam ProviderTypeParam `json:"ProviderTypeParam"`
 }
 
-type ProviderParams struct {
-	Id           int
-	Name         string
-	Area         int
-	ProviderType ProviderType
+type ProviderTypeParam struct {
+	Id            int     `json:"Id"`
+	Name          *string `json:"Name"`
+	DisplayName   *string `json:"DisplayName"`
+	DataType      int     `json:"DataType"`
+	InstanceLevel bool    `json:"InstanceLevel"`
+	ProviderType  *string `json:"ProviderType"` //defaults null, likely deprecated
 }
 
-type ProviderType struct {
-	Id   string
-	Name string
-}
+// type ProviderTypeParams struct {
+// 	Id           string
+// 	Value        string
+// 	InstanceId   string
+// 	InstanceGuid string
+// 	Provider     ProviderParams
+// }
+
+// type ProviderParams struct {
+// 	Id           int
+// 	Name         string
+// 	Area         int
+// 	ProviderType ProviderType
+// }
+
+// type ProviderType struct {
+// 	Id   string
+// 	Name string
+// }
 
 // CertStoreTypeResponse contains the response elements returned from the GetCertificateStoreType method.
 type CertStoreTypeResponse struct {
