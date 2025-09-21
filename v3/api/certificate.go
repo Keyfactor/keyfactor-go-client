@@ -196,6 +196,7 @@ func (c *Client) DownloadCertificate(
 	thumbprint string,
 	serialNumber string,
 	issuerDn string,
+	collectionId int,
 ) (*x509.Certificate, []*x509.Certificate, error) {
 	log.Println("[INFO] Downloading certificate")
 
@@ -228,6 +229,19 @@ func (c *Client) DownloadCertificate(
 		ChainOrder:   "EndEntityFirst",
 	}
 
+	query := apiQuery{
+		Query: []StringTuple{},
+	}
+	if collectionId > 0 {
+		log.Println("[DEBUG] RecoverCertificate: Collection ID:", collectionId)
+		query.Query = append(
+			query.Query, StringTuple{
+				"collectionId", fmt.Sprintf("%d", collectionId),
+			},
+		)
+		log.Println("[DEBUG] RecoverCertificate: Query:", query)
+	}
+
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -242,6 +256,7 @@ func (c *Client) DownloadCertificate(
 		Endpoint: "Certificates/Download",
 		Headers:  headers,
 		Payload:  payload,
+		Query:    &query,
 	}
 
 	resp, err := c.sendRequest(keyfactorAPIStruct)
@@ -754,28 +769,37 @@ func createSubject(cs CertificateSubject) (string, error) {
 	var subject string
 
 	if cs.SubjectCommonName != "" && cs.SubjectCommonName != "<null>" {
-		subject = "CN=" + cs.SubjectCommonName + ","
+		subject = "CN=" + escapeDNValue(cs.SubjectCommonName) + ","
 	} else {
 		return "", errors.New("build subject: common name required") // Common name is required!
 	}
 	if cs.SubjectOrganizationalUnit != "" && cs.SubjectOrganizationalUnit != "<null>" {
-		subject += "OU=" + cs.SubjectOrganizationalUnit + ","
+		subject += "OU=" + escapeDNValue(cs.SubjectOrganizationalUnit) + ","
 	}
 	if cs.SubjectOrganization != "" && cs.SubjectOrganization != "<null>" {
-		subject += "O=" + cs.SubjectOrganization + ","
+		subject += "O=" + escapeDNValue(cs.SubjectOrganization) + ","
 	}
 	if cs.SubjectLocality != "" && cs.SubjectLocality != "<null>" {
-		subject += "L=" + cs.SubjectLocality + ","
+		subject += "L=" + escapeDNValue(cs.SubjectLocality) + ","
 	}
 	if cs.SubjectState != "" && cs.SubjectState != "<null>" {
-		subject += "ST=" + cs.SubjectState + ","
+		subject += "ST=" + escapeDNValue(cs.SubjectState) + ","
 	}
 	if cs.SubjectCountry != "" && cs.SubjectCountry != "<null>" {
-		subject += "C=" + cs.SubjectCountry + ","
+		subject += "C=" + escapeDNValue(cs.SubjectCountry) + ","
 	}
 	subject = strings.TrimRight(subject, ",") // remove trailing comma
 	log.Printf("[DEBUG] createSubject(): Certificate subject created: %s\n", subject)
 	return subject, nil
+}
+
+// escapeDNValue ensures that a value in a DN is properly escaped if it contains special characters.
+func escapeDNValue(value string) string {
+	// If the value contains a comma, quote it
+	if strings.Contains(value, ",") {
+		return `"` + value + `"`
+	}
+	return value
 }
 
 // validateDeployPFXArgs validates the arguments required to deploy a PFX certificate.
