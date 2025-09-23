@@ -47,27 +47,35 @@ type EnrollPFXFctArgs struct {
 type EnrollPFXFctArgsV2 struct {
 	Stores                      []CertificateStore `json:"Stores,omitempty"`
 	CustomFriendlyName          string             `json:"CustomFriendlyName,omitempty"`
-	Password                    string             `json:"Password"`
+	Password                    string             `json:"Password,omitempty"`
 	PopulateMissingValuesFromAD bool               `json:"PopulateMissingValuesFromAD"`
 	// Configure the SubjectString field as the full string subject for the certificate. For example, if you don't have
 	// subject fields individually separated, and the subject is already in the format required by RFC5280, use the SubjectString field.
-	SubjectString string `json:"Subject"`
 
 	// If the certificate subject is not already in the format required by RFC5280, configure the subject fields using a CertificateSubject
 	// struct, and EnrollPFX will automatically compile this information into a proper subject.
-	Subject                              *CertificateSubject    `json:"-"`
-	IncludeChain                         bool                   `json:"IncludeChain"`
-	RenewalCertificateId                 int                    `json:"RenewalCertificateId,omitempty"`
-	CertificateAuthority                 string                 `json:"CertificateAuthority"`
-	Timestamp                            string                 `json:"Timestamp"`
-	Template                             string                 `json:"Template"`
-	SANs                                 *SANs                  `json:"SANs,omitempty"`
-	Metadata                             map[string]interface{} `json:"Metadata,omitempty"`
-	CertFormat                           string                 `json:"-"`
-	InstallIntoExistingCertificateStores bool                   `json:"InstallIntoExistingCertificateStores,omitempty"`
-	ChainOrder                           string                 `json:"ChainOrder,omitempty"`
-	KeyType                              string                 `json:"KeyType,omitempty"`
-	KeyLength                            int                    `json:"KeyLength,omitempty"`
+	Subject                              *CertificateSubject     `json:"-"`
+	SubjectString                        string                  `json:"Subject,omitempty"`
+	IncludeChain                         bool                    `json:"IncludeChain"`
+	IncludeSubjectHeader                 bool                    `json:"IncludeSubjectHeader,omitempty"`
+	RenewalCertificateId                 int                     `json:"RenewalCertificateId,omitempty"`
+	CertificateAuthority                 string                  `json:"CertificateAuthority"`
+	Timestamp                            string                  `json:"Timestamp"`
+	Template                             string                  `json:"Template"`
+	SANs                                 *SANs                   `json:"SANs,omitempty"`
+	Metadata                             map[string]interface{}  `json:"Metadata,omitempty"`
+	AdditionalEnrollmentFields           *map[string]interface{} `json:"AdditionalEnrollmentFields,omitempty"`
+	CertFormat                           string                  `json:"-"` // Needs to be passed as header X-Certificate-Format
+	InstallIntoExistingCertificateStores bool                    `json:"InstallIntoExistingCertificateStores,omitempty"`
+	ChainOrder                           string                  `json:"ChainOrder,omitempty"`
+	AlternativeKeyType                   string                  `json:"AlternativeKeyType,omitempty"` // Requires Command 25.0.0+
+	KeyType                              string                  `json:"KeyType,omitempty"`
+	AlternativeKeyLength                 int                     `json:"AlternativeKeyLength,omitempty"` // Requires Command 25.0.0+
+	KeyLength                            int                     `json:"KeyLength,omitempty"`
+	Curve                                string                  `json:"Curve,omitempty"`
+	EnrollmentPatternId                  int                     `json:"EnrollmentPatternId,omitempty"` // Requires Command 25.1.0+
+	OwnerRoleId                          int                     `json:"OwnerRoleId,omitempty"`         // Requires Command 12.3.0+
+	OwnerRoleName                        string                  `json:"OwnerRoleName,omitempty"`       // Requires Command 12.3.0+
 }
 
 // EnrollCSRFctArgs holds the function arguments used for calling the EnrollCSR method.
