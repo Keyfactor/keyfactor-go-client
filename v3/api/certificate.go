@@ -151,7 +151,11 @@ func (c *Client) EnrollPFXV2(ea *EnrollPFXFctArgsV2) (*EnrollResponseV2, error) 
 			}
 			ea.SubjectString = subject
 		} else {
-			return nil, fmt.Errorf("subject is required to use enrollpfx(). Please configure either SubjectString or Subject")
+			log.Println("[DEBUG] EnrollPFXV2: Subject is nil checks if there are SANs")
+			if ea.SANs == nil || (len(ea.SANs.DNS) == 0 && len(ea.SANs.URI) == 0 && len(ea.SANs.IP4) == 0 &&
+				len(ea.SANs.IP6) == 0) {
+				return nil, fmt.Errorf("subject or subject alternative names are required to use enrollpfx(). Please configure either SubjectString or Subject or SANs")
+			}
 		}
 	}
 
