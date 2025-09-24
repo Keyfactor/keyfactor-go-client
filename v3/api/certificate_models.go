@@ -221,16 +221,25 @@ type GetCertificateResponse struct {
 	NotAfter                 string `json:"NotAfter"`
 	IssuerDN                 string `json:"IssuerDN"`
 	PrincipalId              string `json:"PrincipalId"`
+	OwnerRoleId              int    `json:"OwnerRoleId;omitempty"`   // Requires Command 12.3.0+
+	OwnerRoleName            string `json:"OwnerRoleName,omitempty"` // Requires Command 12.3.0+
 	TemplateId               int    `json:"TemplateId"`
 	CertState                int    `json:"CertState"`
 	KeySizeInBits            int    `json:"KeySizeInBits"`
 	KeyType                  int    `json:"KeyType"`
+	KeyAlgorithm             string `json:"KeyAlgorithm"`
+	AltKeyAlgorithm          string `json:"AltKeyAlgorithm,omitempty"`  // Requires Command 25.0.0+
+	AltKeySizeInBits         int    `json:"AltKeySizeInBits,omitempty"` // Requires Command 25.0.0+
+	AltKeyType               int    `json:"AltKeyType,omitempty"`       // Requires Command 25.0.0+
 	RequesterId              int    `json:"RequesterId"`
 	IssuedOU                 string `json:"IssuedOU"`
+	IssuedEmail              string `json:"IssuedEmail"`
 	KeyUsage                 int    `json:"KeyUsage"`
 	SigningAlgorithm         string `json:"SigningAlgorithm"`
+	AltSigningAlgorithm      string `json:"AltSigningAlgorithm,omitempty"` // Requires Command 25.0.0+
 	CertStateString          string `json:"CertStateString"`
 	KeyTypeString            string `json:"KeyTypeString"`
+	AltKeyTypeString         string `json:"AltKeyTypeString,omitempty"` // Requires Command 25.0.0+
 	RevocationEffDate        string `json:"RevocationEffDate"`
 	RevocationReason         int    `json:"RevocationReason"`
 	RevocationComment        string `json:"RevocationComment"`
@@ -239,6 +248,7 @@ type GetCertificateResponse struct {
 	TemplateName             string `json:"TemplateName"`
 	ArchivedKey              bool   `json:"ArchivedKey"`
 	HasPrivateKey            bool   `json:"HasPrivateKey"`
+	HasAltPrivateKey         bool   `json:"HasAltPrivateKey,omitempty"` // Requires Command 25.0.0+
 	PrincipalName            string `json:"PrincipalName"`
 	CertRequestId            int    `json:"CertRequestId"`
 	RequesterName            string `json:"RequesterName"`
@@ -252,8 +262,11 @@ type GetCertificateResponse struct {
 	Metadata                 interface{}              `json:"Metadata"`
 	CertificateKeyId         int                      `json:"CertificateKeyId"`
 	CARowIndex               int                      `json:"CARowIndex"`
+	CARecordId               string                   `json:"CARecordId"`
 	DetailedKeyUsage         []DetailedKeyUsage       `json:"detailed_key_usage"`
 	KeyRecoverable           bool                     `json:"KeyRecoverable"`
+	Curve                    string                   `json:"Curve,omitempty"`
+	EnrollmentPatternId      int                      `json:"EnrollmentPatternId,omitempty"` // Requires Command 25.1.0+
 }
 
 type ListCertificateResponse struct {
