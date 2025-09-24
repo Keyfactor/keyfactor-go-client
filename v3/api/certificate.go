@@ -113,8 +113,8 @@ func (c *Client) EnrollPFXV2(ea *EnrollPFXFctArgsV2) (*EnrollResponseV2, error) 
 	var missingFields []string
 
 	// TODO: Probably a better way to express these if blocks
-	if ea.Template == "" {
-		missingFields = append(missingFields, "Template")
+	if ea.Template == "" && ea.EnrollmentPatternId == 0 {
+		missingFields = append(missingFields, "Template or EnrollmentPatternId")
 	}
 	if ea.CertificateAuthority == "" {
 		missingFields = append(missingFields, "CertificateAuthority")
