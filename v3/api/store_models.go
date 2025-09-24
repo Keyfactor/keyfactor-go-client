@@ -51,14 +51,14 @@ type UpdateStoreFctArgs struct {
 	// automatically populated by the CreateStore method. However, if configured, this field will be used.
 	PropertiesString string `json:"Properties,omitempty"`
 	// Mapped name-value pair field used to configure properties.
-	Properties            map[string]interface{}     `json:"-"`
-	AgentId               string                     `json:"AgentId"`
-	AgentAssigned         *bool                      `json:"AgentAssigned,omitempty"`
-	ContainerName         *string                    `json:"ContainerName,omitempty"`
-	InventorySchedule     *InventorySchedule         `json:"InventorySchedule,omitempty"`
-	ReEnrollmentStatus    *ReEnrollmnentConfig       `json:"ReEnrollmentStatus,omitempty"`
-	SetNewPasswordAllowed *bool                      `json:"SetNewPasswordAllowed,omitempty"`
-	Password              *UpdateStorePasswordConfig `json:"Password"`
+	Properties            map[string]interface{} `json:"-"`
+	AgentId               string                 `json:"AgentId"`
+	AgentAssigned         *bool                  `json:"AgentAssigned,omitempty"`
+	ContainerName         *string                `json:"ContainerName,omitempty"`
+	InventorySchedule     *InventorySchedule     `json:"InventorySchedule,omitempty"`
+	ReEnrollmentStatus    *ReEnrollmnentConfig   `json:"ReEnrollmentStatus,omitempty"`
+	SetNewPasswordAllowed *bool                  `json:"SetNewPasswordAllowed,omitempty"`
+	Password              *StorePasswordConfig   `json:"Password"`
 }
 
 type UpdateStorePasswordConfig struct {
