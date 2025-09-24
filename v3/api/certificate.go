@@ -768,6 +768,68 @@ func (c *Client) RecoverCertificate(
 	return priv, leaf, chain, nil
 }
 
+// ChangeCertificateOwnerRole changes the certificate's owner. Users must be in the current owner's role and the new owner's role.
+// If removing the owner, leave both NewRoleId and NewRoleName empty in the request.
+// Calls PUT /Certificates/{id}/Owner endpoint.
+func (c *Client) ChangeCertificateOwnerRole(
+	certificateId int,
+	req *OwnerRequest,
+	params ...*CertificateOwnerChangeParams,
+) error {
+	log.Printf("[INFO] Changing owner of certificate with ID %d in Keyfactor", certificateId)
+
+	// Validate certificate ID
+	if certificateId <= 0 {
+		return errors.New("certificate ID must be a positive integer")
+	}
+
+	// Set Keyfactor-specific headers
+	headers := &apiHeaders{
+		Headers: []StringTuple{
+			{"x-keyfactor-api-version", "1"},
+			{"x-keyfactor-requested-with", "APIClient"},
+			{"Content-Type", "application/json"},
+		},
+	}
+
+	// Build URL with query parameters
+	endpoint := fmt.Sprintf("Certificates/%d/Owner", certificateId)
+	var queryParams []string
+
+	if len(params) > 0 && params[0] != nil {
+		param := params[0]
+		if param.CollectionId != nil {
+			queryParams = append(queryParams, fmt.Sprintf("collectionId=%d", *param.CollectionId))
+		}
+		if param.ContainerId != nil {
+			queryParams = append(queryParams, fmt.Sprintf("containerId=%d", *param.ContainerId))
+		}
+	}
+
+	if len(queryParams) > 0 {
+		endpoint += "?" + strings.Join(queryParams, "&")
+	}
+
+	keyfactorAPIStruct := &request{
+		Method:   "PUT",
+		Endpoint: endpoint,
+		Headers:  headers,
+		Payload:  req,
+	}
+
+	resp, err := c.sendRequest(keyfactorAPIStruct)
+	if err != nil {
+		return err
+	}
+
+	// Check if the response indicates success (204 No Content expected)
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("failed to change certificate owner: HTTP %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
 // createSubject builds the certificate subject string from a passed CertificateSubject argument.
 func createSubject(cs CertificateSubject) (string, error) {
 	var subject string

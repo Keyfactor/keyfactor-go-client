@@ -340,3 +340,15 @@ type SubjectAltNameElements struct {
 type downloadCertificateResponse struct {
 	Content string `json:"Content"`
 }
+
+// OwnerRequest represents the request structure for changing certificate ownership
+type OwnerRequest struct {
+	NewRoleId   *int    `json:"NewRoleId,omitempty"`
+	NewRoleName *string `json:"NewRoleName,omitempty"`
+}
+
+// CertificateOwnerChangeParams represents the parameters for changing certificate ownership
+type CertificateOwnerChangeParams struct {
+	CollectionId *int `json:"collectionId,omitempty"`
+	ContainerId  *int `json:"containerId,omitempty"`
+}
