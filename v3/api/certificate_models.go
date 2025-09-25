@@ -80,14 +80,21 @@ type EnrollPFXFctArgsV2 struct {
 
 // EnrollCSRFctArgs holds the function arguments used for calling the EnrollCSR method.
 type EnrollCSRFctArgs struct {
-	CSR                  string
-	Timestamp            string                 `json:"Timestamp"`
-	Template             string                 `json:"Template"`
-	CertFormat           string                 `json:"-"`
-	CertificateAuthority string                 `json:"CertificateAuthority"`
-	IncludeChain         bool                   `json:"IncludeChain"`
-	SANs                 *SANs                  `json:"SANs"`
-	Metadata             map[string]interface{} `json:"Metadata"`
+	CSR                        string                 `json:"CSR"` //required
+	PrivateKey                 string                 `json:"PrivateKey,omitempty"`
+	RenewalCertificateId       int                    `json:"RenewalCertificateId,omitempty"`
+	CertificateAuthority       string                 `json:"CertificateAuthority,omitempty"`
+	IncludeChain               bool                   `json:"IncludeChain"`
+	IncludeSubjectHeader       bool                   `json:"IncludeSubjectHeader,omitempty"`
+	Timestamp                  string                 `json:"Timestamp"`
+	Template                   string                 `json:"Template,omitempty"`
+	EnrollmentPatternId        int                    `json:"EnrollmentPatternId,omitempty"` // Requires Command 25.1.0+
+	CertFormat                 string                 `json:"-"`
+	SANs                       *SANs                  `json:"SANs,omitempty"`
+	Metadata                   map[string]interface{} `json:"Metadata,omitempty"`
+	AdditionalEnrollmentFields map[string]interface{} `json:"AdditionalEnrollmentFields,omitempty"`
+	OwnerRoleId                int                    `json:"OwnerRoleId,omitempty"`   // Requires Command 12.3.0+
+	OwnerRoleName              string                 `json:"OwnerRoleName,omitempty"` // Requires Command 12.3.0+
 }
 
 // RevokeCertArgs holds the function arguments used for calling the RevokeCert method.
