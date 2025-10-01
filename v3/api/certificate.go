@@ -113,8 +113,8 @@ func (c *Client) EnrollPFXV2(ea *EnrollPFXFctArgsV2) (*EnrollResponseV2, error) 
 	var missingFields []string
 
 	// TODO: Probably a better way to express these if blocks
-	if ea.Template == "" {
-		missingFields = append(missingFields, "Template")
+	if ea.Template == "" && ea.EnrollmentPatternId == 0 {
+		missingFields = append(missingFields, "Template or EnrollmentPatternId")
 	}
 	if ea.CertificateAuthority == "" {
 		missingFields = append(missingFields, "CertificateAuthority")
@@ -151,7 +151,11 @@ func (c *Client) EnrollPFXV2(ea *EnrollPFXFctArgsV2) (*EnrollResponseV2, error) 
 			}
 			ea.SubjectString = subject
 		} else {
-			return nil, fmt.Errorf("subject is required to use enrollpfx(). Please configure either SubjectString or Subject")
+			log.Println("[DEBUG] EnrollPFXV2: Subject is nil checks if there are SANs")
+			if ea.SANs == nil || (len(ea.SANs.DNS) == 0 && len(ea.SANs.URI) == 0 && len(ea.SANs.IP4) == 0 &&
+				len(ea.SANs.IP6) == 0) {
+				return nil, fmt.Errorf("subject or subject alternative names are required to use enrollpfx(). Please configure either SubjectString or Subject or SANs")
+			}
 		}
 	}
 
@@ -191,13 +195,16 @@ func (c *Client) EnrollPFXV2(ea *EnrollPFXFctArgsV2) (*EnrollResponseV2, error) 
 // Returns:
 //   - Leaf certificate
 //   - Certificate chain
+//   - Raw certificate data (as base64 string, if applicable)
+//   - Error
 func (c *Client) DownloadCertificate(
 	certId int,
 	thumbprint string,
 	serialNumber string,
 	issuerDn string,
 	collectionId int,
-) (*x509.Certificate, []*x509.Certificate, error) {
+	certificateFormat string,
+) (*x509.Certificate, []*x509.Certificate, *string, error) {
 	log.Println("[INFO] Downloading certificate")
 
 	/* The download certificate endpoint requires one of the following to retrieve a cert:
@@ -217,7 +224,7 @@ func (c *Client) DownloadCertificate(
 	}
 
 	if !validInput {
-		return nil, nil, fmt.Errorf("certID, thumbprint, or serial number AND issuer DN required to dowload certificate")
+		return nil, nil, nil, fmt.Errorf("certID, thumbprint, or serial number AND issuer DN required to dowload certificate")
 	}
 
 	payload := &downloadCertificateBody{
@@ -243,11 +250,19 @@ func (c *Client) DownloadCertificate(
 	}
 
 	// Set Keyfactor-specific headers
+	switch certificateFormat {
+	case "CER", "CRT", "DER", "PEM":
+		// do nothing these are valid formats
+		break
+	default:
+		// if not specified or invalid format then default to P7B
+		certificateFormat = "P7B"
+	}
 	headers := &apiHeaders{
 		Headers: []StringTuple{
 			{"x-keyfactor-api-version", "1"},
 			{"x-keyfactor-requested-with", "APIClient"},
-			{"x-certificateformat", "P7B"},
+			{"x-certificateformat", certificateFormat},
 		},
 	}
 
@@ -261,13 +276,13 @@ func (c *Client) DownloadCertificate(
 
 	resp, err := c.sendRequest(keyfactorAPIStruct)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	jsonResp := &downloadCertificateResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	//buf, err := base64.StdEncoding.DecodeString(jsonResp.Content)
 	//if err != nil {
@@ -281,17 +296,17 @@ func (c *Client) DownloadCertificate(
 
 	certs, p7bErr := ConvertBase64P7BtoCertificates(jsonResp.Content)
 	if p7bErr != nil {
-		return nil, nil, p7bErr
+		return nil, nil, &jsonResp.Content, p7bErr
 	}
 
 	var leaf *x509.Certificate
 	if len(certs) > 1 {
 		//leaf is last cert in chain
 		leaf = certs[0] // First cert in chain is the leaf
-		return leaf, certs, nil
+		return leaf, certs, &jsonResp.Content, nil
 	}
 
-	return certs[0], nil, nil
+	return certs[0], nil, &jsonResp.Content, nil
 }
 
 // EnrollCSR takes arguments for EnrollCSRFctArgs to enroll a passed Certificate Signing
@@ -659,7 +674,8 @@ func (c *Client) RecoverCertificate(
 	issuerDn string,
 	password string,
 	collectionId int,
-) (interface{}, *x509.Certificate, []*x509.Certificate, error) {
+	certificateFormat string,
+) (interface{}, *x509.Certificate, []*x509.Certificate, *string, error) {
 	log.Println("[DEBUG] Enter RecoverCertificate")
 	log.Println("[INFO] Recovering certificate ID:", certId)
 	/* The download certificate endpoint requires one of the following to retrieve a cert:
@@ -669,6 +685,9 @@ func (c *Client) RecoverCertificate(
 
 	Check for this input
 	*/
+	if certificateFormat == "" {
+		certificateFormat = "PFX"
+	}
 	validInput := false
 	if certId != 0 {
 		validInput = true
@@ -680,12 +699,12 @@ func (c *Client) RecoverCertificate(
 
 	if !validInput {
 		log.Println("[ERROR] RecoverCertificate: certID, thumbprint, or serial number AND issuer DN required to download certificate")
-		return nil, nil, nil, fmt.Errorf("certID, thumbprint, or serial number AND issuer DN required to download certificate")
+		return nil, nil, nil, nil, fmt.Errorf("certID, thumbprint, or serial number AND issuer DN required to download certificate")
 	}
 	log.Println("[DEBUG] RecoverCertificate: Valid input")
 
 	if password == "" {
-		return nil, nil, nil, fmt.Errorf("password required to recover private key with certificate")
+		return nil, nil, nil, nil, fmt.Errorf("password required to recover private key with certificate")
 	}
 
 	rca := &recoverCertArgs{
@@ -703,7 +722,7 @@ func (c *Client) RecoverCertificate(
 		Headers: []StringTuple{
 			{"x-keyfactor-api-version", "1"},
 			{"x-keyfactor-requested-with", "APIClient"},
-			{"x-certificateformat", "PFX"},
+			{"x-certificateformat", certificateFormat},
 		},
 	}
 
@@ -734,7 +753,7 @@ func (c *Client) RecoverCertificate(
 	resp, err := c.sendRequest(keyfactorAPIStruct)
 	if err != nil {
 		log.Println("[ERROR] RecoverCertificate: Error recovering certificate from Keyfactor Command", err.Error())
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	jsonResp := &recoverCertResponse{}
@@ -742,26 +761,144 @@ func (c *Client) RecoverCertificate(
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
 		log.Println("[ERROR] RecoverCertificate: Error decoding response from Keyfactor Command", err.Error())
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
-	log.Println("[DEBUG] RecoverCertificate: Decoding PFX")
-	pfxDer, err := base64.StdEncoding.DecodeString(jsonResp.PFX)
+	switch certificateFormat {
+	case "PFX", "pfx", "pkcs12", "p12", "jks", "JKS":
+		log.Println("[DEBUG] RecoverCertificate: decoding `PFX` response field")
+		pfxDer := jsonResp.PFX
+		if pfxDer == "" {
+			log.Println("[ERROR] RecoverCertificate: Error decoding PFX", err.Error())
+			return nil, nil, nil, &pfxDer, fmt.Errorf("pfx field in response is empty")
+		}
+		log.Println("[INFO] Recovered certificate successfully")
+		log.Println("[DEBUG] RecoverCertificate returning in PFX format")
+		return nil, nil, nil, &pfxDer, nil
+	case "PEM", "pem":
+		log.Println("[DEBUG] RecoverCertificate: Decoding PFX")
+		pfxDer, dErr := base64.StdEncoding.DecodeString(jsonResp.PFX)
+		if dErr != nil {
+			log.Println("[ERROR] RecoverCertificate: Error decoding PFX", dErr.Error())
+			return nil, nil, nil, &jsonResp.PFX, dErr
+		}
+
+		log.Println("[DEBUG] RecoverCertificate: Decoding PFX chain")
+		priv, leaf, chain, pErr := pkcs12.DecodeChain(pfxDer, rca.Password)
+		if pErr != nil {
+			log.Println("[ERROR] RecoverCertificate: Error decoding PFX chain", pErr.Error())
+			return nil, nil, nil, &jsonResp.PFX, pErr
+		}
+
+		log.Println("[INFO] Recovered certificate successfully")
+		log.Println("[DEBUG] RecoverCertificate: ", leaf, chain)
+		return priv, leaf, chain, &jsonResp.PFX, nil
+	default:
+		log.Println("[DEBUG] RecoverCertificate: Decoding PFX")
+		pfxDer, dErr := base64.StdEncoding.DecodeString(jsonResp.PFX)
+		if dErr != nil {
+			log.Println("[ERROR] RecoverCertificate: Error decoding PFX", dErr.Error())
+			return nil, nil, nil, &jsonResp.PFX, dErr
+		}
+
+		log.Println("[DEBUG] RecoverCertificate: Decoding PFX chain")
+		priv, leaf, chain, pErr := pkcs12.DecodeChain(pfxDer, rca.Password)
+		if pErr != nil {
+			log.Println("[ERROR] RecoverCertificate: Error decoding PFX chain", pErr.Error())
+			return nil, nil, nil, &jsonResp.PFX, pErr
+		}
+
+		log.Println("[INFO] Recovered certificate successfully")
+		log.Println("[DEBUG] RecoverCertificate returning in PEM format")
+
+		var pemCerts []string
+
+		// Encode leaf certificate to PEM
+		pemLeaf := pem.EncodeToMemory(
+			&pem.Block{
+				Type:  "CERTIFICATE",
+				Bytes: leaf.Raw,
+			},
+		)
+		pemCerts = append(pemCerts, string(pemLeaf))
+
+		// Encode chain certificates to PEM
+		for _, cert := range chain {
+			pemCert := pem.EncodeToMemory(
+				&pem.Block{
+					Type:  "CERTIFICATE",
+					Bytes: cert.Raw,
+				},
+			)
+			pemCerts = append(pemCerts, string(pemCert))
+		}
+
+		pemData := strings.Join(pemCerts, "\n")
+		return priv, leaf, chain, &pemData, nil
+	}
+
+}
+
+// ChangeCertificateOwnerRole changes the certificate's owner. Users must be in the current owner's role and the new owner's role.
+// If removing the owner, leave both NewRoleId and NewRoleName empty in the request.
+// Calls PUT /Certificates/{id}/Owner endpoint.
+func (c *Client) ChangeCertificateOwnerRole(
+	certificateId int,
+	req *OwnerRequest,
+	params ...*CertificateOwnerChangeParams,
+) error {
+	log.Printf("[INFO] Changing owner of certificate with ID %d in Keyfactor", certificateId)
+
+	// Validate certificate ID
+	if certificateId <= 0 {
+		return errors.New("certificate ID must be a positive integer")
+	}
+
+	// Set Keyfactor-specific headers
+	headers := &apiHeaders{
+		Headers: []StringTuple{
+			{"x-keyfactor-api-version", "1"},
+			{"x-keyfactor-requested-with", "APIClient"},
+			{"Content-Type", "application/json"},
+		},
+	}
+
+	// Build URL with query parameters
+	endpoint := fmt.Sprintf("Certificates/%d/Owner", certificateId)
+	var queryParams []string
+
+	if len(params) > 0 && params[0] != nil {
+		param := params[0]
+		if param.CollectionId != nil {
+			queryParams = append(queryParams, fmt.Sprintf("collectionId=%d", *param.CollectionId))
+		}
+		if param.ContainerId != nil {
+			queryParams = append(queryParams, fmt.Sprintf("containerId=%d", *param.ContainerId))
+		}
+	}
+
+	if len(queryParams) > 0 {
+		endpoint += "?" + strings.Join(queryParams, "&")
+	}
+
+	keyfactorAPIStruct := &request{
+		Method:   "PUT",
+		Endpoint: endpoint,
+		Headers:  headers,
+		Payload:  req,
+	}
+
+	resp, err := c.sendRequest(keyfactorAPIStruct)
 	if err != nil {
-		log.Println("[ERROR] RecoverCertificate: Error decoding PFX", err.Error())
-		return nil, nil, nil, err
+		return err
 	}
 
-	log.Println("[DEBUG] RecoverCertificate: Decoding PFX chain")
-	priv, leaf, chain, err := pkcs12.DecodeChain(pfxDer, rca.Password)
-	if err != nil {
-		log.Println("[ERROR] RecoverCertificate: Error decoding PFX chain", err.Error())
-		return nil, nil, nil, err
+	// Check if the response indicates success (204 No Content expected)
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("failed to change certificate owner: HTTP %d", resp.StatusCode)
 	}
 
-	log.Println("[INFO] Recovered certificate successfully")
-	log.Println("[DEBUG] RecoverCertificate: ", leaf, chain)
-	return priv, leaf, chain, nil
+	return nil
 }
 
 // createSubject builds the certificate subject string from a passed CertificateSubject argument.
