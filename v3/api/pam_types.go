@@ -60,7 +60,7 @@ func (c *Client) GetPAMProviderTypeByName(name string) (*ProviderTypeResponse, e
 
 	// find the provider type with the matching name
 	for _, t := range *types {
-		if t.Name != nil && *t.Name == name {
+		if t.Name == name {
 			return &t, nil
 		}
 	}

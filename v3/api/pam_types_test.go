@@ -87,7 +87,7 @@ var (
 		Area: 1,
 		ProviderType: &ProviderType{
 			Id:   mockProviderTypeId,
-			Name: &mockProviderTypeName,
+			Name: mockProviderTypeName,
 		},
 		SecuredAreaId: intPtr(1),
 		Remote:        false,

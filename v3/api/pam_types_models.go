@@ -30,7 +30,7 @@ type SecretType int
 // ProviderTypeParameterResponse represents a parameter for a PAM provider type
 type ProviderTypeParameterResponse struct {
 	Id            int                  `json:"Id,omitempty"`
-	Name          *string              `json:"Name,omitempty"`
+	Name          string               `json:"Name,omitempty"`
 	DisplayName   *string              `json:"DisplayName,omitempty"`
 	DataType      PamParameterDataType `json:"DataType,omitempty"`
 	InstanceLevel bool                 `json:"InstanceLevel,omitempty"`
@@ -39,7 +39,7 @@ type ProviderTypeParameterResponse struct {
 // ProviderTypeResponse represents a PAM provider type
 type ProviderTypeResponse struct {
 	Id         string                           `json:"Id,omitempty"` // UUID format
-	Name       *string                          `json:"Name,omitempty"`
+	Name       string                           `json:"Name,omitempty"`
 	Parameters *[]ProviderTypeParameterResponse `json:"Parameters,omitempty"`
 }
 
@@ -60,7 +60,7 @@ type ProviderTypeCreateRequest struct {
 // ProviderCreateRequestProviderTypeParam represents a provider type parameter in a provider creation request
 type ProviderCreateRequestProviderTypeParam struct {
 	Id            int     `json:"Id,omitempty"`
-	Name          *string `json:"Name,omitempty"`
+	Name          string  `json:"Name,omitempty"`
 	DisplayName   *string `json:"DisplayName,omitempty"`
 	InstanceLevel bool    `json:"InstanceLevel,omitempty"`
 }
@@ -68,7 +68,7 @@ type ProviderCreateRequestProviderTypeParam struct {
 // PamProviderTypeParam represents a provider type parameter (full model) for PAM operations
 type PamProviderTypeParam struct {
 	Id            int                  `json:"Id,omitempty"`
-	Name          *string              `json:"Name,omitempty"`
+	Name          string               `json:"Name,omitempty"`
 	DisplayName   *string              `json:"DisplayName,omitempty"`
 	DataType      PamParameterDataType `json:"DataType,omitempty"`
 	InstanceLevel bool                 `json:"InstanceLevel,omitempty"`
@@ -78,7 +78,7 @@ type PamProviderTypeParam struct {
 // ProviderType represents a PAM provider type (full model)
 type ProviderType struct {
 	Id                 string                  `json:"Id,omitempty"` // UUID format
-	Name               *string                 `json:"Name,omitempty"`
+	Name               string                  `json:"Name,omitempty"`
 	ProviderTypeParams *[]PamProviderTypeParam `json:"ProviderTypeParams,omitempty"`
 }
 
