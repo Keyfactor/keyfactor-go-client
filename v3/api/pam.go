@@ -45,6 +45,24 @@ func (c *Client) ListPAMProviders(query *GetPAMProviderQuery) (*[]ProviderRespon
 	return &jsonResp, nil
 }
 
+// GetPamProviderByName returns a specific PAM provider by name
+func (c *Client) GetPamProviderByName(name string) (*ProviderResponseLegacy, error) {
+	log.Printf("[INFO] Getting PAM provider with name: %s", name)
+
+	query := &GetPAMProviderQuery{
+		QueryString: fmt.Sprintf("Name eq '%s'", name),
+	}
+	providers, err := c.ListPAMProviders(query)
+	if err != nil {
+		return nil, err
+	}
+
+	if providers == nil || len(*providers) == 0 {
+		return nil, fmt.Errorf("PAM provider with name '%s' not found", name)
+	}
+	return &(*providers)[0], nil
+}
+
 // GetPAMProvider returns a specific PAM provider by ID
 func (c *Client) GetPAMProvider(id int) (*ProviderResponseLegacy, error) {
 	log.Printf("[INFO] Getting PAM provider with ID: %d", id)
