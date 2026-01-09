@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -66,9 +67,9 @@ func (c *Client) CreateStore(ca *CreateStoreFctArgs) (*CreateStoreResponse, erro
 		Payload:  &ca,
 	}
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return nil, err
+	resp, respErr := c.sendRequest(keyfactorAPIStruct)
+	if respErr != nil {
+		return nil, respErr
 	}
 
 	jsonResp := &CreateStoreResponse{}
@@ -274,17 +275,26 @@ func (c *Client) GetCertificateStoreByID(storeId string) (*GetCertificateStoreRe
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
+
+	bodyBytes, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		return nil, readErr
+	}
 
 	jsonResp := &GetCertificateStoreResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
+	if jErr := json.Unmarshal(bodyBytes, &jsonResp); jErr != nil {
+		rawJson := make(map[string]interface{})
+		if mErr := json.Unmarshal(bodyBytes, &rawJson); mErr != nil {
+			return nil, fmt.Errorf("error decoding response: %v", mErr)
+		}
+		return nil, fmt.Errorf("error decoding response: %v, raw response: %v", jErr, rawJson)
 	}
 	jsonResp.Properties = unmarshalPropertiesString(jsonResp.PropertiesString)
 	return jsonResp, nil
 }
 
-// GetCertificateStoreByID takes arguments for a certificate store ID to facilitate a call to Keyfactor
+// GetCertificateStoreByContainerID takes arguments for a certificate store ID to facilitate a call to Keyfactor
 // that retrieves a certificate store context. Only the store ID is required. A pointer to a GetStoreByIDResp struct
 // is returned that contains information on the certificate store.
 func (c *Client) GetCertificateStoreByContainerID(containerID interface{}) (*[]GetCertificateStoreResponse, error) {
@@ -646,4 +656,17 @@ func buildPropertiesInterface(properties map[string]string) interface{} {
 	}
 
 	return propertiesInterface
+}
+
+func mapToEscapedJSONString(m map[string]interface{}) (string, error) {
+	// Convert the map to a byte slice of JSON
+	jsonBytes, err := json.Marshal(m)
+	if err != nil {
+		return "", err
+	}
+
+	// Escape any special characters in the JSON string
+	escapedString := string(jsonBytes)
+
+	return escapedString, nil
 }
