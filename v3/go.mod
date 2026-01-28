@@ -22,6 +22,7 @@ require (
 	github.com/Keyfactor/keyfactor-auth-client-go v1.3.0
 	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/spbsoluble/go-pkcs12 v0.3.3
+	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
 	go.mozilla.org/pkcs7 v0.9.0
 )
 

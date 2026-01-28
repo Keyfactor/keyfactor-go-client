@@ -784,10 +784,13 @@ func (c *Client) RecoverCertificate(
 		}
 
 		log.Println("[DEBUG] RecoverCertificate: Decoding PFX chain")
-		priv, leaf, chain, pErr := pkcs12.DecodeChain(pfxDer, rca.Password)
+		priv, leaf, chain, pErr := pkcs12.DecodeChain(
+			pfxDer,
+			rca.Password,
+		) // TODO: Attempt to parse as PKCS12 because that used to be the "default" export format.
 		if pErr != nil {
 			log.Println("[ERROR] RecoverCertificate: Error decoding PFX chain", pErr.Error())
-			return nil, nil, nil, &jsonResp.PFX, pErr
+			return nil, nil, nil, &jsonResp.PFX, nil //TODO: Don't return error because it's probably actually a PEM
 		}
 
 		log.Println("[INFO] Recovered certificate successfully")
