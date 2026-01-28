@@ -1,18 +1,18 @@
 package api
 
 import (
-	`crypto/ecdsa`
-	`crypto/sha1`
-	`crypto/x509`
-	`encoding/base64`
-	`encoding/hex`
-	`encoding/pem`
-	`fmt`
-	`reflect`
-	"crypto/rsa"
+	"crypto/ecdsa"
 	"crypto/ed25519"
-	`github.com/spbsoluble/go-pkcs12`
+	"crypto/rsa"
+	"crypto/sha1"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/pem"
+	"fmt"
+	"github.com/spbsoluble/go-pkcs12"
 	"github.com/youmark/pkcs8"
+	"reflect"
 )
 
 // UnpackPEM extracts the private key, certificate, and CA certificates from PEM-formatted data.
