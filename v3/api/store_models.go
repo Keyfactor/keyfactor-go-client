@@ -27,14 +27,14 @@ type CreateStoreFctArgs struct {
 	// automatically populated by the CreateStore method. However, if configured, this field will be used.
 	PropertiesString string `json:"Properties,omitempty"`
 	// Mapped name-value pair field used to configure properties.
-	Properties            map[string]interface{} `json:"-"`
-	AgentId               string                 `json:"AgentId"`
-	AgentAssigned         *bool                  `json:"AgentAssigned,omitempty"`
-	ContainerName         *string                `json:"ContainerName,omitempty"`
-	InventorySchedule     *InventorySchedule     `json:"InventorySchedule,omitempty"`
-	ReEnrollmentStatus    *ReEnrollmnentConfig   `json:"ReEnrollmentStatus,omitempty"`
-	SetNewPasswordAllowed *bool                  `json:"SetNewPasswordAllowed,omitempty"`
-	Password              *StorePasswordConfig   `json:"Password"`
+	Properties            map[string]interface{}     `json:"-"`
+	AgentId               string                     `json:"AgentId"`
+	AgentAssigned         *bool                      `json:"AgentAssigned,omitempty"`
+	ContainerName         *string                    `json:"ContainerName,omitempty"`
+	InventorySchedule     *InventorySchedule         `json:"InventorySchedule,omitempty"`
+	ReEnrollmentStatus    *ReEnrollmnentConfig       `json:"ReEnrollmentStatus,omitempty"`
+	SetNewPasswordAllowed *bool                      `json:"SetNewPasswordAllowed,omitempty"`
+	Password              *UpdateStorePasswordConfig `json:"Password"`
 }
 
 // UpdateStoreFctArgs holds the function arguments used for calling the UpdateStore method.
@@ -51,20 +51,21 @@ type UpdateStoreFctArgs struct {
 	// automatically populated by the CreateStore method. However, if configured, this field will be used.
 	PropertiesString string `json:"Properties,omitempty"`
 	// Mapped name-value pair field used to configure properties.
-	Properties            map[string]interface{} `json:"-"`
-	AgentId               string                 `json:"AgentId"`
-	AgentAssigned         *bool                  `json:"AgentAssigned,omitempty"`
-	ContainerName         *string                `json:"ContainerName,omitempty"`
-	InventorySchedule     *InventorySchedule     `json:"InventorySchedule,omitempty"`
-	ReEnrollmentStatus    *ReEnrollmnentConfig   `json:"ReEnrollmentStatus,omitempty"`
-	SetNewPasswordAllowed *bool                  `json:"SetNewPasswordAllowed,omitempty"`
-	Password              *StorePasswordConfig   `json:"Password"`
+	Properties            map[string]interface{}     `json:"-"`
+	AgentId               string                     `json:"AgentId"`
+	AgentAssigned         *bool                      `json:"AgentAssigned,omitempty"`
+	ContainerName         *string                    `json:"ContainerName,omitempty"`
+	InventorySchedule     *InventorySchedule         `json:"InventorySchedule,omitempty"`
+	ReEnrollmentStatus    *ReEnrollmnentConfig       `json:"ReEnrollmentStatus,omitempty"`
+	SetNewPasswordAllowed *bool                      `json:"SetNewPasswordAllowed,omitempty"`
+	Password              *UpdateStorePasswordConfig `json:"Password"`
 }
 
 type UpdateStorePasswordConfig struct {
-	SecretValue *string           `json:"SecretValue"` // used for setting kf-secret value or No Value (null)
-	Parameters  map[string]string `json:"Parameters"`
-	Provider    int               `json:"Provider"`
+	SecretValue *string `json:"SecretValue,omitempty"` // used for setting kf-secret value or No Value (
+	// null)
+	Parameters map[string]string `json:"Parameters,omitempty"` // used for setting PAM parameters
+	Provider   int               `json:"Provider"`             // used for setting PAM provider ID
 }
 
 // InventorySchedule holds configuration data for creating an inventory schedule for a certificate store in Keyfactor
@@ -102,27 +103,27 @@ type ReEnrollmnentConfig struct {
 // StorePasswordConfig configures the password field for a new certificate store.
 // TODO: make re-usable struct for Secret type fields
 type StorePasswordConfig struct {
-	Value                         *string                       `json:"SecretValue"`
-	SecretTypeGuid                *string                       `json:"SecretTypeGuid,omitempty"`
-	InstanceId                    *string                       `json:"InstanceId,omitempty"`
-	InstanceGuid                  *string                       `json:"InstanceGuid,omitempty"`
-	ProvidererTypeParameterValues *[]ProviderTypeParameterValue `json:"ProviderTypeParameterValues"`
-	ProviderId                    int                           `json:"ProviderId"`
-	IsManaged                     bool                          `json:"IsManaged"`
-	HasValue                      bool                          `json:"HasValue"`
-} // ProviderTypeParameterValues - Not yet implemented
-// ProviderTypeParameterValues ProviderTypeParams - Not implemented
+	Value                       *string                       `json:"Value,omitempty"` // TODO: In a GET response this is just `Value`, but in a POST/PUT this is `SecretValue`
+	TypedValue                  *string                       `json:"TypedValue,omitempty"`
+	SecretTypeGuid              *string                       `json:"SecretTypeGuid,omitempty"`
+	InstanceId                  *string                       `json:"InstanceId,omitempty"`
+	InstanceGuid                *string                       `json:"InstanceGuid,omitempty"`
+	ProviderTypeParameterValues *[]ProviderTypeParameterValue `json:"ProviderTypeParameterValues,omitempty"`
+	ProviderId                  int                           `json:"ProviderId"`
+	IsManaged                   bool                          `json:"IsManaged"`
+	HasValue                    bool                          `json:"HasValue"`
+	RemoteProviderName          *string                       `json:"RemoteProviderName,omitempty"`
+}
 
-/* Future non-critical functionality */
-
+// ProviderTypeParameterValue - Not yet implemented
 type ProviderTypeParameterValue struct {
 	Id                int               `json:"Id"`
-	Value             *string           `json:"Value"`
+	Value             *string           `json:"Value,omitempty"`
 	ParameterId       int               `json:"ParameterId"` // defaults always to 0, likely deprecated
 	InstanceId        *string           `json:"InstanceId"`  // defaults null, likely deprecated
-	InstanceGuid      *string           `json:"InstanceGuid"`
-	Provider          *string           `json:"Provider"` // defaults null, likely deprecated
-	ProviderTypeParam ProviderTypeParam `json:"ProviderTypeParam"`
+	InstanceGuid      *string           `json:"InstanceGuid,omitempty"`
+	Provider          *Provider         `json:"Provider,omitempty"` // defaults null, likely deprecated
+	ProviderTypeParam ProviderTypeParam `json:"ProviderTypeParam,omitempty"`
 }
 
 type ProviderTypeParam struct {
