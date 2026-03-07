@@ -126,6 +126,13 @@ type AuthConfig interface {
 	GetServerConfig() *auth_providers.Server
 }
 
+// NewKeyfactorClientWithAuth creates a Client with a pre-built AuthConfig, bypassing
+// the Authenticate() network call. Used in unit tests with VCR cassettes.
+func NewKeyfactorClientWithAuth(auth AuthConfig, ctx *context.Context) *Client {
+	initLogger(ctx)
+	return &Client{AuthClient: auth}
+}
+
 // NewKeyfactorClient creates a new Keyfactor client instance. A configured Client is returned with methods used to
 // interact with Keyfactor.
 func NewKeyfactorClient(cfg *auth_providers.Server, ctx *context.Context) (*Client, error) {
