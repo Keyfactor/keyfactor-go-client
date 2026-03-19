@@ -124,6 +124,7 @@ type AuthConfig interface {
 	Authenticate() error
 	GetHttpClient() (*http.Client, error)
 	GetServerConfig() *auth_providers.Server
+	GetCommandVersion() string
 }
 
 // NewKeyfactorClientWithAuth creates a Client with a pre-built AuthConfig, bypassing

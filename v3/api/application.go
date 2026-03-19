@@ -18,9 +18,44 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 )
 
-// ListApplications returns all applications from the /Applications endpoint.
+// isLegacyContainerAPI returns true when the server is pre-v25 and uses
+// CertificateStoreContainers instead of the v25+ Applications endpoint.
+// Both endpoints accept and return the same JSON schedule format.
+func (c *Client) isLegacyContainerAPI() bool {
+	v := c.AuthClient.GetCommandVersion()
+	major := commandVersionMajor(v)
+	return major > 0 && major < 25
+}
+
+// commandVersionMajor parses the major version number from a product version
+// string such as "24.4.0.0" or "25.1.0.0". Returns 0 if unparseable.
+func commandVersionMajor(version string) int {
+	if version == "" {
+		return 0
+	}
+	parts := strings.SplitN(version, ".", 2)
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0
+	}
+	return major
+}
+
+// appEndpoint returns the base API endpoint for the connected Command version.
+// Pre-v25 uses CertificateStoreContainers; v25+ uses Applications.
+// Both endpoints share the same JSON request/response format.
+func (c *Client) appEndpoint() string {
+	if c.isLegacyContainerAPI() {
+		return "CertificateStoreContainers"
+	}
+	return "Applications"
+}
+
+// ListApplications returns all applications/containers.
 func (c *Client) ListApplications() ([]ApplicationListItem, error) {
 	log.Println("[INFO] Listing applications.")
 
@@ -33,7 +68,7 @@ func (c *Client) ListApplications() ([]ApplicationListItem, error) {
 
 	req := &request{
 		Method:   "GET",
-		Endpoint: "Applications",
+		Endpoint: c.appEndpoint(),
 		Headers:  headers,
 	}
 
@@ -43,14 +78,13 @@ func (c *Client) ListApplications() ([]ApplicationListItem, error) {
 	}
 
 	var result []ApplicationListItem
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-// GetApplication returns the full details of an application by its integer ID.
+// GetApplication returns the full details of an application/container by integer ID.
 func (c *Client) GetApplication(id int) (*ApplicationResponse, error) {
 	log.Printf("[INFO] Fetching application with ID %d.", id)
 
@@ -63,7 +97,7 @@ func (c *Client) GetApplication(id int) (*ApplicationResponse, error) {
 
 	req := &request{
 		Method:   "GET",
-		Endpoint: fmt.Sprintf("Applications/%d", id),
+		Endpoint: fmt.Sprintf("%s/%d", c.appEndpoint(), id),
 		Headers:  headers,
 	}
 
@@ -73,8 +107,7 @@ func (c *Client) GetApplication(id int) (*ApplicationResponse, error) {
 	}
 
 	var result ApplicationResponse
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
 	return &result, nil
@@ -99,7 +132,7 @@ func (c *Client) GetApplicationByName(name string) (*ApplicationResponse, error)
 	return nil, fmt.Errorf("application %q not found", name)
 }
 
-// CreateApplication creates a new application and returns the created resource.
+// CreateApplication creates a new application/container and returns the created resource.
 func (c *Client) CreateApplication(createReq *ApplicationCreateRequest) (*ApplicationResponse, error) {
 	log.Println("[INFO] Creating application.")
 
@@ -113,7 +146,7 @@ func (c *Client) CreateApplication(createReq *ApplicationCreateRequest) (*Applic
 
 	req := &request{
 		Method:   "POST",
-		Endpoint: "Applications",
+		Endpoint: c.appEndpoint(),
 		Headers:  headers,
 		Payload:  createReq,
 	}
@@ -124,16 +157,15 @@ func (c *Client) CreateApplication(createReq *ApplicationCreateRequest) (*Applic
 	}
 
 	var result ApplicationResponse
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 
-// UpdateApplication performs a full replacement (PUT) of an existing application.
-// The API uses PUT /Applications (base URL, ID in body), not PUT /Applications/{id}.
-// The Id field in updateReq is set automatically from the id argument.
+// UpdateApplication performs a full replacement of an existing application/container.
+// For v25+ the API uses PUT /Applications with the ID in the body.
+// For pre-v25 the API uses PUT /CertificateStoreContainers/{id} with the ID in the path.
 func (c *Client) UpdateApplication(id int, updateReq *ApplicationUpdateRequest) (*ApplicationResponse, error) {
 	log.Printf("[INFO] Updating application with ID %d.", id)
 
@@ -147,9 +179,12 @@ func (c *Client) UpdateApplication(id int, updateReq *ApplicationUpdateRequest) 
 		},
 	}
 
+	// Both pre-v25 and v25+ use PUT /{endpoint} with the ID in the request body.
+	endpoint := c.appEndpoint()
+
 	req := &request{
 		Method:   "PUT",
-		Endpoint: "Applications",
+		Endpoint: endpoint,
 		Headers:  headers,
 		Payload:  updateReq,
 	}
@@ -160,14 +195,13 @@ func (c *Client) UpdateApplication(id int, updateReq *ApplicationUpdateRequest) 
 	}
 
 	var result ApplicationResponse
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 
-// DeleteApplication deletes an application by its integer ID.
+// DeleteApplication deletes an application/container by its integer ID.
 // The server returns 204 No Content on success.
 func (c *Client) DeleteApplication(id int) error {
 	log.Printf("[INFO] Deleting application with ID %d.", id)
@@ -181,7 +215,7 @@ func (c *Client) DeleteApplication(id int) error {
 
 	req := &request{
 		Method:   "DELETE",
-		Endpoint: fmt.Sprintf("Applications/%d", id),
+		Endpoint: fmt.Sprintf("%s/%d", c.appEndpoint(), id),
 		Headers:  headers,
 	}
 
