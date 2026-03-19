@@ -20,15 +20,41 @@ type ApplicationScheduleInterval struct {
 }
 
 // ApplicationScheduleDaily defines a daily time-based inventory schedule.
+// Also reused as the shape for ExactlyOnce.
 type ApplicationScheduleDaily struct {
 	Time string `json:"Time"` // ISO 8601 datetime string (e.g. "2023-11-25T23:30:00Z")
 }
 
+// ApplicationScheduleWeekly defines a weekly inventory schedule.
+// Days are weekday names ("Sunday"…"Saturday"); Time is an ISO 8601 UTC datetime.
+type ApplicationScheduleWeekly struct {
+	Days []string `json:"Days"` // e.g. ["Monday", "Wednesday"]
+	Time string   `json:"Time"` // ISO 8601 datetime string
+}
+
+// ApplicationScheduleMonthly defines a monthly inventory schedule.
+// Day is the day-of-month (1–31); Time is an ISO 8601 UTC datetime.
+type ApplicationScheduleMonthly struct {
+	Day  int    `json:"Day"`
+	Time string `json:"Time"` // ISO 8601 datetime string
+}
+
 // ApplicationSchedule holds the schedule configuration for an application.
-// Set exactly one of Interval or Daily; omit both to disable the schedule.
+// Set exactly one field; omit all to disable the schedule (Off).
+//
+//   - Immediate:   run once immediately (server may convert to ExactlyOnce on next read)
+//   - Interval:    run every N minutes
+//   - Daily:       run at the same time each day
+//   - Weekly:      run on specific weekdays at a given time
+//   - Monthly:     run on a specific day of each month at a given time
+//   - ExactlyOnce: run exactly once at the specified time
 type ApplicationSchedule struct {
-	Interval *ApplicationScheduleInterval `json:"Interval,omitempty"`
-	Daily    *ApplicationScheduleDaily    `json:"Daily,omitempty"`
+	Immediate   *bool                        `json:"Immediate,omitempty"`
+	Interval    *ApplicationScheduleInterval `json:"Interval,omitempty"`
+	Daily       *ApplicationScheduleDaily    `json:"Daily,omitempty"`
+	Weekly      *ApplicationScheduleWeekly   `json:"Weekly,omitempty"`
+	Monthly     *ApplicationScheduleMonthly  `json:"Monthly,omitempty"`
+	ExactlyOnce *ApplicationScheduleDaily    `json:"ExactlyOnce,omitempty"`
 }
 
 // ApplicationCertStore is a minimal certificate store reference within an application detail response.
