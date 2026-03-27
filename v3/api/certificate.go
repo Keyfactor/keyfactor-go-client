@@ -343,13 +343,14 @@ func findLeafCert(certs []*x509.Certificate) *x509.Certificate {
 // Request with Keyfactor. An EnrollResponse containing a signed certificate is returned upon successful
 // enrollment. Required fields to complete a CSR enrollment are:
 //   - CSR                  : string
-//   - Template             : string
+//   - Template             : string  (or EnrollmentPatternId on Command v25+)
 //   - CertificateAuthority : string
 func (c *Client) EnrollCSR(ea *EnrollCSRFctArgs) (*EnrollResponse, error) {
 	log.Println("[INFO] Signing CSR with Keyfactor")
 
-	/* Ensure required inputs exist */
-	if (ea.Template == "") || (ea.CertificateAuthority == "") {
+	/* Ensure required inputs exist.
+	   On Command v25+ an EnrollmentPatternId can substitute for Template. */
+	if (ea.Template == "" && ea.EnrollmentPatternId == 0) || (ea.CertificateAuthority == "") {
 		return nil, errors.New("invalid or nonexistent values required for csr enrollment")
 	}
 
