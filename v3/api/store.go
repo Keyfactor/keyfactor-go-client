@@ -117,7 +117,7 @@ func (c *Client) UpdateStore(ua *UpdateStoreFctArgs) (*UpdateStoreResponse, erro
 	}
 
 	keyfactorAPIStruct := &request{
-		Method:   "Put",
+		Method:   "PUT",
 		Endpoint: "CertificateStores",
 		Headers:  headers,
 		Payload:  &ua,
