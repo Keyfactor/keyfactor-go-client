@@ -242,6 +242,13 @@ func EncodePrivateKey(key interface{}) (*pem.Block, error) {
 			Type:  "PRIVATE KEY",
 			Bytes: k,
 		}, nil
+	case *pkcs12.OpaquePrivateKey:
+		// Algorithm not supported by Go's x509 (e.g. Ed448, OID 1.3.101.113).
+		// The DER is already valid PKCS#8; wrap it directly.
+		return &pem.Block{
+			Type:  "PRIVATE KEY",
+			Bytes: k.DER,
+		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported private key type: %T", key)
 	}
