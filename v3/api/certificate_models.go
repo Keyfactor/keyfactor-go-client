@@ -47,39 +47,54 @@ type EnrollPFXFctArgs struct {
 type EnrollPFXFctArgsV2 struct {
 	Stores                      []CertificateStore `json:"Stores,omitempty"`
 	CustomFriendlyName          string             `json:"CustomFriendlyName,omitempty"`
-	Password                    string             `json:"Password"`
+	Password                    string             `json:"Password,omitempty"`
 	PopulateMissingValuesFromAD bool               `json:"PopulateMissingValuesFromAD"`
 	// Configure the SubjectString field as the full string subject for the certificate. For example, if you don't have
 	// subject fields individually separated, and the subject is already in the format required by RFC5280, use the SubjectString field.
-	SubjectString string `json:"Subject"`
 
 	// If the certificate subject is not already in the format required by RFC5280, configure the subject fields using a CertificateSubject
 	// struct, and EnrollPFX will automatically compile this information into a proper subject.
-	Subject                              *CertificateSubject    `json:"-"`
-	IncludeChain                         bool                   `json:"IncludeChain"`
-	RenewalCertificateId                 int                    `json:"RenewalCertificateId,omitempty"`
-	CertificateAuthority                 string                 `json:"CertificateAuthority"`
-	Timestamp                            string                 `json:"Timestamp"`
-	Template                             string                 `json:"Template"`
-	SANs                                 *SANs                  `json:"SANs,omitempty"`
-	Metadata                             map[string]interface{} `json:"Metadata,omitempty"`
-	CertFormat                           string                 `json:"-"`
-	InstallIntoExistingCertificateStores bool                   `json:"InstallIntoExistingCertificateStores,omitempty"`
-	ChainOrder                           string                 `json:"ChainOrder,omitempty"`
-	KeyType                              string                 `json:"KeyType,omitempty"`
-	KeyLength                            int                    `json:"KeyLength,omitempty"`
+	Subject                              *CertificateSubject     `json:"-"`
+	SubjectString                        string                  `json:"Subject,omitempty"`
+	IncludeChain                         bool                    `json:"IncludeChain"`
+	IncludeSubjectHeader                 bool                    `json:"IncludeSubjectHeader,omitempty"`
+	RenewalCertificateId                 int                     `json:"RenewalCertificateId,omitempty"`
+	CertificateAuthority                 string                  `json:"CertificateAuthority"`
+	Timestamp                            string                  `json:"Timestamp"`
+	Template                             string                  `json:"Template"`
+	SANs                                 *SANs                   `json:"SANs,omitempty"`
+	Metadata                             map[string]interface{}  `json:"Metadata,omitempty"`
+	AdditionalEnrollmentFields           *map[string]interface{} `json:"AdditionalEnrollmentFields,omitempty"`
+	CertFormat                           string                  `json:"-"` // Needs to be passed as header X-Certificate-Format
+	InstallIntoExistingCertificateStores bool                    `json:"InstallIntoExistingCertificateStores,omitempty"`
+	ChainOrder                           string                  `json:"ChainOrder,omitempty"`
+	AlternativeKeyType                   string                  `json:"AlternativeKeyType,omitempty"` // Requires Command 25.0.0+
+	KeyType                              string                  `json:"KeyType,omitempty"`
+	AlternativeKeyLength                 int                     `json:"AlternativeKeyLength,omitempty"` // Requires Command 25.0.0+
+	KeyLength                            int                     `json:"KeyLength,omitempty"`
+	Curve                                string                  `json:"Curve,omitempty"`
+	EnrollmentPatternId                  int                     `json:"EnrollmentPatternId,omitempty"` // Requires Command 25.1.0+
+	OwnerRoleId                          int                     `json:"OwnerRoleId,omitempty"`         // Requires Command 12.3.0+
+	OwnerRoleName                        string                  `json:"OwnerRoleName,omitempty"`       // Requires Command 12.3.0+
 }
 
 // EnrollCSRFctArgs holds the function arguments used for calling the EnrollCSR method.
 type EnrollCSRFctArgs struct {
-	CSR                  string
-	Timestamp            string                 `json:"Timestamp"`
-	Template             string                 `json:"Template"`
-	CertFormat           string                 `json:"-"`
-	CertificateAuthority string                 `json:"CertificateAuthority"`
-	IncludeChain         bool                   `json:"IncludeChain"`
-	SANs                 *SANs                  `json:"SANs"`
-	Metadata             map[string]interface{} `json:"Metadata"`
+	CSR                        string                 `json:"CSR"` //required
+	PrivateKey                 string                 `json:"PrivateKey,omitempty"`
+	RenewalCertificateId       int                    `json:"RenewalCertificateId,omitempty"`
+	CertificateAuthority       string                 `json:"CertificateAuthority,omitempty"`
+	IncludeChain               bool                   `json:"IncludeChain"`
+	IncludeSubjectHeader       bool                   `json:"IncludeSubjectHeader,omitempty"`
+	Timestamp                  string                 `json:"Timestamp"`
+	Template                   string                 `json:"Template,omitempty"`
+	EnrollmentPatternId        int                    `json:"EnrollmentPatternId,omitempty"` // Requires Command 25.1.0+
+	CertFormat                 string                 `json:"-"`
+	SANs                       *SANs                  `json:"SANs,omitempty"`
+	Metadata                   map[string]interface{} `json:"Metadata,omitempty"`
+	AdditionalEnrollmentFields map[string]interface{} `json:"AdditionalEnrollmentFields,omitempty"`
+	OwnerRoleId                int                    `json:"OwnerRoleId,omitempty"`   // Requires Command 12.3.0+
+	OwnerRoleName              string                 `json:"OwnerRoleName,omitempty"` // Requires Command 12.3.0+
 }
 
 // RevokeCertArgs holds the function arguments used for calling the RevokeCert method.
@@ -213,16 +228,25 @@ type GetCertificateResponse struct {
 	NotAfter                 string `json:"NotAfter"`
 	IssuerDN                 string `json:"IssuerDN"`
 	PrincipalId              string `json:"PrincipalId"`
+	OwnerRoleId              int    `json:"OwnerRoleId;omitempty"`   // Requires Command 12.3.0+
+	OwnerRoleName            string `json:"OwnerRoleName,omitempty"` // Requires Command 12.3.0+
 	TemplateId               int    `json:"TemplateId"`
 	CertState                int    `json:"CertState"`
 	KeySizeInBits            int    `json:"KeySizeInBits"`
 	KeyType                  int    `json:"KeyType"`
+	KeyAlgorithm             string `json:"KeyAlgorithm"`
+	AltKeyAlgorithm          string `json:"AltKeyAlgorithm,omitempty"`  // Requires Command 25.0.0+
+	AltKeySizeInBits         int    `json:"AltKeySizeInBits,omitempty"` // Requires Command 25.0.0+
+	AltKeyType               int    `json:"AltKeyType,omitempty"`       // Requires Command 25.0.0+
 	RequesterId              int    `json:"RequesterId"`
 	IssuedOU                 string `json:"IssuedOU"`
+	IssuedEmail              string `json:"IssuedEmail"`
 	KeyUsage                 int    `json:"KeyUsage"`
 	SigningAlgorithm         string `json:"SigningAlgorithm"`
+	AltSigningAlgorithm      string `json:"AltSigningAlgorithm,omitempty"` // Requires Command 25.0.0+
 	CertStateString          string `json:"CertStateString"`
 	KeyTypeString            string `json:"KeyTypeString"`
+	AltKeyTypeString         string `json:"AltKeyTypeString,omitempty"` // Requires Command 25.0.0+
 	RevocationEffDate        string `json:"RevocationEffDate"`
 	RevocationReason         int    `json:"RevocationReason"`
 	RevocationComment        string `json:"RevocationComment"`
@@ -231,6 +255,7 @@ type GetCertificateResponse struct {
 	TemplateName             string `json:"TemplateName"`
 	ArchivedKey              bool   `json:"ArchivedKey"`
 	HasPrivateKey            bool   `json:"HasPrivateKey"`
+	HasAltPrivateKey         bool   `json:"HasAltPrivateKey,omitempty"` // Requires Command 25.0.0+
 	PrincipalName            string `json:"PrincipalName"`
 	CertRequestId            int    `json:"CertRequestId"`
 	RequesterName            string `json:"RequesterName"`
@@ -244,8 +269,11 @@ type GetCertificateResponse struct {
 	Metadata                 interface{}              `json:"Metadata"`
 	CertificateKeyId         int                      `json:"CertificateKeyId"`
 	CARowIndex               int                      `json:"CARowIndex"`
+	CARecordId               string                   `json:"CARecordId"`
 	DetailedKeyUsage         []DetailedKeyUsage       `json:"detailed_key_usage"`
 	KeyRecoverable           bool                     `json:"KeyRecoverable"`
+	Curve                    string                   `json:"Curve,omitempty"`
+	EnrollmentPatternId      int                      `json:"EnrollmentPatternId,omitempty"` // Requires Command 25.1.0+
 }
 
 type ListCertificateResponse struct {
@@ -318,4 +346,16 @@ type SubjectAltNameElements struct {
 // downloadCertificateResponse holds a raw string containing a Base64 encoded certificate.
 type downloadCertificateResponse struct {
 	Content string `json:"Content"`
+}
+
+// OwnerRequest represents the request structure for changing certificate ownership
+type OwnerRequest struct {
+	NewRoleId   *int    `json:"NewRoleId,omitempty"`
+	NewRoleName *string `json:"NewRoleName,omitempty"`
+}
+
+// CertificateOwnerChangeParams represents the parameters for changing certificate ownership
+type CertificateOwnerChangeParams struct {
+	CollectionId *int `json:"collectionId,omitempty"`
+	ContainerId  *int `json:"containerId,omitempty"`
 }
