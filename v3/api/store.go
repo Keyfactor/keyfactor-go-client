@@ -614,6 +614,47 @@ func unmarshalPropertiesString(properties string) map[string]interface{} {
 	return make(map[string]interface{})
 }
 
+// ScheduleImmediateInventory triggers an immediate inventory job on the given certificate store.
+// If the store already has any inventory schedule configured this is a no-op.
+// When no schedule is present (common for newly-created stores that have never had inventory run)
+// it sends a PUT with InventorySchedule.Immediate=true so the orchestrator runs inventory on its
+// next check-in and updates Command's inventory record.
+//
+// Password and server-credential Properties (ServerUsername/Password/UseSsl) are not included in
+// the PUT body because they are write-only and are not returned by the GET endpoint. With the
+// Password field now tagged json:"Password,omitempty", nil is omitted from JSON entirely so
+// Command does not receive a null and will preserve whatever password is already configured.
+func (c *Client) ScheduleImmediateInventory(storeId string) error {
+	storeResp, err := c.GetCertificateStoreByID(storeId)
+	if err != nil {
+		return fmt.Errorf("ScheduleImmediateInventory: could not read store %s: %w", storeId, err)
+	}
+
+	// No-op if any schedule is already configured.
+	sched := storeResp.InventorySchedule
+	if sched.Immediate != nil || sched.Interval != nil || sched.Daily != nil || sched.ExactlyOnce != nil {
+		return nil
+	}
+
+	immediate := true
+	_, err = c.UpdateStore(&UpdateStoreFctArgs{
+		Id:            storeResp.Id,
+		ClientMachine: storeResp.ClientMachine,
+		StorePath:     storeResp.StorePath,
+		CertStoreType: storeResp.CertStoreType,
+		AgentId:       storeResp.AgentId,
+		// Password intentionally nil (omitted from JSON via omitempty) — preserves existing password.
+		// PropertiesString intentionally empty (omitted from JSON via omitempty) — preserves existing properties.
+		InventorySchedule: &InventorySchedule{
+			Immediate: &immediate,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("ScheduleImmediateInventory: UpdateStore failed for store %s: %w", storeId, err)
+	}
+	return nil
+}
+
 func validateCreateStoreArgs(ca *CreateStoreFctArgs) error {
 	if ca.ClientMachine == "" {
 		return errors.New("client machine is required for creation of new certificate store")

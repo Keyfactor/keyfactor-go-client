@@ -34,7 +34,7 @@ type CreateStoreFctArgs struct {
 	InventorySchedule     *InventorySchedule         `json:"InventorySchedule,omitempty"`
 	ReEnrollmentStatus    *ReEnrollmnentConfig       `json:"ReEnrollmentStatus,omitempty"`
 	SetNewPasswordAllowed *bool                      `json:"SetNewPasswordAllowed,omitempty"`
-	Password              *UpdateStorePasswordConfig `json:"Password"`
+	Password              *UpdateStorePasswordConfig `json:"Password,omitempty"`
 }
 
 // UpdateStoreFctArgs holds the function arguments used for calling the UpdateStore method.
@@ -58,7 +58,7 @@ type UpdateStoreFctArgs struct {
 	InventorySchedule     *InventorySchedule         `json:"InventorySchedule,omitempty"`
 	ReEnrollmentStatus    *ReEnrollmnentConfig       `json:"ReEnrollmentStatus,omitempty"`
 	SetNewPasswordAllowed *bool                      `json:"SetNewPasswordAllowed,omitempty"`
-	Password              *UpdateStorePasswordConfig `json:"Password"`
+	Password              *UpdateStorePasswordConfig `json:"Password,omitempty"`
 }
 
 type UpdateStorePasswordConfig struct {
