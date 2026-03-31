@@ -299,27 +299,58 @@ func (c *Client) DownloadCertificate(
 		return nil, nil, &jsonResp.Content, p7bErr
 	}
 
-	var leaf *x509.Certificate
+	leaf := findLeafCert(certs)
 	if len(certs) > 1 {
-		//leaf is last cert in chain
-		leaf = certs[0] // First cert in chain is the leaf
 		return leaf, certs, &jsonResp.Content, nil
 	}
+	return leaf, nil, &jsonResp.Content, nil
+}
 
-	return certs[0], nil, &jsonResp.Content, nil
+// findLeafCert returns the end-entity (leaf) certificate from a set of
+// certificates. It identifies the leaf as the cert whose Subject is not used
+// as an Issuer by any other cert in the set — i.e. nothing is signed by it.
+// This is order-independent and handles both root-first and leaf-first P7Bs.
+//
+// When the set contains only one cert, or when the algorithm cannot determine
+// a unique leaf (e.g. all certs are self-signed), certs[0] is returned as a
+// safe fallback.
+func findLeafCert(certs []*x509.Certificate) *x509.Certificate {
+	if len(certs) == 0 {
+		return nil
+	}
+	if len(certs) == 1 {
+		return certs[0]
+	}
+
+	// Build a set of all RawIssuer values (subjects that issued something).
+	issuers := make(map[string]bool, len(certs))
+	for _, c := range certs {
+		issuers[string(c.RawIssuer)] = true
+	}
+
+	// The leaf's Subject is not in the issuers set.
+	for _, c := range certs {
+		if !issuers[string(c.RawSubject)] {
+			return c
+		}
+	}
+
+	// Fallback: cannot distinguish (e.g. single self-signed cert in multi-cert set).
+	return certs[0]
 }
 
 // EnrollCSR takes arguments for EnrollCSRFctArgs to enroll a passed Certificate Signing
 // Request with Keyfactor. An EnrollResponse containing a signed certificate is returned upon successful
 // enrollment. Required fields to complete a CSR enrollment are:
 //   - CSR                  : string
-//   - Template             : string
+//   - Template             : string  (or EnrollmentPatternId on Command v25+)
 //   - CertificateAuthority : string
 func (c *Client) EnrollCSR(ea *EnrollCSRFctArgs) (*EnrollResponse, error) {
 	log.Println("[INFO] Signing CSR with Keyfactor")
 
-	/* Ensure required inputs exist */
-	if (ea.Template == "") || (ea.CertificateAuthority == "") {
+	/* Ensure required inputs exist.
+	   On Command v25+ an EnrollmentPatternId can substitute for Template. */
+	if (ea.Template == "" && ea.EnrollmentPatternId == 0) || (ea.CertificateAuthority == "") {
 		return nil, errors.New("invalid or nonexistent values required for csr enrollment")
 	}
 

@@ -41,6 +41,10 @@ func (m *mockAuthConfig) Authenticate() error {
 	return nil
 }
 
+func (m *mockAuthConfig) GetCommandVersion() string {
+	return "25.1.0.0"
+}
+
 // newTestClient creates a test client with mock server
 func newTestClient(server *httptest.Server) *Client {
 	return &Client{
@@ -62,18 +66,18 @@ var (
 
 	mockProviderTypeResponse = ProviderTypeResponse{
 		Id:   mockProviderTypeId,
-		Name: &mockProviderTypeName,
+		Name: mockProviderTypeName,
 		Parameters: &[]ProviderTypeParameterResponse{
 			{
 				Id:            1,
-				Name:          stringPtr("Username"),
+				Name:          "Username",
 				DisplayName:   stringPtr("User Name"),
 				DataType:      PamParameterDataTypeString,
 				InstanceLevel: false,
 			},
 			{
 				Id:            2,
-				Name:          stringPtr("Password"),
+				Name:          "Password",
 				DisplayName:   stringPtr("Password"),
 				DataType:      PamParameterDataTypeSecret,
 				InstanceLevel: true,
