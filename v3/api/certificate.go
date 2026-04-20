@@ -36,27 +36,6 @@ import (
 func (c *Client) EnrollPFX(ea *EnrollPFXFctArgs) (*EnrollResponse, error) {
 	log.Println("[INFO] Enrolling PFX certificate with Keyfactor")
 
-	/* Ensure required inputs exist */
-	var missingFields []string
-
-	// TODO: Probably a better way to express these if blocks
-	if ea.Template == "" {
-		missingFields = append(missingFields, "Template")
-	}
-	if ea.CertificateAuthority == "" {
-		missingFields = append(missingFields, "CertificateAuthority")
-	}
-	if ea.CertFormat == "" {
-		missingFields = append(missingFields, "CertFormat")
-	}
-	//if ea.Password == "" {
-	//	missingFields = append(missingFields, "Password")
-	//}
-
-	if len(missingFields) > 0 {
-		return nil, errors.New("Required field(s) missing: " + strings.Join(missingFields, ", "))
-	}
-
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
@@ -115,9 +94,6 @@ func (c *Client) EnrollPFXV2(ea *EnrollPFXFctArgsV2) (*EnrollResponseV2, error) 
 	// TODO: Probably a better way to express these if blocks
 	if ea.Template == "" && ea.EnrollmentPatternId == 0 {
 		missingFields = append(missingFields, "Template or EnrollmentPatternId")
-	}
-	if ea.CertificateAuthority == "" {
-		missingFields = append(missingFields, "CertificateAuthority")
 	}
 	if ea.CertFormat == "" {
 		missingFields = append(missingFields, "CertFormat")
@@ -344,13 +320,15 @@ func findLeafCert(certs []*x509.Certificate) *x509.Certificate {
 // enrollment. Required fields to complete a CSR enrollment are:
 //   - CSR                  : string
 //   - Template             : string  (or EnrollmentPatternId on Command v25+)
-//   - CertificateAuthority : string
+//   - CertificateAuthority : string  (optional when using a template or enrollment pattern)
 func (c *Client) EnrollCSR(ea *EnrollCSRFctArgs) (*EnrollResponse, error) {
 	log.Println("[INFO] Signing CSR with Keyfactor")
 
 	/* Ensure required inputs exist.
-	   On Command v25+ an EnrollmentPatternId can substitute for Template. */
-	if (ea.Template == "" && ea.EnrollmentPatternId == 0) || (ea.CertificateAuthority == "") {
+	   On Command v25+ an EnrollmentPatternId can substitute for Template.
+	   CertificateAuthority is optional when a template or enrollment pattern is provided;
+	   it is only required when enrolling against a standalone CA. */
+	if ea.Template == "" && ea.EnrollmentPatternId == 0 {
 		return nil, errors.New("invalid or nonexistent values required for csr enrollment")
 	}
 
