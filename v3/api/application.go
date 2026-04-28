@@ -55,7 +55,7 @@ func (c *Client) appEndpoint() string {
 	return "Applications"
 }
 
-// ListApplications returns all applications/containers.
+// ListApplications returns all applications/containers, paginating automatically.
 func (c *Client) ListApplications() ([]ApplicationListItem, error) {
 	log.Println("[INFO] Listing applications.")
 
@@ -66,22 +66,34 @@ func (c *Client) ListApplications() ([]ApplicationListItem, error) {
 		},
 	}
 
-	req := &request{
-		Method:   "GET",
-		Endpoint: c.appEndpoint(),
-		Headers:  headers,
+	const pageSize = 100
+	var all []ApplicationListItem
+	for page := 1; ; page++ {
+		req := &request{
+			Method:   "GET",
+			Endpoint: c.appEndpoint(),
+			Headers:  headers,
+			Query: &apiQuery{
+				Query: []StringTuple{
+					{"PageReturned", strconv.Itoa(page)},
+					{"ReturnLimit", strconv.Itoa(pageSize)},
+				},
+			},
+		}
+		resp, err := c.sendRequest(req)
+		if err != nil {
+			return nil, err
+		}
+		var pageResults []ApplicationListItem
+		if err = json.NewDecoder(resp.Body).Decode(&pageResults); err != nil {
+			return nil, err
+		}
+		all = append(all, pageResults...)
+		if len(pageResults) < pageSize {
+			break
+		}
 	}
-
-	resp, err := c.sendRequest(req)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []ApplicationListItem
-	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
-	}
-	return result, nil
+	return all, nil
 }
 
 // GetApplication returns the full details of an application/container by integer ID.
