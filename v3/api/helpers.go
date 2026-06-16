@@ -64,6 +64,7 @@ func UnpackPEM(pemData interface{}, password string) (
 	}
 
 	var certificates []string
+	var parsedCerts []*x509.Certificate
 	var encryptedKeyBlock *pem.Block
 
 	// Parse all PEM blocks
@@ -79,6 +80,13 @@ func UnpackPEM(pemData interface{}, password string) (
 		case "CERTIFICATE":
 			certPEM := string(pem.EncodeToMemory(block))
 			certificates = append(certificates, certPEM)
+			// Keep a parsed copy (index-aligned with certificates) so the leaf
+			// can be selected by chain topology rather than by position.
+			if c, parseErr := x509.ParseCertificate(block.Bytes); parseErr == nil && c != nil {
+				parsedCerts = append(parsedCerts, c)
+			} else {
+				parsedCerts = append(parsedCerts, nil)
+			}
 		case "ENCRYPTED PRIVATE KEY":
 			encryptedKeyBlock = block
 		case "RSA PRIVATE KEY", "EC PRIVATE KEY", "PRIVATE KEY":
@@ -97,11 +105,36 @@ func UnpackPEM(pemData interface{}, password string) (
 		privateKey = decryptedKey
 	}
 
-	// Assign certificates: first is leaf, rest are CA chain
+	// Select the leaf by chain topology, not position: Keyfactor Command may
+	// return the bundle in any order (notably root-first for externally-rooted
+	// chains such as DigiCert PKIaaS), so certificates[0] is not reliably the
+	// end-entity. findLeafCert picks the cert no other cert in the set issued,
+	// matching the behavior of DownloadCertificate. The remaining certs become
+	// the CA chain, preserving their original order.
 	if len(certificates) > 0 {
-		certificate = certificates[0]
-		if len(certificates) > 1 {
-			caCertificates = certificates[1:]
+		leafIdx := 0
+		// Collect the successfully-parsed certs for leaf detection.
+		var valid []*x509.Certificate
+		for _, c := range parsedCerts {
+			if c != nil {
+				valid = append(valid, c)
+			}
+		}
+		if leaf := findLeafCert(valid); leaf != nil {
+			for i, c := range parsedCerts {
+				if c != nil && c.Equal(leaf) {
+					leafIdx = i
+					break
+				}
+			}
+		}
+
+		certificate = certificates[leafIdx]
+		for i, certPEM := range certificates {
+			if i == leafIdx {
+				continue
+			}
+			caCertificates = append(caCertificates, certPEM)
 		}
 	}
 
