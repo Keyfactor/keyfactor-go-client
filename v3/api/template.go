@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"strconv"
 )
 
 // GetTemplate takes arguments for a template ID used to facilitate the retrieval
@@ -59,9 +61,12 @@ func (c *Client) GetTemplate(Id interface{}) (*GetTemplateResponse, error) {
 	return jsonResp, err
 }
 
-// GetTemplates asks Keyfactor for a complete list of known certificate templates. A list of
-// GetTemplateResponse structures is returned, containing the template context.
+// GetTemplates asks Keyfactor for a complete list of known certificate templates,
+// paginating automatically so that instances with more than the server's default
+// page size (50) return all templates. A list of GetTemplateResponse structures
+// is returned, containing the template context.
 func (c *Client) GetTemplates() ([]GetTemplateResponse, error) {
+	log.Println("[INFO] Listing certificate templates.")
 
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
@@ -71,25 +76,37 @@ func (c *Client) GetTemplates() ([]GetTemplateResponse, error) {
 		},
 	}
 
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: "Templates/",
-		Headers:  headers,
-		Query:    nil,
-		Payload:  nil,
-	}
+	const pageSize = 100
+	var all []GetTemplateResponse
+	for page := 1; ; page++ {
+		keyfactorAPIStruct := &request{
+			Method:   "GET",
+			Endpoint: "Templates/",
+			Headers:  headers,
+			Query: &apiQuery{
+				Query: []StringTuple{
+					{"PageReturned", strconv.Itoa(page)},
+					{"ReturnLimit", strconv.Itoa(pageSize)},
+				},
+			},
+			Payload: nil,
+		}
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return nil, err
-	}
+		resp, err := c.sendRequest(keyfactorAPIStruct)
+		if err != nil {
+			return nil, err
+		}
 
-	var jsonResp []GetTemplateResponse
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
+		var pageResults []GetTemplateResponse
+		if err = json.NewDecoder(resp.Body).Decode(&pageResults); err != nil {
+			return nil, err
+		}
+		all = append(all, pageResults...)
+		if len(pageResults) < pageSize {
+			break
+		}
 	}
-	return jsonResp, err
+	return all, nil
 }
 
 // UpdateTemplate takes arguments for a UpdateTemplateArg structure used to facilitate the modification
