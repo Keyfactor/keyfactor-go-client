@@ -22,6 +22,11 @@ import (
 	"strconv"
 )
 
+// getTemplatesMaxPages is the maximum number of pages GetTemplates will fetch
+// before aborting with an error. It is an unexported package-level var (not a
+// const) so that tests can lower it without iterating thousands of times.
+var getTemplatesMaxPages = 10000
+
 // GetTemplate takes arguments for a template ID used to facilitate the retrieval
 // of certificate template context. The primary query required to get certificate context is the template ID. A pointer
 // to a GetTemplateResponse structure is returned, containing the template context.
@@ -78,7 +83,8 @@ func (c *Client) GetTemplates() ([]GetTemplateResponse, error) {
 
 	const pageSize = 100
 	var all []GetTemplateResponse
-	for page := 1; ; page++ {
+	var page int
+	for page = 1; page <= getTemplatesMaxPages; page++ {
 		keyfactorAPIStruct := &request{
 			Method:   "GET",
 			Endpoint: "Templates/",
@@ -94,18 +100,29 @@ func (c *Client) GetTemplates() ([]GetTemplateResponse, error) {
 
 		resp, err := c.sendRequest(keyfactorAPIStruct)
 		if err != nil {
+			log.Printf("[ERROR] GetTemplates: request for page %d failed: %s", page, err)
 			return nil, err
 		}
 
 		var pageResults []GetTemplateResponse
-		if err = json.NewDecoder(resp.Body).Decode(&pageResults); err != nil {
-			return nil, err
+		decodeErr := json.NewDecoder(resp.Body).Decode(&pageResults)
+		resp.Body.Close()
+		if decodeErr != nil {
+			log.Printf("[ERROR] GetTemplates: failed to decode page %d: %s", page, decodeErr)
+			return nil, decodeErr
 		}
+
 		all = append(all, pageResults...)
-		if len(pageResults) < pageSize {
+		if len(pageResults) == 0 || len(pageResults) < pageSize {
 			break
 		}
 	}
+
+	if page > getTemplatesMaxPages {
+		return nil, fmt.Errorf("GetTemplates: exceeded max pages (%d); server may be ignoring pagination", getTemplatesMaxPages)
+	}
+
+	log.Printf("[INFO] Listed %d certificate templates across %d page(s).", len(all), page)
 	return all, nil
 }
 

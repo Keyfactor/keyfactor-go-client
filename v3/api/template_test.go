@@ -75,6 +75,37 @@ func TestGetTemplates_Pagination(t *testing.T) {
 	}
 }
 
+// TestGetTemplates_MaxPagesGuard verifies that GetTemplates aborts with an error
+// when the server always returns a full page (simulating a server that ignores
+// pagination and would otherwise cause an infinite loop / unbounded memory growth).
+func TestGetTemplates_MaxPagesGuard(t *testing.T) {
+	// Build a fixed full page of pageSize (100) items.
+	fullPage := make([]GetTemplateResponse, 100)
+	for i := range fullPage {
+		fullPage[i] = GetTemplateResponse{Id: i + 1, CommonName: "Template-" + strconv.Itoa(i+1)}
+	}
+
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Always return a full page regardless of PageReturned — simulates a
+		// server that ignores paging parameters.
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(fullPage)
+	}))
+	defer srv.Close()
+
+	// Lower the safety bound so the test terminates quickly.
+	orig := getTemplatesMaxPages
+	getTemplatesMaxPages = 3
+	defer func() { getTemplatesMaxPages = orig }()
+
+	c := newTestClient(srv)
+
+	_, err := c.GetTemplates()
+	if err == nil {
+		t.Fatal("GetTemplates() expected an error when max pages exceeded, got nil")
+	}
+}
+
 // TestGetTemplates_SinglePage verifies that a sub-pageSize result terminates
 // the pagination loop in a single call.
 func TestGetTemplates_SinglePage(t *testing.T) {
