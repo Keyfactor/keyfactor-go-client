@@ -294,7 +294,9 @@ type CertificateStore struct {
 	Overwrite bool `json:"Overwrite,omitempty"`
 
 	// The password to set on the entry within the certificate store, if applicable. Only select certificate stores support entry passwords (e.g. Java keystores).
-	EntryPassword *EntryPassword `json:"EntryPassword"`
+	// omitempty: a nil pointer must be omitted, not marshaled as an explicit
+	// "EntryPassword": null on every add-certificate-to-store request.
+	EntryPassword *EntryPassword `json:"EntryPassword,omitempty"`
 
 	// Password used to secure certificate store, if it exists as a PKCS#12
 	PfxPassword string `json:"PfxPassword,omitempty"`
