@@ -22,7 +22,15 @@ import (
 	"strconv"
 )
 
-// GetStoreContainers returns a list of store containers
+// getStoreContainersMaxPages is the maximum number of pages GetStoreContainers
+// will fetch before aborting with an error. It is an unexported package-level
+// var (not a const) so that tests can lower it without iterating thousands of
+// times.
+var getStoreContainersMaxPages = 10000
+
+// GetStoreContainers returns a list of store containers, paginating
+// automatically so that instances with more than the server's default page
+// size (100) return all containers.
 func (c *Client) GetStoreContainers() (*[]CertStoreContainer, error) {
 	log.Println("[INFO] Listing certificate store containers.")
 
@@ -33,24 +41,49 @@ func (c *Client) GetStoreContainers() (*[]CertStoreContainer, error) {
 		},
 	}
 
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: "CertificateStoreContainers",
-		Headers:  headers,
-		Payload:  nil,
+	const pageSize = 100
+	var all []CertStoreContainer
+	var page int
+	for page = 1; page <= getStoreContainersMaxPages; page++ {
+		keyfactorAPIStruct := &request{
+			Method:   "GET",
+			Endpoint: "CertificateStoreContainers",
+			Headers:  headers,
+			Query: &apiQuery{
+				Query: []StringTuple{
+					{"PageReturned", strconv.Itoa(page)},
+					{"ReturnLimit", strconv.Itoa(pageSize)},
+				},
+			},
+			Payload: nil,
+		}
+
+		resp, err := c.sendRequest(keyfactorAPIStruct)
+		if err != nil {
+			log.Printf("[ERROR] GetStoreContainers: request for page %d failed: %s", page, err)
+			return nil, err
+		}
+
+		var pageResults []CertStoreContainer
+		decodeErr := json.NewDecoder(resp.Body).Decode(&pageResults)
+		resp.Body.Close()
+		if decodeErr != nil {
+			log.Printf("[ERROR] GetStoreContainers: failed to decode page %d: %s", page, decodeErr)
+			return nil, decodeErr
+		}
+
+		all = append(all, pageResults...)
+		if len(pageResults) == 0 || len(pageResults) < pageSize {
+			break
+		}
 	}
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return nil, err
+	if page > getStoreContainersMaxPages {
+		return nil, fmt.Errorf("GetStoreContainers: exceeded max pages (%d); server may be ignoring pagination", getStoreContainersMaxPages)
 	}
 
-	jsonResp := &[]CertStoreContainer{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
-	}
-	return jsonResp, nil
+	log.Printf("[INFO] Listed %d certificate store containers across %d page(s).", len(all), page)
+	return &all, nil
 }
 
 // GetStoreContainer takes an ID and returns a single store container
