@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -66,9 +67,9 @@ func (c *Client) CreateStore(ca *CreateStoreFctArgs) (*CreateStoreResponse, erro
 		Payload:  &ca,
 	}
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return nil, err
+	resp, respErr := c.sendRequest(keyfactorAPIStruct)
+	if respErr != nil {
+		return nil, respErr
 	}
 
 	jsonResp := &CreateStoreResponse{}
@@ -116,7 +117,7 @@ func (c *Client) UpdateStore(ua *UpdateStoreFctArgs) (*UpdateStoreResponse, erro
 	}
 
 	keyfactorAPIStruct := &request{
-		Method:   "Put",
+		Method:   "PUT",
 		Endpoint: "CertificateStores",
 		Headers:  headers,
 		Payload:  &ua,
@@ -274,17 +275,26 @@ func (c *Client) GetCertificateStoreByID(storeId string) (*GetCertificateStoreRe
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
+
+	bodyBytes, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		return nil, readErr
+	}
 
 	jsonResp := &GetCertificateStoreResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
+	if jErr := json.Unmarshal(bodyBytes, &jsonResp); jErr != nil {
+		rawJson := make(map[string]interface{})
+		if mErr := json.Unmarshal(bodyBytes, &rawJson); mErr != nil {
+			return nil, fmt.Errorf("error decoding response: %v", mErr)
+		}
+		return nil, fmt.Errorf("error decoding response: %v, raw response: %v", jErr, rawJson)
 	}
 	jsonResp.Properties = unmarshalPropertiesString(jsonResp.PropertiesString)
 	return jsonResp, nil
 }
 
-// GetCertificateStoreByID takes arguments for a certificate store ID to facilitate a call to Keyfactor
+// GetCertificateStoreByContainerID takes arguments for a certificate store ID to facilitate a call to Keyfactor
 // that retrieves a certificate store context. Only the store ID is required. A pointer to a GetStoreByIDResp struct
 // is returned that contains information on the certificate store.
 func (c *Client) GetCertificateStoreByContainerID(containerID interface{}) (*[]GetCertificateStoreResponse, error) {
@@ -604,6 +614,47 @@ func unmarshalPropertiesString(properties string) map[string]interface{} {
 	return make(map[string]interface{})
 }
 
+// ScheduleImmediateInventory triggers an immediate inventory job on the given certificate store.
+// If the store already has any inventory schedule configured this is a no-op.
+// When no schedule is present (common for newly-created stores that have never had inventory run)
+// it sends a PUT with InventorySchedule.Immediate=true so the orchestrator runs inventory on its
+// next check-in and updates Command's inventory record.
+//
+// Password and server-credential Properties (ServerUsername/Password/UseSsl) are not included in
+// the PUT body because they are write-only and are not returned by the GET endpoint. With the
+// Password field now tagged json:"Password,omitempty", nil is omitted from JSON entirely so
+// Command does not receive a null and will preserve whatever password is already configured.
+func (c *Client) ScheduleImmediateInventory(storeId string) error {
+	storeResp, err := c.GetCertificateStoreByID(storeId)
+	if err != nil {
+		return fmt.Errorf("ScheduleImmediateInventory: could not read store %s: %w", storeId, err)
+	}
+
+	// No-op if any schedule is already configured.
+	sched := storeResp.InventorySchedule
+	if sched.Immediate != nil || sched.Interval != nil || sched.Daily != nil || sched.ExactlyOnce != nil {
+		return nil
+	}
+
+	immediate := true
+	_, err = c.UpdateStore(&UpdateStoreFctArgs{
+		Id:            storeResp.Id,
+		ClientMachine: storeResp.ClientMachine,
+		StorePath:     storeResp.StorePath,
+		CertStoreType: storeResp.CertStoreType,
+		AgentId:       storeResp.AgentId,
+		// Password intentionally nil (omitted from JSON via omitempty) — preserves existing password.
+		// PropertiesString intentionally empty (omitted from JSON via omitempty) — preserves existing properties.
+		InventorySchedule: &InventorySchedule{
+			Immediate: &immediate,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("ScheduleImmediateInventory: UpdateStore failed for store %s: %w", storeId, err)
+	}
+	return nil
+}
+
 func validateCreateStoreArgs(ca *CreateStoreFctArgs) error {
 	if ca.ClientMachine == "" {
 		return errors.New("client machine is required for creation of new certificate store")
@@ -646,4 +697,17 @@ func buildPropertiesInterface(properties map[string]string) interface{} {
 	}
 
 	return propertiesInterface
+}
+
+func mapToEscapedJSONString(m map[string]interface{}) (string, error) {
+	// Convert the map to a byte slice of JSON
+	jsonBytes, err := json.Marshal(m)
+	if err != nil {
+		return "", err
+	}
+
+	// Escape any special characters in the JSON string
+	escapedString := string(jsonBytes)
+
+	return escapedString, nil
 }
