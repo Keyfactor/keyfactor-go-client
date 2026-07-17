@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -128,5 +129,118 @@ func TestGetTemplates_SinglePage(t *testing.T) {
 	}
 	if calls != 1 {
 		t.Errorf("server called %d times, want 1", calls)
+	}
+}
+
+// TestGetTemplateResponse_TemplatePolicy_Decode verifies that GetTemplateResponse
+// decodes the "TemplatePolicy" object Command returns for templates linked to an
+// enrollment pattern (PrimaryKeyAlgorithms/AlternativeKeyAlgorithms, wildcard/key-reuse
+// flags, etc). Before the fix GetTemplateResponse had no TemplatePolicy field at all,
+// so encoding/json silently dropped it and buildTemplateRoleBindingUpdateArg-style
+// callers had nothing to copy forward.
+func TestGetTemplateResponse_TemplatePolicy_Decode(t *testing.T) {
+	// Trimmed down, real shape captured from a live Command 25.4.1 GET /Templates/{id}
+	// response for a template linked to an enrollment pattern.
+	body := `{
+		"Id": 4,
+		"CommonName": "Server_tlsServerAuth-1y",
+		"UseAllowedRequesters": true,
+		"AllowedRequesters": ["Administrator", "InstanceOwner"],
+		"TemplatePolicy": {
+			"TemplateId": 4,
+			"AllowKeyReuse": true,
+			"AllowWildcards": true,
+			"RFCEnforcement": null,
+			"CertificateOwnerRole": 0,
+			"PrimaryKeyAlgorithms": [
+				{"name": "RSA", "bit_lengths": [2048, 3072, 4096], "curves": []},
+				{"name": "Ed25519", "bit_lengths": [255], "curves": []}
+			],
+			"AlternativeKeyAlgorithms": []
+		}
+	}`
+
+	var resp GetTemplateResponse
+	if err := json.Unmarshal([]byte(body), &resp); err != nil {
+		t.Fatalf("json.Unmarshal() error: %v", err)
+	}
+
+	if resp.TemplatePolicy == nil {
+		t.Fatal("GetTemplateResponse.TemplatePolicy = nil, want non-nil (field not decoded)")
+	}
+	if got, want := len(resp.TemplatePolicy.PrimaryKeyAlgorithms), 2; got != want {
+		t.Fatalf("len(TemplatePolicy.PrimaryKeyAlgorithms) = %d, want %d", got, want)
+	}
+	if got, want := resp.TemplatePolicy.PrimaryKeyAlgorithms[0].Name, "RSA"; got != want {
+		t.Errorf("PrimaryKeyAlgorithms[0].Name = %q, want %q", got, want)
+	}
+	if got, want := resp.TemplatePolicy.PrimaryKeyAlgorithms[0].BitLengths, []int{2048, 3072, 4096}; len(got) != len(want) {
+		t.Errorf("PrimaryKeyAlgorithms[0].BitLengths = %v, want %v", got, want)
+	}
+	if resp.TemplatePolicy.AllowKeyReuse == nil || !*resp.TemplatePolicy.AllowKeyReuse {
+		t.Errorf("TemplatePolicy.AllowKeyReuse = %v, want true", resp.TemplatePolicy.AllowKeyReuse)
+	}
+}
+
+// TestUpdateTemplateArg_TemplatePolicy_Roundtrip verifies that an UpdateTemplateArg
+// with TemplatePolicy set actually serializes that field onto the wire when passed to
+// UpdateTemplate. This is the crux of the "'Policies' cannot be empty" bug fix
+// (Keyfactor/terraform-provider-keyfactor#180): Command's PUT /Templates rejects the
+// full-replace update outright for templates linked to an enrollment pattern unless
+// TemplatePolicy.PrimaryKeyAlgorithms/AlternativeKeyAlgorithms round-trip the
+// previously-fetched values. Before the fix, UpdateTemplateArg had no TemplatePolicy
+// field, so this could never be sent — this test would fail to compile against the
+// pre-fix struct definition.
+func TestUpdateTemplateArg_TemplatePolicy_Roundtrip(t *testing.T) {
+	var receivedBody []byte
+
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var err error
+		receivedBody, err = io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatalf("failed to read request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(receivedBody)
+	}))
+	defer srv.Close()
+
+	c := newTestClient(srv)
+
+	allowKeyReuse := true
+	allowWildcards := true
+	useAllowedRequesters := true
+	allowedRequesters := []string{"Administrator", "InstanceOwner"}
+	arg := &UpdateTemplateArg{
+		Id:                   4,
+		UseAllowedRequesters: &useAllowedRequesters,
+		AllowedRequesters:    &allowedRequesters,
+		TemplatePolicy: &TemplatePolicy{
+			TemplateId:     4,
+			AllowKeyReuse:  &allowKeyReuse,
+			AllowWildcards: &allowWildcards,
+			PrimaryKeyAlgorithms: []TemplateKeyAlgorithm{
+				{Name: "RSA", BitLengths: []int{2048, 3072, 4096}},
+				{Name: "Ed25519", BitLengths: []int{255}},
+			},
+		},
+	}
+
+	if _, err := c.UpdateTemplate(arg); err != nil {
+		t.Fatalf("UpdateTemplate() error: %v", err)
+	}
+
+	var onWire map[string]interface{}
+	if err := json.Unmarshal(receivedBody, &onWire); err != nil {
+		t.Fatalf("failed to decode request body sent to server: %v", err)
+	}
+
+	policy, ok := onWire["TemplatePolicy"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("request body sent to server has no TemplatePolicy object; got keys: %v", onWire)
+	}
+	primaryAlgos, ok := policy["PrimaryKeyAlgorithms"].([]interface{})
+	if !ok || len(primaryAlgos) != 2 {
+		t.Fatalf("TemplatePolicy.PrimaryKeyAlgorithms on the wire = %v, want 2 entries", policy["PrimaryKeyAlgorithms"])
 	}
 }

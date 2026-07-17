@@ -35,6 +35,44 @@ type GetTemplateResponse struct {
 	RFCEnforcement         bool                       `json:"RFCEnforcement,omitempty"`
 	RequiresApproval       bool                       `json:"RequiresApproval,omitempty"`
 	KeyUsage               int                        `json:"KeyUsage,omitempty"`
+	// TemplatePolicy carries the template's key-algorithm policy (PrimaryKeyAlgorithms /
+	// AlternativeKeyAlgorithms, wildcard/key-reuse flags, certificate owner role, etc).
+	// It is null for templates that predate this policy model or have never had it
+	// configured. Command's PUT /Templates full-replace validation derives an internal
+	// "Policies" set from TemplatePolicy.PrimaryKeyAlgorithms/AlternativeKeyAlgorithms;
+	// for templates linked to an enrollment pattern, omitting TemplatePolicy on update
+	// collapses that set to empty and Command rejects the request with
+	// "'Policies' cannot be empty" (confirmed against a live Command 25.4.1 instance).
+	TemplatePolicy *TemplatePolicy `json:"TemplatePolicy,omitempty"`
+}
+
+// TemplateKeyAlgorithm describes one allowed key algorithm entry within a
+// TemplatePolicy's PrimaryKeyAlgorithms/AlternativeKeyAlgorithms list. Field
+// names intentionally match Command's lowercase/snake_case wire format for
+// this nested object (unlike the rest of the Templates API, which is
+// PascalCase).
+type TemplateKeyAlgorithm struct {
+	Name       string   `json:"name,omitempty"`
+	BitLengths []int    `json:"bit_lengths,omitempty"`
+	Curves     []string `json:"curves,omitempty"`
+}
+
+// TemplatePolicy models Command's per-template key/enrollment policy object,
+// returned under GetTemplateResponse.TemplatePolicy and required (when the
+// template has one configured) on UpdateTemplateArg.TemplatePolicy to avoid
+// Command's full-replace PUT /Templates clearing it. See the comment on
+// GetTemplateResponse.TemplatePolicy for the "'Policies' cannot be empty"
+// validation error this addresses.
+type TemplatePolicy struct {
+	TemplateId                      int                    `json:"TemplateId,omitempty"`
+	AllowKeyReuse                   *bool                  `json:"AllowKeyReuse,omitempty"`
+	AllowWildcards                  *bool                  `json:"AllowWildcards,omitempty"`
+	RFCEnforcement                  *bool                  `json:"RFCEnforcement,omitempty"`
+	CertificateOwnerRole            *int                   `json:"CertificateOwnerRole,omitempty"`
+	DefaultCertificateOwnerRoleId   *int                   `json:"DefaultCertificateOwnerRoleId,omitempty"`
+	DefaultCertificateOwnerRoleName *string                `json:"DefaultCertificateOwnerRoleName,omitempty"`
+	PrimaryKeyAlgorithms            []TemplateKeyAlgorithm `json:"PrimaryKeyAlgorithms,omitempty"`
+	AlternativeKeyAlgorithms        []TemplateKeyAlgorithm `json:"AlternativeKeyAlgorithms,omitempty"`
 }
 
 type TemplateEnrollmentFields struct {
@@ -82,6 +120,9 @@ type UpdateTemplateArg struct {
 	RFCEnforcement         *bool                       `json:"RFCEnforcement,omitempty"`
 	RequiresApproval       *bool                       `json:"RequiresApproval,omitempty"`
 	KeyUsage               *bool                       `json:"KeyUsage,omitempty"`
+	// TemplatePolicy must be round-tripped from the corresponding GetTemplateResponse
+	// on every update; see the field comment on GetTemplateResponse.TemplatePolicy.
+	TemplatePolicy *TemplatePolicy `json:"TemplatePolicy,omitempty"`
 }
 
 type UpdateTemplateResponse struct{ GetTemplateResponse }
