@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -44,6 +45,42 @@ func newFakeCommandServer(t *testing.T) *httptest.Server {
 	return server
 }
 
+// isolateKeyfactorEnv unsets ambient KEYFACTOR_* environment variables that
+// CommandAuthConfig.ValidateAuthConfig() falls back to whenever the
+// corresponding struct field is left at its zero value, restoring their
+// original values (present-and-unset, or present-with-value) once the test
+// completes. This makes tests that build a Server/CommandAuthConfig with an
+// intentionally-zero field (e.g. ClientTimeout: 0 to exercise the "use the
+// default" path, or SkipTLSVerify relying on a literal true) hermetic:
+// without this, a developer or CI job with KEYFACTOR_CLIENT_TIMEOUT or
+// KEYFACTOR_SKIP_VERIFY exported in their shell would get spurious failures
+// or, worse, a silently-clobbered SkipVerify that rejects the test's
+// self-signed httptest TLS cert.
+//
+// Note: t.Setenv(key, "") is NOT equivalent to unsetting - os.LookupEnv still
+// reports the variable as present with an empty value, which is enough to
+// take the "environment variable is set" branch in ValidateAuthConfig (e.g.
+// strconv.Atoi("") fails silently and leaves HttpClientTimeout at 0 rather
+// than falling through to DefaultClientTimeout). The variable must be
+// actually removed from the environment.
+func isolateKeyfactorEnv(t *testing.T, keys ...string) {
+	t.Helper()
+	for _, key := range keys {
+		key := key
+		originalValue, wasSet := os.LookupEnv(key)
+		if err := os.Unsetenv(key); err != nil {
+			t.Fatalf("failed to unset %s: %v", key, err)
+		}
+		t.Cleanup(func() {
+			if wasSet {
+				_ = os.Setenv(key, originalValue)
+			} else {
+				_ = os.Unsetenv(key)
+			}
+		})
+	}
+}
+
 // TestNewKeyfactorClient_PlumbsClientTimeout is a regression test proving that
 // a Server.ClientTimeout value survives NewKeyfactorClient's rebuild of the
 // CommandAuthConfig. Before this fix, baseConfig never set HttpClientTimeout,
@@ -53,6 +90,13 @@ func newFakeCommandServer(t *testing.T) *httptest.Server {
 // producing "net/http: timeout awaiting response headers" on long-running
 // calls such as PFX enrollment.
 func TestNewKeyfactorClient_PlumbsClientTimeout(t *testing.T) {
+	isolateKeyfactorEnv(
+		t,
+		auth_providers.EnvKeyfactorClientTimeout,
+		auth_providers.EnvKeyfactorSkipVerify,
+		auth_providers.EnvKeyfactorPort,
+		auth_providers.EnvKeyfactorCACert,
+	)
 	server := newFakeCommandServer(t)
 	u, uErr := url.Parse(server.URL)
 	if uErr != nil {
@@ -98,6 +142,13 @@ func TestNewKeyfactorClient_PlumbsClientTimeout(t *testing.T) {
 // (unset) case still falls back to the library default rather than 0s,
 // preserving pre-fix behavior for callers who don't set ClientTimeout.
 func TestNewKeyfactorClient_DefaultClientTimeout(t *testing.T) {
+	isolateKeyfactorEnv(
+		t,
+		auth_providers.EnvKeyfactorClientTimeout,
+		auth_providers.EnvKeyfactorSkipVerify,
+		auth_providers.EnvKeyfactorPort,
+		auth_providers.EnvKeyfactorCACert,
+	)
 	server := newFakeCommandServer(t)
 	u, uErr := url.Parse(server.URL)
 	if uErr != nil {
