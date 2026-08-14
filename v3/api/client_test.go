@@ -23,6 +23,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -279,6 +280,172 @@ func TestClient_ReusesHttpClientAcrossRequests(t *testing.T) {
 			"expected the TCP connection to be reused across %d sequential requests (at most ~1-2 new connections), observed %d new connections",
 			requestCount,
 			conns,
+		)
+	}
+}
+
+// TestClient_ConcurrentRequestsNotCappedByMaxConnsPerHost is an end-to-end
+// regression test closing the loop on a finding this package's own
+// http.Client-caching fix (see TestClient_ReusesHttpClientAcrossRequests)
+// caused but could not fix locally: caching a single *http.Client means the
+// transport keyfactor-auth-client-go builds is now reused for the lifetime
+// of the Client instance, so any nonzero MaxConnsPerHost on that transport
+// stops being a harmless per-request default and becomes a permanent,
+// unqueued-timeout ceiling on concurrent in-flight requests for the whole
+// process - e.g. `terraform apply -parallelism=25` would silently serialize
+// into batches of N with no bound on how long excess requests wait, since
+// neither the cached client's Timeout (0, unset) nor its requests' contexts
+// impose one.
+//
+// keyfactor-auth-client-go previously hardcoded MaxConnsPerHost: 10 on this
+// transport. Its own fix (auth_core.go's newHTTPTransport, now pinned at 0 /
+// unbounded to match net/http.DefaultTransport) was verified from that
+// repo's side by inspecting the constructed *http.Transport's field value.
+// This test verifies the fix end-to-end from this repo's perspective instead
+// of trusting that inspection alone: it builds a real Client via
+// NewKeyfactorClient (exactly as production code does), retrieves its cached
+// *http.Client via getHttpClient(), and drives 25 concurrent requests through
+// it against a real httptest server, asserting the server actually observes
+// well more than 10 requests in flight at once rather than serializing into
+// batches of 10.
+func TestClient_ConcurrentRequestsNotCappedByMaxConnsPerHost(t *testing.T) {
+	const (
+		concurrentRequests = 25
+		holdDuration       = 200 * time.Millisecond
+	)
+
+	var (
+		mu          sync.Mutex
+		inFlight    int
+		maxInFlight int
+	)
+
+	srv := httptest.NewTLSServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				// The initial CommandAuthConfigBasic.Authenticate() call made
+				// by NewKeyfactorClient below hits this same handler; letting
+				// it fall through the same slow path is harmless since it
+				// happens once, sequentially, before the concurrent phase
+				// starts timing anything.
+				mu.Lock()
+				inFlight++
+				if inFlight > maxInFlight {
+					maxInFlight = inFlight
+				}
+				mu.Unlock()
+
+				time.Sleep(holdDuration)
+
+				mu.Lock()
+				inFlight--
+				mu.Unlock()
+
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("x-keyfactor-product-version", "99.9.9")
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`["endpoint1"]`))
+			},
+		),
+	)
+	t.Cleanup(srv.Close)
+
+	u, uErr := url.Parse(srv.URL)
+	if uErr != nil {
+		t.Fatalf("failed to parse test server URL: %v", uErr)
+	}
+
+	cfg := &auth_providers.Server{
+		Host:          u.Host,
+		Username:      "user",
+		Password:      "pass",
+		APIPath:       "api",
+		SkipTLSVerify: true,
+	}
+
+	ctx := context.Background()
+	client, err := NewKeyfactorClient(cfg, &ctx)
+	if err != nil {
+		t.Fatalf("NewKeyfactorClient failed: %v", err)
+	}
+
+	httpClient, hErr := client.getHttpClient()
+	if hErr != nil {
+		t.Fatalf("getHttpClient failed: %v", hErr)
+	}
+
+	// Reset the counters: the single sequential Authenticate() call above
+	// already touched inFlight/maxInFlight and this resets the baseline so
+	// the assertion below reflects only the concurrent phase.
+	mu.Lock()
+	inFlight = 0
+	maxInFlight = 0
+	mu.Unlock()
+
+	start := time.Now()
+	var wg sync.WaitGroup
+	for i := 0; i < concurrentRequests; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			req, rErr := http.NewRequest(http.MethodGet, srv.URL+"/KeyfactorAPI/concurrent-probe", nil)
+			if rErr != nil {
+				t.Errorf("failed to build request: %v", rErr)
+				return
+			}
+			resp, dErr := httpClient.Do(req)
+			if dErr != nil {
+				t.Errorf("request failed: %v", dErr)
+				return
+			}
+			_ = resp.Body.Close()
+		}()
+	}
+	wg.Wait()
+	elapsed := time.Since(start)
+
+	mu.Lock()
+	observedMax := maxInFlight
+	mu.Unlock()
+
+	t.Logf(
+		"observed max in-flight requests: %d/%d, wall time: %s (old MaxConnsPerHost=10 cap measured ~10 in-flight/909ms for a comparable batch; unbounded measured ~315ms)",
+		observedMax,
+		concurrentRequests,
+		elapsed,
+	)
+
+	// The old hardcoded MaxConnsPerHost: 10 would cap this at exactly 10
+	// no matter how many requests are fired concurrently. Assert well above
+	// that ceiling (comfortably below concurrentRequests to tolerate
+	// scheduler jitter) to prove the requests are not being serialized into
+	// batches of 10.
+	const minAcceptableMaxInFlight = 15
+	if observedMax <= 10 {
+		t.Fatalf(
+			"expected max concurrent in-flight requests to exceed the old MaxConnsPerHost=10 ceiling, got %d (elapsed %s) - concurrency ceiling regression",
+			observedMax,
+			elapsed,
+		)
+	}
+	if observedMax < minAcceptableMaxInFlight {
+		t.Fatalf(
+			"expected max concurrent in-flight requests to be close to %d (unbounded), got only %d (elapsed %s)",
+			concurrentRequests,
+			observedMax,
+			elapsed,
+		)
+	}
+
+	// Wall time is a secondary signal: fully serialized into batches of 10
+	// would take ceil(25/10)*holdDuration ~= 3*200ms = 600ms; unbounded
+	// concurrency should complete in roughly one holdDuration plus overhead.
+	maxAcceptableElapsed := holdDuration * 2
+	if elapsed > maxAcceptableElapsed {
+		t.Fatalf(
+			"expected wall time close to a single %s hold duration for unbounded concurrency, got %s (elapsed too long, suggests serialization)",
+			holdDuration,
+			elapsed,
 		)
 	}
 }
