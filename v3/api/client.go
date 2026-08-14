@@ -28,6 +28,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Keyfactor/keyfactor-auth-client-go/auth_providers"
@@ -69,6 +70,47 @@ var (
 type Client struct {
 	AuthClient AuthConfig
 	LoggerType string
+
+	// httpClient caches the *http.Client returned by AuthClient.GetHttpClient()
+	// so that sendRequest reuses a single underlying transport/connection pool
+	// across requests instead of asking AuthClient to build a brand new one on
+	// every call. Both CommandConfigOauth.GetHttpClient() and
+	// CommandAuthConfigBasic.GetHttpClient() (in keyfactor-auth-client-go)
+	// construct a fresh http.Transport per invocation, and that transport's
+	// IdleConnTimeout is derived from the configured HttpClientTimeout - so
+	// without this cache, every request opens its own connection pool whose
+	// sockets linger for up to HttpClientTimeout before being reclaimed. This
+	// was already true at the old fixed 60s default; plumbing a caller-supplied
+	// ClientTimeout (see NewKeyfactorClient) just widens the window, so caching
+	// here keeps that fix from amplifying a pre-existing resource leak.
+	httpClient   *http.Client
+	httpClientMu sync.Mutex
+}
+
+// getHttpClient returns the cached *http.Client if one has already been
+// resolved for this Client, populating the cache on first use otherwise.
+// This guarantees AuthClient.GetHttpClient() is invoked at most once per
+// Client instance, so the transport (and its connection pool) is reused
+// across requests. It is safe for concurrent use.
+//
+// Note this does not affect OAuth token refresh: the cached *http.Client's
+// transport wraps an oauth2 TokenSource that is consulted (and refreshed as
+// needed) on every RoundTrip, independent of how many times the *http.Client
+// itself is reused.
+func (c *Client) getHttpClient() (*http.Client, error) {
+	c.httpClientMu.Lock()
+	defer c.httpClientMu.Unlock()
+
+	if c.httpClient != nil {
+		return c.httpClient, nil
+	}
+
+	httpClient, err := c.AuthClient.GetHttpClient()
+	if err != nil {
+		return nil, err
+	}
+	c.httpClient = httpClient
+	return httpClient, nil
 }
 
 // TerraformLogger wraps the tflog logging to handle Go's log messages with log level mapping.
@@ -161,11 +203,12 @@ func NewKeyfactorClient(cfg *auth_providers.Server, ctx *context.Context) (*Clie
 		if aErr != nil {
 			return nil, aErr
 		}
-		_, cErr := basicCfg.GetHttpClient()
+		httpClient, cErr := basicCfg.GetHttpClient()
 		if cErr != nil {
 			return nil, cErr
 		}
 		client.AuthClient = &basicCfg
+		client.httpClient = httpClient
 		return &client, nil
 	} else if clientAuthType == "oauth" {
 		oauthCfg := auth_providers.CommandConfigOauth{
@@ -181,11 +224,12 @@ func NewKeyfactorClient(cfg *auth_providers.Server, ctx *context.Context) (*Clie
 		if aErr != nil {
 			return nil, aErr
 		}
-		_, cErr := oauthCfg.GetHttpClient()
+		httpClient, cErr := oauthCfg.GetHttpClient()
 		if cErr != nil {
 			return nil, cErr
 		}
 		client.AuthClient = &oauthCfg
+		client.httpClient = httpClient
 		return &client, nil
 	} else {
 		return nil, fmt.Errorf("unsupported auth type or authentication cfg: '%s'", clientAuthType)
@@ -343,7 +387,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 
 	// Log the request
 	logRequest(req)
-	httpClient, cErr := c.AuthClient.GetHttpClient()
+	httpClient, cErr := c.getHttpClient()
 	if cErr != nil {
 		return nil, cErr
 	}
