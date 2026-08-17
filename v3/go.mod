@@ -19,7 +19,7 @@ go 1.24.0
 toolchain go1.24.5
 
 require (
-	github.com/Keyfactor/keyfactor-auth-client-go v1.6.0-rc.3
+	github.com/Keyfactor/keyfactor-auth-client-go v1.6.0-rc.4
 	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/spbsoluble/go-pkcs12 v0.4.0
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
