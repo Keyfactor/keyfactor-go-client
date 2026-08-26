@@ -23,6 +23,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -447,5 +448,143 @@ func TestClient_ConcurrentRequestsNotCappedByMaxConnsPerHost(t *testing.T) {
 			holdDuration,
 			elapsed,
 		)
+	}
+}
+
+// TestSendRequest_ContextDeadlineExceeded_NoSilentRetry reproduces the first half
+// of a confirmed HIGH-severity bug in sendRequest: on a client-side timeout
+// ("context deadline exceeded"), the function used to transparently retry the
+// request (up to MAX_CONTEXT_DEADLINE_RETRIES times) and, if a retry
+// succeeded, return that success with no indication a timeout ever happened.
+//
+// That silently swallowed the fact that the *original* request may have
+// already succeeded server-side (e.g. a certificate enrollment), and
+// defeated callers -- like terraform-provider-keyfactor's orphaned-PFX
+// recovery logic -- that specifically match on "context deadline exceeded"
+// to trigger their own safe recovery search instead of blindly re-issuing a
+// non-idempotent request.
+//
+// This test sets up a server that only delays its FIRST response beyond the
+// client timeout and answers instantly after that -- i.e. exactly the shape
+// that used to be masked into a silent "success after retry". It asserts
+// sendRequest now returns the timeout error immediately, without contacting
+// the server a second time.
+func TestSendRequest_ContextDeadlineExceeded_NoSilentRetry(t *testing.T) {
+	var requestCount int32
+
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := atomic.AddInt32(&requestCount, 1)
+		if n == 1 {
+			// First request: sleep well past the client timeout below, so the
+			// client gives up on it -- but note the server continues to
+			// process it and will "complete" it right after. A retry that
+			// followed would succeed immediately, which is exactly the
+			// scenario that used to be silently swallowed.
+			time.Sleep(300 * time.Millisecond)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	c := &Client{
+		AuthClient: &mockAuthConfig{
+			serverConfig: newTestServerConfig(srv),
+			httpClient:   testHTTPClientWithTimeout(srv, 50*time.Millisecond),
+		},
+	}
+
+	resp, err := c.sendRequest(&request{Method: http.MethodGet, Endpoint: "test", Headers: &apiHeaders{}})
+
+	if err == nil {
+		t.Fatalf("sendRequest() returned nil error, want a context-deadline-exceeded error (retry must not silently succeed)")
+	}
+	if !strings.Contains(err.Error(), "context deadline exceeded") {
+		t.Fatalf("sendRequest() error = %q, want it to contain %q", err.Error(), "context deadline exceeded")
+	}
+	if resp != nil {
+		t.Fatalf("sendRequest() returned a non-nil response alongside an error: %+v", resp)
+	}
+	if got := atomic.LoadInt32(&requestCount); got != 1 {
+		t.Fatalf(
+			"server was hit %d time(s), want exactly 1 -- sendRequest must not silently retry a timed-out request",
+			got,
+		)
+	}
+}
+
+// TestSendRequest_ContextDeadlineExceeded_NoPanic reproduces the second half
+// of the bug: when every attempt fails with a "context deadline exceeded"
+// shaped error, sendRequest's response variable was never reassigned from
+// its original nil value, and the surrounding switch had no `return` for
+// this case -- so control fell through to `resp.StatusCode` on a nil
+// *http.Response, panicking the caller (e.g. crashing `terraform apply`
+// outright) instead of returning a normal, handleable error.
+//
+// This test uses a server that always delays past the client timeout, so
+// every attempt sendRequest makes hits the same failure shape. It asserts a
+// clean error is returned -- never a panic.
+func TestSendRequest_ContextDeadlineExceeded_NoPanic(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(300 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	c := &Client{
+		AuthClient: &mockAuthConfig{
+			serverConfig: newTestServerConfig(srv),
+			httpClient:   testHTTPClientWithTimeout(srv, 50*time.Millisecond),
+		},
+	}
+
+	var (
+		resp *http.Response
+		err  error
+	)
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Fatalf("sendRequest() panicked: %v", r)
+			}
+		}()
+		resp, err = c.sendRequest(&request{Method: http.MethodGet, Endpoint: "test", Headers: &apiHeaders{}})
+	}()
+
+	if err == nil {
+		t.Fatalf("sendRequest() returned nil error, want a context-deadline-exceeded error")
+	}
+	if !strings.Contains(err.Error(), "context deadline exceeded") {
+		t.Fatalf("sendRequest() error = %q, want it to contain %q", err.Error(), "context deadline exceeded")
+	}
+	if resp != nil {
+		t.Fatalf("sendRequest() returned a non-nil response alongside an error: %+v", resp)
+	}
+}
+
+// newTestServerConfig builds a minimal *auth_providers.Server pointing at the
+// given httptest server, matching the pattern used by newTestClient in
+// pam_types_test.go.
+func newTestServerConfig(server *httptest.Server) *auth_providers.Server {
+	return &auth_providers.Server{
+		Host:          server.URL,
+		APIPath:       "/KeyfactorAPI",
+		SkipTLSVerify: true,
+	}
+}
+
+// testHTTPClientWithTimeout returns an *http.Client that trusts the given
+// httptest TLS server's certificate (sendRequest always forces the https
+// scheme, so a plain httptest.NewServer can't be used directly) but with a
+// short overall Timeout so requests to a deliberately slow handler produce a
+// real "context deadline exceeded" error, identical in shape to what a
+// production client sees against a genuinely slow/unreachable Command
+// server.
+func testHTTPClientWithTimeout(server *httptest.Server, timeout time.Duration) *http.Client {
+	base := server.Client()
+	return &http.Client{
+		Transport: base.Transport,
+		Timeout:   timeout,
 	}
 }

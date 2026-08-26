@@ -393,43 +393,24 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	}
 	resp, respErr := httpClient.Do(req)
 
-	// check if context deadline exceeded
+	// NOTE: this used to silently retry on "context deadline exceeded" (up to
+	// MAX_CONTEXT_DEADLINE_RETRIES times) without ever surfacing that a retry
+	// happened. That's unsafe for two reasons:
+	//   1. Retrying a non-idempotent request (e.g. a POST enrollment) after a
+	//      client-side timeout risks creating a second server-side resource
+	//      if the original request actually succeeded after the client gave
+	//      up on it -- exactly the scenario callers need to detect via the
+	//      returned error, not have hidden from them by a "successful" retry.
+	//   2. If every retry also failed, `resp` was never reassigned from its
+	//      original nil value and there was no `return` for this case, so
+	//      control fell through to `resp.StatusCode` below on a nil
+	//      *http.Response, panicking the caller (e.g. crashing `terraform
+	//      apply` outright).
+	// Callers that need retry-with-backoff semantics around a timeout (and
+	// that know their request is safe to repeat) should implement that at
+	// their own call site, where they have the context to decide; this layer
+	// now always returns the transport error untouched.
 	switch {
-	case respErr != nil && (strings.Contains(respErr.Error(), "context deadline exceeded")):
-		sleepDuration := time.Duration(1) * time.Second
-		for i := 0; i < MAX_CONTEXT_DEADLINE_RETRIES; i++ {
-			// sleep for exponential backoff
-			if i > 0 {
-				sleepDuration *= 2
-				if sleepDuration > time.Duration(MAX_WAIT_SECONDS)*time.Second {
-					sleepDuration = time.Duration(MAX_WAIT_SECONDS) * time.Second
-				}
-				log.Printf(
-					"[DEBUG] %s request to %s failed with error %s, retrying in %s seconds...",
-					request.Method,
-					keyfactorPath,
-					respErr.Error(),
-					sleepDuration,
-				)
-				time.Sleep(sleepDuration)
-			}
-
-			log.Printf(
-				"[DEBUG] %s request to %s failed with error %s, retrying...",
-				request.Method,
-				keyfactorPath,
-				respErr.Error(),
-			)
-			req, reqErr = http.NewRequest(request.Method, keyfactorPath, bytes.NewBuffer(jsonByes))
-			if reqErr != nil {
-				return nil, reqErr
-			}
-			resp2, respErr2 := httpClient.Do(req)
-			if respErr2 == nil && resp2 != nil {
-				resp = resp2
-				break
-			}
-		}
 	case respErr != nil:
 		log.Printf("[ERROR] Error sending '%s' request to '%s': %s", request.Method, request.Endpoint, respErr)
 		return nil, respErr
