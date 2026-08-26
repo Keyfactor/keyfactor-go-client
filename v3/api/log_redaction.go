@@ -32,6 +32,20 @@ var sensitiveLogFieldPattern = regexp.MustCompile(`(?i)(password|passphrase|secr
 
 const redactedLogValue = "[REDACTED]"
 
+// maxNestedJSONStringDepth bounds how many levels of "JSON encoded as a
+// string value" redactSensitiveValue will attempt to unmarshal and recurse
+// into. Several request structs (e.g. CreateStoreFctArgs/UpdateStoreFctArgs's
+// PropertiesString field) are populated by pre-serializing a
+// map[string]interface{} to a JSON string before the outer struct itself is
+// marshaled by sendRequest, producing a JSON string leaf whose *contents* are
+// themselves JSON containing secrets (e.g. ServerUsername/ServerPassword).
+// Without unwrapping these string-encoded-JSON leaves, redaction never sees
+// the nested keys and secrets sail through unredacted into TRACE logs. The
+// depth guard exists purely so adversarial or accidentally-deep
+// string-of-JSON-of-string-of-JSON... nesting can't recurse unboundedly; a
+// legitimate payload should never come close to this limit.
+const maxNestedJSONStringDepth = 5
+
 // redactSensitiveJSONForLogging returns a copy of jsonBytes (expected to be
 // the JSON encoding of an API request/response payload) with the values of
 // any object key matching sensitiveLogFieldPattern replaced by
@@ -55,7 +69,7 @@ func redactSensitiveJSONForLogging(jsonBytes []byte) []byte {
 		return jsonBytes
 	}
 
-	redacted, err := json.Marshal(redactSensitiveValue(decoded))
+	redacted, err := json.Marshal(redactSensitiveValue(decoded, maxNestedJSONStringDepth))
 	if err != nil {
 		return jsonBytes
 	}
@@ -64,9 +78,29 @@ func redactSensitiveJSONForLogging(jsonBytes []byte) []byte {
 
 // redactSensitiveValue recursively walks a decoded JSON value (as produced by
 // encoding/json's default interface{} unmarshaling: map[string]interface{},
-// []interface{}, or a scalar), replacing the value of any map key that
-// matches sensitiveLogFieldPattern with redactedLogValue.
-func redactSensitiveValue(v interface{}) interface{} {
+// []interface{}, a string, or another scalar), replacing the value of any
+// map key that matches sensitiveLogFieldPattern with redactedLogValue.
+//
+// String leaves get one extra check: some request structs pre-serialize a
+// map to a JSON string before the outer struct is marshaled again (e.g.
+// CreateStoreFctArgs/UpdateStoreFctArgs's PropertiesString field), so a
+// string leaf's own contents may themselves be JSON carrying secrets
+// (ServerUsername/ServerPassword, etc.) that would otherwise sail through
+// unredacted. If a string leaf successfully unmarshals as a
+// map[string]interface{} or []interface{}, it is redacted the same way and
+// re-marshaled back to a string, preserving its "valid JSON encoded as a
+// string" shape in the log output. If it doesn't decode to one of those two
+// container types (including "it isn't valid JSON at all"), it is left
+// alone: that's the common case of an ordinary string value, not a nested
+// payload to unwrap.
+//
+// remainingDepth bounds how many further levels of string-encoded-JSON will
+// be unwrapped, so adversarial or accidentally deep nesting
+// (JSON-of-string-of-JSON-of-string-of-...) can't recurse unboundedly. Once
+// it reaches zero, string leaves are left as-is without attempting to parse
+// them further; map/slice recursion is unaffected by this guard since it can
+// only nest as deeply as the decoded value's own structure allows.
+func redactSensitiveValue(v interface{}, remainingDepth int) interface{} {
 	switch t := v.(type) {
 	case map[string]interface{}:
 		out := make(map[string]interface{}, len(t))
@@ -74,16 +108,40 @@ func redactSensitiveValue(v interface{}) interface{} {
 			if sensitiveLogFieldPattern.MatchString(k) {
 				out[k] = redactedLogValue
 			} else {
-				out[k] = redactSensitiveValue(val)
+				out[k] = redactSensitiveValue(val, remainingDepth)
 			}
 		}
 		return out
 	case []interface{}:
 		out := make([]interface{}, len(t))
 		for i, val := range t {
-			out[i] = redactSensitiveValue(val)
+			out[i] = redactSensitiveValue(val, remainingDepth)
 		}
 		return out
+	case string:
+		if remainingDepth <= 0 {
+			return t
+		}
+		var nested interface{}
+		if err := json.Unmarshal([]byte(t), &nested); err != nil {
+			return t
+		}
+		switch nested.(type) {
+		case map[string]interface{}, []interface{}:
+			redactedNested := redactSensitiveValue(nested, remainingDepth-1)
+			reMarshaled, err := json.Marshal(redactedNested)
+			if err != nil {
+				return t
+			}
+			return string(reMarshaled)
+		default:
+			// Decoded to a bare scalar (a JSON string/number/bool/null that
+			// happens to be valid JSON on its own, e.g. the string "42" or
+			// `"true"`) rather than a container - nothing to redact inside
+			// it, and re-marshaling would just be a no-op wrapped in
+			// pointless work. Leave the original string leaf unchanged.
+			return t
+		}
 	default:
 		return v
 	}
