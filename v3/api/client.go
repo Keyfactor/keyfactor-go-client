@@ -249,7 +249,12 @@ func logRequest(req *http.Request) error {
 	// Restore the request body so it can be read later
 	req.Body = io.NopCloser(bytes.NewBuffer(body))
 
-	// Create a struct to hold request data
+	// Create a struct to hold request data. The body is redacted before
+	// logging (see redactSensitiveJSONForLogging) since it's always the same
+	// JSON-marshaled request.Payload passed into sendRequest, which may carry
+	// a certificate/PFX recovery password or other secret - this must not be
+	// dumped verbatim into TRACE-level logs.
+	redactedBody := redactSensitiveJSONForLogging(body)
 	requestData := struct {
 		Method  string              `json:"method"`
 		URL     string              `json:"url"`
@@ -259,7 +264,7 @@ func logRequest(req *http.Request) error {
 		Method:  req.Method,
 		URL:     req.URL.String(),
 		Headers: req.Header,
-		Body:    string(body),
+		Body:    string(redactedBody),
 	}
 
 	// Convert struct to JSON
@@ -296,7 +301,10 @@ func requestToCurl(req *http.Request) (string, error) {
 		}
 	}
 
-	// Add the body if it exists
+	// Add the body if it exists. The body is redacted before being embedded
+	// in the logged cURL command (see redactSensitiveJSONForLogging) since a
+	// TRACE-level cURL command containing a raw password is directly
+	// replayable by anyone who reads the log, not just informational.
 	if req.Method == http.MethodPost || req.Method == http.MethodPut {
 		body, err := io.ReadAll(req.Body)
 		if err != nil {
@@ -304,7 +312,7 @@ func requestToCurl(req *http.Request) (string, error) {
 		}
 		req.Body = io.NopCloser(bytes.NewBuffer(body)) // Restore the request body
 
-		curlCommand.WriteString(fmt.Sprintf("--data %q ", string(body)))
+		curlCommand.WriteString(fmt.Sprintf("--data %q ", string(redactSensitiveJSONForLogging(body))))
 	}
 
 	return curlCommand.String(), nil
@@ -362,7 +370,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	if mErr != nil {
 		return nil, mErr
 	}
-	log.Printf("[TRACE] Request body: %s", jsonByes)
+	log.Printf("[TRACE] Request body: %s", redactSensitiveJSONForLogging(jsonByes))
 
 	req, reqErr := http.NewRequest(request.Method, keyfactorPath, bytes.NewBuffer(jsonByes))
 	if reqErr != nil {

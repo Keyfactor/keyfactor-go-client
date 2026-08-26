@@ -142,7 +142,21 @@ func (c *Client) EnrollPFXV2(ea *EnrollPFXFctArgsV2) (*EnrollResponseV2, error) 
 		Payload:  &ea,
 	}
 
-	log.Println("[TRACE] Request: ", keyfactorAPIStruct)
+	// Log a redacted copy of the enrollment args rather than ea/keyfactorAPIStruct
+	// directly: ea.Password carries the PFX private-key protection password, and
+	// %v-formatting the struct (as this TRACE log historically did) would dump it
+	// in plaintext. redactedEA is a value copy (ea is *EnrollPFXFctArgsV2) so
+	// mutating its Password field below never touches the real request's ea.
+	redactedEA := *ea
+	if redactedEA.Password != "" {
+		redactedEA.Password = redactedLogValue
+	}
+	log.Println("[TRACE] Request: ", &request{
+		Method:   keyfactorAPIStruct.Method,
+		Endpoint: keyfactorAPIStruct.Endpoint,
+		Headers:  keyfactorAPIStruct.Headers,
+		Payload:  &redactedEA,
+	})
 
 	resp, err := c.sendRequest(keyfactorAPIStruct)
 	if err != nil {
@@ -725,7 +739,18 @@ func (c *Client) RecoverCertificate(
 		IncludeChain: true,
 	}
 
-	log.Println("[DEBUG] RecoverCertificate: Recovering certificate with args:", rca)
+	// Log a redacted copy: rca.Password is the private-key recovery password
+	// supplied by the caller, and this DEBUG-level log (a common
+	// troubleshooting verbosity, reachable on ordinary Read/Update/import
+	// private-key-recovery paths) used to dump it in plaintext via %v-style
+	// struct formatting. redactedRCA is a value copy (rca is
+	// *recoverCertArgs) so mutating its Password field below never touches
+	// the real rca used to build the outgoing request below.
+	redactedRCA := *rca
+	if redactedRCA.Password != "" {
+		redactedRCA.Password = redactedLogValue
+	}
+	log.Println("[DEBUG] RecoverCertificate: Recovering certificate with args:", &redactedRCA)
 	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
