@@ -28,6 +28,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Keyfactor/keyfactor-auth-client-go/auth_providers"
@@ -69,6 +70,47 @@ var (
 type Client struct {
 	AuthClient AuthConfig
 	LoggerType string
+
+	// httpClient caches the *http.Client returned by AuthClient.GetHttpClient()
+	// so that sendRequest reuses a single underlying transport/connection pool
+	// across requests instead of asking AuthClient to build a brand new one on
+	// every call. Both CommandConfigOauth.GetHttpClient() and
+	// CommandAuthConfigBasic.GetHttpClient() (in keyfactor-auth-client-go)
+	// construct a fresh http.Transport per invocation, and that transport's
+	// IdleConnTimeout is derived from the configured HttpClientTimeout - so
+	// without this cache, every request opens its own connection pool whose
+	// sockets linger for up to HttpClientTimeout before being reclaimed. This
+	// was already true at the old fixed 60s default; plumbing a caller-supplied
+	// ClientTimeout (see NewKeyfactorClient) just widens the window, so caching
+	// here keeps that fix from amplifying a pre-existing resource leak.
+	httpClient   *http.Client
+	httpClientMu sync.Mutex
+}
+
+// getHttpClient returns the cached *http.Client if one has already been
+// resolved for this Client, populating the cache on first use otherwise.
+// This guarantees AuthClient.GetHttpClient() is invoked at most once per
+// Client instance, so the transport (and its connection pool) is reused
+// across requests. It is safe for concurrent use.
+//
+// Note this does not affect OAuth token refresh: the cached *http.Client's
+// transport wraps an oauth2 TokenSource that is consulted (and refreshed as
+// needed) on every RoundTrip, independent of how many times the *http.Client
+// itself is reused.
+func (c *Client) getHttpClient() (*http.Client, error) {
+	c.httpClientMu.Lock()
+	defer c.httpClientMu.Unlock()
+
+	if c.httpClient != nil {
+		return c.httpClient, nil
+	}
+
+	httpClient, err := c.AuthClient.GetHttpClient()
+	if err != nil {
+		return nil, err
+	}
+	c.httpClient = httpClient
+	return httpClient, nil
 }
 
 // TerraformLogger wraps the tflog logging to handle Go's log messages with log level mapping.
@@ -124,6 +166,14 @@ type AuthConfig interface {
 	Authenticate() error
 	GetHttpClient() (*http.Client, error)
 	GetServerConfig() *auth_providers.Server
+	GetCommandVersion() string
+}
+
+// NewKeyfactorClientWithAuth creates a Client with a pre-built AuthConfig, bypassing
+// the Authenticate() network call. Used in unit tests with VCR cassettes.
+func NewKeyfactorClientWithAuth(auth AuthConfig, ctx *context.Context) *Client {
+	initLogger(ctx)
+	return &Client{AuthClient: auth}
 }
 
 // NewKeyfactorClient creates a new Keyfactor client instance. A configured Client is returned with methods used to
@@ -134,11 +184,12 @@ func NewKeyfactorClient(cfg *auth_providers.Server, ctx *context.Context) (*Clie
 	clientAuthType := cfg.GetAuthType()
 
 	baseConfig := auth_providers.CommandAuthConfig{
-		CommandHostName: cfg.Host,
-		CommandPort:     cfg.Port,
-		CommandAPIPath:  cfg.APIPath,
-		CommandCACert:   cfg.CACertPath,
-		SkipVerify:      cfg.SkipTLSVerify,
+		CommandHostName:   cfg.Host,
+		CommandPort:       cfg.Port,
+		CommandAPIPath:    cfg.APIPath,
+		CommandCACert:     cfg.CACertPath,
+		SkipVerify:        cfg.SkipTLSVerify,
+		HttpClientTimeout: cfg.ClientTimeout,
 	}
 
 	if clientAuthType == "basic" {
@@ -152,11 +203,12 @@ func NewKeyfactorClient(cfg *auth_providers.Server, ctx *context.Context) (*Clie
 		if aErr != nil {
 			return nil, aErr
 		}
-		_, cErr := basicCfg.GetHttpClient()
+		httpClient, cErr := basicCfg.GetHttpClient()
 		if cErr != nil {
 			return nil, cErr
 		}
 		client.AuthClient = &basicCfg
+		client.httpClient = httpClient
 		return &client, nil
 	} else if clientAuthType == "oauth" {
 		oauthCfg := auth_providers.CommandConfigOauth{
@@ -172,11 +224,12 @@ func NewKeyfactorClient(cfg *auth_providers.Server, ctx *context.Context) (*Clie
 		if aErr != nil {
 			return nil, aErr
 		}
-		_, cErr := oauthCfg.GetHttpClient()
+		httpClient, cErr := oauthCfg.GetHttpClient()
 		if cErr != nil {
 			return nil, cErr
 		}
 		client.AuthClient = &oauthCfg
+		client.httpClient = httpClient
 		return &client, nil
 	} else {
 		return nil, fmt.Errorf("unsupported auth type or authentication cfg: '%s'", clientAuthType)
@@ -196,7 +249,12 @@ func logRequest(req *http.Request) error {
 	// Restore the request body so it can be read later
 	req.Body = io.NopCloser(bytes.NewBuffer(body))
 
-	// Create a struct to hold request data
+	// Create a struct to hold request data. The body is redacted before
+	// logging (see redactSensitiveJSONForLogging) since it's always the same
+	// JSON-marshaled request.Payload passed into sendRequest, which may carry
+	// a certificate/PFX recovery password or other secret - this must not be
+	// dumped verbatim into TRACE-level logs.
+	redactedBody := redactSensitiveJSONForLogging(body)
 	requestData := struct {
 		Method  string              `json:"method"`
 		URL     string              `json:"url"`
@@ -206,7 +264,7 @@ func logRequest(req *http.Request) error {
 		Method:  req.Method,
 		URL:     req.URL.String(),
 		Headers: req.Header,
-		Body:    string(body),
+		Body:    string(redactedBody),
 	}
 
 	// Convert struct to JSON
@@ -243,7 +301,10 @@ func requestToCurl(req *http.Request) (string, error) {
 		}
 	}
 
-	// Add the body if it exists
+	// Add the body if it exists. The body is redacted before being embedded
+	// in the logged cURL command (see redactSensitiveJSONForLogging) since a
+	// TRACE-level cURL command containing a raw password is directly
+	// replayable by anyone who reads the log, not just informational.
 	if req.Method == http.MethodPost || req.Method == http.MethodPut {
 		body, err := io.ReadAll(req.Body)
 		if err != nil {
@@ -251,7 +312,7 @@ func requestToCurl(req *http.Request) (string, error) {
 		}
 		req.Body = io.NopCloser(bytes.NewBuffer(body)) // Restore the request body
 
-		curlCommand.WriteString(fmt.Sprintf("--data %q ", string(body)))
+		curlCommand.WriteString(fmt.Sprintf("--data %q ", string(redactSensitiveJSONForLogging(body))))
 	}
 
 	return curlCommand.String(), nil
@@ -309,7 +370,7 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	if mErr != nil {
 		return nil, mErr
 	}
-	log.Printf("[TRACE] Request body: %s", jsonByes)
+	log.Printf("[TRACE] Request body: %s", redactSensitiveJSONForLogging(jsonByes))
 
 	req, reqErr := http.NewRequest(request.Method, keyfactorPath, bytes.NewBuffer(jsonByes))
 	if reqErr != nil {
@@ -334,49 +395,30 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 
 	// Log the request
 	logRequest(req)
-	httpClient, cErr := c.AuthClient.GetHttpClient()
+	httpClient, cErr := c.getHttpClient()
 	if cErr != nil {
 		return nil, cErr
 	}
 	resp, respErr := httpClient.Do(req)
 
-	// check if context deadline exceeded
+	// NOTE: this used to silently retry on "context deadline exceeded" (up to
+	// MAX_CONTEXT_DEADLINE_RETRIES times) without ever surfacing that a retry
+	// happened. That's unsafe for two reasons:
+	//   1. Retrying a non-idempotent request (e.g. a POST enrollment) after a
+	//      client-side timeout risks creating a second server-side resource
+	//      if the original request actually succeeded after the client gave
+	//      up on it -- exactly the scenario callers need to detect via the
+	//      returned error, not have hidden from them by a "successful" retry.
+	//   2. If every retry also failed, `resp` was never reassigned from its
+	//      original nil value and there was no `return` for this case, so
+	//      control fell through to `resp.StatusCode` below on a nil
+	//      *http.Response, panicking the caller (e.g. crashing `terraform
+	//      apply` outright).
+	// Callers that need retry-with-backoff semantics around a timeout (and
+	// that know their request is safe to repeat) should implement that at
+	// their own call site, where they have the context to decide; this layer
+	// now always returns the transport error untouched.
 	switch {
-	case respErr != nil && (strings.Contains(respErr.Error(), "context deadline exceeded")):
-		sleepDuration := time.Duration(1) * time.Second
-		for i := 0; i < MAX_CONTEXT_DEADLINE_RETRIES; i++ {
-			// sleep for exponential backoff
-			if i > 0 {
-				sleepDuration *= 2
-				if sleepDuration > time.Duration(MAX_WAIT_SECONDS)*time.Second {
-					sleepDuration = time.Duration(MAX_WAIT_SECONDS) * time.Second
-				}
-				log.Printf(
-					"[DEBUG] %s request to %s failed with error %s, retrying in %s seconds...",
-					request.Method,
-					keyfactorPath,
-					respErr.Error(),
-					sleepDuration,
-				)
-				time.Sleep(sleepDuration)
-			}
-
-			log.Printf(
-				"[DEBUG] %s request to %s failed with error %s, retrying...",
-				request.Method,
-				keyfactorPath,
-				respErr.Error(),
-			)
-			req, reqErr = http.NewRequest(request.Method, keyfactorPath, bytes.NewBuffer(jsonByes))
-			if reqErr != nil {
-				return nil, reqErr
-			}
-			resp2, respErr2 := httpClient.Do(req)
-			if respErr2 == nil && resp2 != nil {
-				resp = resp2
-				break
-			}
-		}
 	case respErr != nil:
 		log.Printf("[ERROR] Error sending '%s' request to '%s': %s", request.Method, request.Endpoint, respErr)
 		return nil, respErr

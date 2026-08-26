@@ -39,7 +39,7 @@ type CertificateStoreType struct {
 	Capability          string                         `json:"Capability,omitempty"`
 	StoreType           int                            `json:"StoreType"`
 	ImportType          int                            `json:"ImportType,omitempty"`
-	LocalStore          bool                           `json:"LocalStore,omitempty"`
+	LocalStore          *bool                          `json:"LocalStore,omitempty"`
 	SupportedOperations *StoreTypeSupportedOperations  `json:"SupportedOperations,omitempty"`
 	Properties          *[]StoreTypePropertyDefinition `json:"Properties,omitempty"`
 	EntryParameters     *[]EntryParameter              `json:"EntryParameters,omitempty"`
@@ -48,9 +48,9 @@ type CertificateStoreType struct {
 	StorePathValue      string                         `json:"StorePathValue,omitempty"`
 	PrivateKeyAllowed   string                         `json:"PrivateKeyAllowed,omitempty"`
 	JobProperties       *[]string                      `json:"JobProperties,omitempty"`
-	ServerRequired      bool                           `json:"ServerRequired,omitempty"`
-	PowerShell          bool                           `json:"PowerShell,omitempty"`
-	BlueprintAllowed    bool                           `json:"BlueprintAllowed,omitempty"`
+	ServerRequired      *bool                          `json:"ServerRequired,omitempty"`
+	PowerShell          *bool                          `json:"PowerShell,omitempty"`
+	BlueprintAllowed    *bool                          `json:"BlueprintAllowed,omitempty"`
 	CustomAliasAllowed  string                         `json:"CustomAliasAllowed,omitempty"`
 	ServerRegistration  int                            `json:"ServerRegistration,omitempty"`
 	InventoryEndpoint   string                         `json:"InventoryEndpoint,omitempty"`

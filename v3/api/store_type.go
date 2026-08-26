@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 )
 
 // GetCertificateStoreType takes arguments for a certificate store type ID or name and if found will return the certificate store type
@@ -101,9 +102,9 @@ func (c *Client) GetCertificateStoreTypeById(id int) (*CertificateStoreType, err
 	return &jsonResp, nil
 }
 
-// ListCertificateStoreTypes takes no arguments and returns a list of certificate store types from Keyfactor.
+// ListCertificateStoreTypes returns all certificate store types from Keyfactor, paginating
+// automatically using pq.pageReturned / pq.returnLimit until all results are fetched.
 func (c *Client) ListCertificateStoreTypes() (*[]CertificateStoreType, error) {
-	// Set Keyfactor-specific headers
 	headers := &apiHeaders{
 		Headers: []StringTuple{
 			{"x-keyfactor-api-version", "1"},
@@ -111,25 +112,38 @@ func (c *Client) ListCertificateStoreTypes() (*[]CertificateStoreType, error) {
 		},
 	}
 
-	endpoint := "CertificateStoreTypes"
-	keyfactorAPIStruct := &request{
-		Method:   "GET",
-		Endpoint: endpoint,
-		Headers:  headers,
-		Payload:  nil,
-	}
+	const pageSize = 100
+	var all []CertificateStoreType
+	for page := 1; ; page++ {
+		keyfactorAPIStruct := &request{
+			Method:   "GET",
+			Endpoint: "CertificateStoreTypes",
+			Headers:  headers,
+			Payload:  nil,
+			Query: &apiQuery{
+				Query: []StringTuple{
+					{"PageReturned", strconv.Itoa(page)},
+					{"ReturnLimit", strconv.Itoa(pageSize)},
+				},
+			},
+		}
 
-	resp, err := c.sendRequest(keyfactorAPIStruct)
-	if err != nil {
-		return nil, err
-	}
+		resp, err := c.sendRequest(keyfactorAPIStruct)
+		if err != nil {
+			return nil, err
+		}
 
-	var jsonResp []CertificateStoreType
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
-	if err != nil {
-		return nil, err
+		var pageResults []CertificateStoreType
+		err = json.NewDecoder(resp.Body).Decode(&pageResults)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, pageResults...)
+		if len(pageResults) < pageSize {
+			break
+		}
 	}
-	return &jsonResp, nil
+	return &all, nil
 }
 
 // CreateStoreType takes arguments for CreateStoreFctArgs to facilitate the creation

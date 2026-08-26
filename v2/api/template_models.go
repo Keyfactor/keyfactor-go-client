@@ -81,7 +81,13 @@ type UpdateTemplateArg struct {
 	AllowedRequesters      *[]string                   `json:"AllowedRequesters,omitempty"`
 	RFCEnforcement         *bool                       `json:"RFCEnforcement,omitempty"`
 	RequiresApproval       *bool                       `json:"RequiresApproval,omitempty"`
-	KeyUsage               *bool                       `json:"KeyUsage,omitempty"`
+	// KeyUsage is an int32 bitmask on Command's wire format (e.g. 160 =
+	// digitalSignature|keyEncipherment), matching GetTemplateResponse.KeyUsage and
+	// Command's TemplateUpdateRequest/TemplateRetrievalResponse swagger schema
+	// (both typed "integer"/"int32"). A *bool here previously produced a live
+	// HTTP 400 ("Unexpected character encountered while parsing value: t. Path
+	// 'KeyUsage'") since Command rejects a JSON boolean for an integer field.
+	KeyUsage *int `json:"KeyUsage,omitempty"`
 }
 
 type UpdateTemplateResponse struct{ GetTemplateResponse }
