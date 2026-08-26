@@ -244,3 +244,62 @@ func TestUpdateTemplateArg_TemplatePolicy_Roundtrip(t *testing.T) {
 		t.Fatalf("TemplatePolicy.PrimaryKeyAlgorithms on the wire = %v, want 2 entries", policy["PrimaryKeyAlgorithms"])
 	}
 }
+
+// TestUpdateTemplateArg_KeyUsage_SerializesAsInt verifies that UpdateTemplateArg.KeyUsage
+// serializes onto the wire as a JSON number, matching Command's TemplateUpdateRequest
+// swagger schema ({"type":"integer","format":"int32"}) confirmed against a live v25.5
+// instance. Before the fix, KeyUsage was typed *bool, which serialized as a JSON boolean
+// and produced a live HTTP 400 from Command ("Unexpected character encountered while
+// parsing value: t. Path 'KeyUsage'"). This also verifies the value returned by
+// GetTemplateResponse.KeyUsage (an int) can be assigned directly to
+// UpdateTemplateArg.KeyUsage without a type conversion, since both now agree on int.
+func TestUpdateTemplateArg_KeyUsage_SerializesAsInt(t *testing.T) {
+	var receivedBody []byte
+
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var err error
+		receivedBody, err = io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatalf("failed to read request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(receivedBody)
+	}))
+	defer srv.Close()
+
+	c := newTestClient(srv)
+
+	// Simulate a real read-modify-write: KeyUsage comes straight off a
+	// GetTemplateResponse (int) with no bool<->int conversion required.
+	fetched := GetTemplateResponse{Id: 4, KeyUsage: 160} // digitalSignature|keyEncipherment
+	keyUsage := fetched.KeyUsage
+
+	arg := &UpdateTemplateArg{
+		Id:       4,
+		KeyUsage: &keyUsage,
+	}
+
+	if _, err := c.UpdateTemplate(arg); err != nil {
+		t.Fatalf("UpdateTemplate() error: %v", err)
+	}
+
+	var onWire map[string]interface{}
+	if err := json.Unmarshal(receivedBody, &onWire); err != nil {
+		t.Fatalf("failed to decode request body sent to server: %v", err)
+	}
+
+	rawKeyUsage, ok := onWire["KeyUsage"]
+	if !ok {
+		t.Fatalf("request body sent to server has no KeyUsage field; got keys: %v", onWire)
+	}
+	switch v := rawKeyUsage.(type) {
+	case float64:
+		if v != 160 {
+			t.Errorf("KeyUsage on the wire = %v, want 160", v)
+		}
+	case bool:
+		t.Fatalf("KeyUsage on the wire is a JSON boolean (%v); Command's API expects an int32 bitmask and returns HTTP 400 for a boolean payload", v)
+	default:
+		t.Fatalf("KeyUsage on the wire has unexpected type %T (value %v), want a JSON number", v, v)
+	}
+}
