@@ -434,8 +434,30 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 	log.Printf("[DEBUG] Response code from '%s' request to '%s': %d", request.Method, request.Endpoint, resp.StatusCode)
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent {
 		log.Printf("[DEBUG] '%s' request to '%s' succeeded", request.Method, request.Endpoint)
+		// Callers of sendRequest decode resp.Body and (in most cases) never
+		// close it. An unclosed body that has not been read to EOF pins its
+		// connection, and the auth-client transports cap connections per host,
+		// so after a handful of such calls every later request blocks forever
+		// in net/http.(*Transport).getConn. Release the connection here by
+		// buffering the body and handing callers an in-memory, already-closed
+		// reader, so no caller can leak it.
+		if bErr := bufferResponseBody(resp); bErr != nil {
+			log.Printf(
+				"[ERROR] Error reading response body for '%s' request to '%s': %s",
+				request.Method,
+				request.Endpoint,
+				bErr,
+			)
+			return nil, fmt.Errorf("error reading response body from Keyfactor Command: %w", bErr)
+		}
 		return resp, nil
-	} else if resp.StatusCode == http.StatusNotFound {
+	}
+
+	// Every remaining branch returns an error and never hands resp to the
+	// caller, so sendRequest owns the body: always release the connection.
+	defer drainAndCloseBody(resp.Body)
+
+	if resp.StatusCode == http.StatusNotFound {
 		stringMessage = fmt.Sprintf(
 			"Error %d - the requested resource was not found. Please check the request and try again.",
 			resp.StatusCode,
@@ -555,6 +577,42 @@ func (c *Client) sendRequest(request *request) (*http.Response, error) {
 
 		return nil, errors.New(stringMessage)
 	}
+}
+
+// bufferResponseBody reads resp.Body fully, closes the original body (which
+// returns the underlying connection to the transport's pool) and replaces
+// resp.Body with an in-memory reader. The replacement's Close is a no-op, so
+// callers may or may not call it. Every existing caller already decodes the
+// whole body into memory, so buffering does not raise peak memory beyond one
+// extra copy of the raw response for the duration of the call.
+func bufferResponseBody(resp *http.Response) error {
+	if resp == nil || resp.Body == nil || resp.Body == http.NoBody {
+		return nil
+	}
+	data, err := io.ReadAll(resp.Body)
+	closeErr := resp.Body.Close()
+	if err != nil {
+		return err
+	}
+	if closeErr != nil {
+		log.Printf("[WARN] Error closing response body: %s", closeErr)
+	}
+	resp.Body = io.NopCloser(bytes.NewReader(data))
+	return nil
+}
+
+// maxDrainBytes bounds how much of an unread error-response body is consumed
+// so the connection can be reused instead of discarded.
+const maxDrainBytes = 64 << 10
+
+// drainAndCloseBody discards (a bounded amount of) any unread data and closes
+// the body so the connection is released back to the transport.
+func drainAndCloseBody(body io.ReadCloser) {
+	if body == nil {
+		return
+	}
+	_, _ = io.Copy(io.Discard, io.LimitReader(body, maxDrainBytes))
+	_ = body.Close()
 }
 
 func getTimestamp() string {
